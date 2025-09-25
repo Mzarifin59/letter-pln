@@ -1,0 +1,61 @@
+{
+  "kind": "collectionType",
+  "collectionName": "emails",
+  "info": {
+    "singularName": "email",
+    "pluralName": "emails",
+    "displayName": "Email"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "subject": {
+      "type": "string"
+    },
+    "from_department": {
+      "type": "string"
+    },
+    "to_company": {
+      "type": "string"
+    },
+    "pesan": {
+      "type": "richtext"
+    },
+    "surat_jalan": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::surat-jalan.surat-jalan",
+      "inversedBy": "emails"
+    },
+    "sender": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "emails"
+    },
+    "recipients": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "email_recipients"
+    },
+    "email_statuses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::email-status.email-status",
+      "mappedBy": "email"
+    },
+    "attachment_files": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_global_materials",
+  "info": {
+    "displayName": "material"
+  },
+  "options": {},
+  "attributes": {
+    "nama": {
+      "type": "string"
+    },
+    "katalog": {
+      "type": "string"
+    },
+    "satuan": {
+      "type": "enumeration",
+      "enum": [
+        "PCS (Pieces)",
+        "Kg (Kilogram)"
+      ]
+    },
+    "jumlah": {
+      "type": "integer"
+    },
+    "keterangan": {
+      "type": "string"
+    }
+  },
+  "config": {}
+}

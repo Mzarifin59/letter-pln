@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_global_pengirims",
+  "info": {
+    "displayName": "pengirim"
+  },
+  "options": {},
+  "attributes": {
+    "departemen_pengirim": {
+      "type": "string"
+    },
+    "nama_pengirim": {
+      "type": "string"
+    },
+    "ttd_pengirim": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  },
+  "config": {}
+}

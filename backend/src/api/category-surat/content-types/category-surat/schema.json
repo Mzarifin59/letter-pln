@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "category_surats",
+  "info": {
+    "singularName": "category-surat",
+    "pluralName": "category-surats",
+    "displayName": "Category Surat"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "surat_jalans": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::surat-jalan.surat-jalan",
+      "mappedBy": "category_surat"
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "kind": "collectionType",
+  "collectionName": "surat_jalans",
+  "info": {
+    "singularName": "surat-jalan",
+    "pluralName": "surat-jalans",
+    "displayName": "Surat Jalan"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "no_surat_jalan": {
+      "type": "string"
+    },
+    "no_surat_permintaan": {
+      "type": "string"
+    },
+    "tanggal": {
+      "type": "datetime"
+    },
+    "perihal": {
+      "type": "text"
+    },
+    "lokasi_asal": {
+      "type": "string"
+    },
+    "lokasi_tujuan": {
+      "type": "string"
+    },
+    "materials": {
+      "type": "component",
+      "component": "global.material",
+      "repeatable": true
+    },
+    "penerima": {
+      "type": "component",
+      "component": "global.penerima",
+      "repeatable": false
+    },
+    "pengirim": {
+      "type": "component",
+      "component": "global.pengirim",
+      "repeatable": false
+    },
+    "lampiran": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "status_surat": {
+      "type": "enumeration",
+      "enum": [
+        "In Progress",
+        "Approve",
+        "Reject"
+      ]
+    },
+    "pesan": {
+      "type": "text"
+    },
+    "emails": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::email.email",
+      "mappedBy": "surat_jalan"
+    },
+    "category_surat": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::category-surat.category-surat",
+      "inversedBy": "surat_jalans"
+    },
+    "catatan_tambahan": {
+      "type": "text"
+    },
+    "informasi_kendaraan": {
+      "type": "string"
+    },
+    "nama_pengemudi": {
+      "type": "string"
+    }
+  }
+}

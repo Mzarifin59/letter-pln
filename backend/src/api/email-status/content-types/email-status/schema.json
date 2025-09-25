@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "email_statuses",
+  "info": {
+    "singularName": "email-status",
+    "pluralName": "email-statuses",
+    "displayName": "Email Status"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "email": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::email.email",
+      "inversedBy": "email_statuses"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "email_statuses"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_at": {
+      "type": "datetime"
+    },
+    "is_bookmarked": {
+      "type": "boolean",
+      "default": false
+    },
+    "bookmarked_at": {
+      "type": "datetime"
+    }
+  }
+}
