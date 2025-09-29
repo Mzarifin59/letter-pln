@@ -2,18 +2,15 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-})
+});
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
-})
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -30,13 +27,7 @@ export default function RootLayout({
       <body
         className={`${inter.className} ${plusJakartaSans.variable} antialiased bg-[#F6F9FF]`}
       >
-        <div className="flex">
-          <Sidebar />
-          <div className="flex-1">
-            <Header />
-            {children}
-          </div>
-        </div>
+        {children}
       </body>
     </html>
   );

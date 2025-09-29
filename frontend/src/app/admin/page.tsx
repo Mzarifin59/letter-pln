@@ -1,6 +1,114 @@
 import { StickyNote, Check, Send, ArchiveX } from "lucide-react";
 
-export default function DashboardPage() {
+import { getAllSuratJalan } from "@/lib/fetch";
+import { SuratJalan } from "@/lib/interface";
+import { JSX } from "react";
+
+function formatDateTime(isoString: string): string {
+  const date = new Date(isoString);
+
+  // Format tanggal ke dd/mm/yyyy
+  const formattedDate = date.toLocaleDateString("en-GB");
+
+  // Format jam (12 jam + am/pm)
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "pm" : "am";
+  hours = hours % 12;
+  hours = hours ? hours : 12; // kalau 0 jadi 12
+
+  const formattedTime = `${hours}:${minutes}${ampm}`;
+
+  return `${formattedDate} at ${formattedTime}`;
+}
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  const minutes = Math.floor(diffInSeconds / 60);
+  const hours = Math.floor(diffInSeconds / 3600);
+  const days = Math.floor(diffInSeconds / 86400);
+  const months = Math.floor(diffInSeconds / 2592000); // 30 hari
+  const years = Math.floor(diffInSeconds / 31536000); // 365 hari
+
+  if (diffInSeconds < 60) return "baru saja";
+  if (minutes < 60) return `${minutes} menit lalu`;
+  if (hours < 24) return `${hours} jam lalu`;
+  if (days < 30) return `${days} hari lalu`;
+  if (months < 12) return `${months} bulan lalu`;
+  return `${years} tahun lalu`;
+}
+
+function mergeDraftAndPublished(drafts: SuratJalan[], published: SuratJalan[]) {
+  const map = new Map<string, SuratJalan>();
+
+  // masukkan semua draft dulu
+  drafts.forEach((sj) => {
+    map.set(sj.documentId, sj);
+  });
+
+  // kalau ada published dengan documentId sama, replace draft
+  published.forEach((sj) => {
+    map.set(sj.documentId, sj);
+  });
+
+  return Array.from(map.values());
+}
+
+const statusIcons: Record<string, { icon: JSX.Element }> = {
+  Draft: {
+    icon: <StickyNote width={15} height={15} className="text-[#4263EB]" />,
+  },
+  Approve: {
+    icon: (
+      <Check
+        width={15}
+        height={15}
+        className="text-[#009867] border border-[#009867] rounded-sm"
+      />
+    ),
+  },
+  "In Progress": {
+    icon: <Send width={15} height={15} className="text-[#009867]" />,
+  },
+  Rejected: {
+    icon: <ArchiveX width={15} height={15} className="text-[#9D0C19]" />,
+  },
+};
+
+export default async function DashboardPage() {
+  const allData: SuratJalan[] = await getAllSuratJalan("draft");
+  const publishedData: SuratJalan[] = await getAllSuratJalan("published");
+
+  const now = new Date();
+  const currentMonth = now.getMonth(); // 0 = Januari
+  const currentYear = now.getFullYear();
+
+  // filter semua data hanya data bulan ini
+  const allDataThisMonth = allData.filter((sj) => {
+    const tgl = new Date(sj.tanggal);
+    return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
+  });
+
+  // filter data published hanya data bulan ini
+  const publishedDataThisMonth = publishedData.filter((sj) => {
+    const tgl = new Date(sj.tanggal);
+    return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
+  });
+
+  // merge draft & published -> hilangkan duplikat
+  const suratJalanThisMonth = mergeDraftAndPublished(
+    allDataThisMonth,
+    publishedDataThisMonth
+  );
+
+  // optional: sort by tanggal terbaru
+  suratJalanThisMonth.sort(
+    (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+  );
+
   return (
     <>
       {/* Main Content */}
@@ -15,7 +123,7 @@ export default function DashboardPage() {
                     Surat Dibuat
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    24
+                    {allDataThisMonth.length}
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Bulan ini
@@ -70,7 +178,7 @@ export default function DashboardPage() {
                     Surat Terkirim
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    13
+                    {publishedDataThisMonth.length}
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Bulan ini
@@ -123,7 +231,11 @@ export default function DashboardPage() {
                     Menunggu Persetujuan
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    5
+                    {
+                      publishedDataThisMonth.filter(
+                        (item) => item.status_surat === "In Progress"
+                      ).length
+                    }
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Perlu Tindakan
@@ -194,78 +306,55 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-gray-50">
-                      <td className="py-4 px-4">
-                        <div className="text-sm text-[#212529]">
-                          <div>02/03/2024</div>
-                          <div className="text-sm text-[#495057]">
-                            at 1:35pm
+                    {suratJalanThisMonth.map((item, index) => (
+                      <tr key={index} className="border-b border-gray-50">
+                        <td className="py-4 px-4">
+                          <div className="text-sm text-[#212529]">
+                            <div>{formatDateTime(item.tanggal)}</div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        2,183
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#212529]">
-                        Discover our new app features
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        New app launch
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="plus-jakarta-sans px-3 py-1 rounded-full text-xs font-medium bg-[#188580]/20 text-green-700">
-                          Approve
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="py-4 px-4">
-                        <div className="text-sm text-[#212529]">
-                          <div>02/03/2024</div>
-                          <div className="text-sm text-[#495057]">
-                            at 1:35pm
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        2,183
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#212529]">
-                        Abandoned cart
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        Automated Email
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="plus-jakarta-sans px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                          In Progress
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="py-4 px-4">
-                        <div className="text-sm text-[#212529]">
-                          <div>02/03/2024</div>
-                          <div className="text-xs text-[#495057]">
-                            at 1:35pm
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        2,183
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#212529]">
-                        Discover our new app features
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#495057]">
-                        New app launch
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="plus-jakarta-sans px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                          Rejected
-                        </span>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-[#495057]">
+                          {item.emails[0].recipients[0].name}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-[#212529]">
+                          {item.perihal}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-[#495057]">
+                          {item.no_surat_jalan}
+                        </td>
+                        <td className="py-4 px-4">
+                          {item.publishedAt ? (
+                            <div
+                              className={`px-3 py-1 rounded-xl ${
+                                item.status_surat === "In Progress"
+                                  ? "bg-yellow-100"
+                                  : item.status_surat === "Approve"
+                                  ? "bg-[#188580]/20"
+                                  : "bg-red-100"
+                              }`}
+                            >
+                              <span
+                                className={`plus-jakarta-sans text-xs font-medium ${
+                                  item.status_surat === "In Progress"
+                                    ? "text-yellow-700"
+                                    : item.status_surat === "Approve"
+                                    ? "text-green-700"
+                                    : "text-red-700"
+                                }`}
+                              >
+                                {item.status_surat}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className={`px-3 py-1 rounded-xl bg-gray-100`}>
+                              <span className="plus-jakarta-sans text-xs font-medium text-gray-600">
+                                Draft
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -285,96 +374,53 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 {/* Activity Item 1 */}
-                <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-                  <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                    <StickyNote
-                      width={15}
-                      height={15}
-                      className="text-[#4263EB]"
-                    />
-                  </div>
-                  <div className="flex items-center max-xl:gap-6 min-w-0">
-                    <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                      <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                        Permohonan Surat Jalan
-                      </p>
-                      <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                        oleh Admin Gudang UPT · 2 jam lalu
-                      </p>
+                {suratJalanThisMonth.slice(0, 4).map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 border-b border-gray-100 pb-3"
+                  >
+                    <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                      {item.publishedAt
+                        ? statusIcons[item.status_surat]?.icon
+                        : statusIcons["Draft"].icon}
                     </div>
-                    <span className="plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 ml-2">
-                      Draft
-                    </span>
-                  </div>
-                </div>
-
-                {/* Activity Item 2 */}
-                <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-                  <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                    <Check
-                      width={15}
-                      height={15}
-                      className="text-[#009867] border border-[#009867] rounded-sm"
-                    />
-                  </div>
-                  <div className="flex items-center max-xl:gap-6 min-w-0">
-                    <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                      <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                        Permohonan Surat Jalan
-                      </p>
-                      <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                        oleh Admin Gudang UPT · 2 jam lalu
-                      </p>
+                    <div className="flex items-center max-xl:gap-6 min-w-0">
+                      <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
+                        <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
+                          Permohonan Surat Jalan
+                        </p>
+                        <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
+                          oleh Admin Gudang UPT · {timeAgo(item.updatedAt)}
+                        </p>
+                      </div>
+                      {item.publishedAt ? (
+                        <span
+                          className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                            item.status_surat === "In Progress"
+                              ? "bg-blue-100 text-blue-700"
+                              : item.status_surat === "Approve"
+                              ? "bg-green-100 text-green-700"
+                              : item.status_surat === "Rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {item.status_surat === "Approve"
+                            ? "Disetujui"
+                            : item.status_surat === "In Progress"
+                            ? "Terkirim"
+                            : "Dibatalkan"}
+                        </span>
+                      ) : (
+                        <span
+                          className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 bg-gray-100 text-gray-600`}
+                        >
+                          Draft
+                        </span>
+                      )}
                     </div>
-                    <span className="plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 ml-2">
-                      Disetujui
-                    </span>
                   </div>
-                </div>
-
-                {/* Activity Item 3 */}
-                <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-                  <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                    <Send width={15} height={15} className="text-[#009867]" />
-                  </div>
-                  <div className="flex items-center max-xl:gap-6 min-w-0">
-                    <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                      <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                        Permohonan Surat Jalan
-                      </p>
-                      <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                        oleh Admin Gudang UPT · 2 jam lalu
-                      </p>
-                    </div>
-                    <span className="plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 ml-2">
-                      Terkirim
-                    </span>
-                  </div>
-                </div>
-
-                {/* Activity Item 4 */}
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                    <ArchiveX
-                      width={15}
-                      height={15}
-                      className="text-[#9D0C19]"
-                    />
-                  </div>
-                  <div className="flex items-center max-xl:gap-6 min-w-0">
-                    <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                      <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                        Permohonan Surat Jalan
-                      </p>
-                      <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                        oleh Admin Gudang UPT · 2 jam lalu
-                      </p>
-                    </div>
-                    <span className="plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 ml-2">
-                      Dibatalkan
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>

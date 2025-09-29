@@ -9,6 +9,7 @@ import {
   Bell,
   ChevronDown,
   Menu,
+  LogOut,
 } from "lucide-react";
 import {
   Sheet,
@@ -16,10 +17,20 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { SidebarContent } from "./sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { SidebarContent } from "@/components/sidebar";
+import { getUserLogin } from "@/lib/user";
 
 export default function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { user, loading } = getUserLogin();
 
   const closeSheet = () => {
     setIsSheetOpen(false);
@@ -79,21 +90,39 @@ export default function Header() {
             <div className="hidden md:block h-8 w-px bg-gray-300"></div>
 
             {/* User Profile */}
-            <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors group">
-              <div className="w-10 h-10 bg-[#0056B0] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                AG
-              </div>
-              <div className="hidden sm:flex flex-col">
-                <p className="text-sm font-medium text-gray-800">
-                  Admin Gudang
-                </p>
-                <p className="text-xs text-gray-500">marco@goodmail.io</p>
-              </div>
-              <ChevronDown
-                size={16}
-                className="hidden sm:block text-gray-400 group-hover:text-gray-600 transition-colors"
-              />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors group">
+                  <div className="w-10 h-10 bg-[#0056B0] rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {user?.name?.[0]?.toUpperCase() ?? "?"}
+                  </div>
+                  <div className="hidden sm:flex flex-col">
+                    <p className="text-sm font-medium text-gray-800">
+                      {loading ? "Loading..." : user?.name ?? "Guest"}
+                    </p>
+                    <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className="hidden sm:block text-gray-400 group-hover:text-gray-600 transition-colors"
+                  />
+                </div>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = "/logout"; 
+                  }}
+                  className="text-red-400 focus:text-red-500"
+                >
+                  <LogOut width={20} height={20} className="text-red-400 focus:text-red-500"/>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
