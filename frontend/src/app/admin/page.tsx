@@ -79,15 +79,17 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
 };
 
 export default async function DashboardPage() {
-  const allData: SuratJalan[] = await getAllSuratJalan("draft");
-  const publishedData: SuratJalan[] = await getAllSuratJalan("published");
+  const allData: SuratJalan[] = await getAllSuratJalan();
+
+  const draftData = allData.filter(item => item.status_entry === "Draft");
+  const publishedData = allData.filter(item => item.status_entry === "Published");
 
   const now = new Date();
   const currentMonth = now.getMonth(); // 0 = Januari
   const currentYear = now.getFullYear();
 
   // filter semua data hanya data bulan ini
-  const allDataThisMonth = allData.filter((sj) => {
+  const draftDataThisMonth = draftData.filter((sj) => {
     const tgl = new Date(sj.tanggal);
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
@@ -100,9 +102,11 @@ export default async function DashboardPage() {
 
   // merge draft & published -> hilangkan duplikat
   const suratJalanThisMonth = mergeDraftAndPublished(
-    allDataThisMonth,
+    draftDataThisMonth,
     publishedDataThisMonth
   );
+
+  console.log(suratJalanThisMonth)
 
   // optional: sort by tanggal terbaru
   suratJalanThisMonth.sort(
@@ -123,7 +127,7 @@ export default async function DashboardPage() {
                     Surat Dibuat
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    {allDataThisMonth.length}
+                    {draftDataThisMonth.length}
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Bulan ini
@@ -314,7 +318,7 @@ export default async function DashboardPage() {
                           </div>
                         </td>
                         <td className="py-4 px-4 text-sm text-[#495057]">
-                          {item.emails[0].recipients[0].name}
+                          {item.emails[0].recipient.name}
                         </td>
                         <td className="py-4 px-4 text-sm text-[#212529]">
                           {item.perihal}
@@ -323,7 +327,7 @@ export default async function DashboardPage() {
                           {item.no_surat_jalan}
                         </td>
                         <td className="py-4 px-4">
-                          {item.publishedAt ? (
+                          {item.status_entry !== "Draft" ? (
                             <div
                               className={`px-3 py-1 rounded-xl ${
                                 item.status_surat === "In Progress"
@@ -380,7 +384,7 @@ export default async function DashboardPage() {
                     className="flex items-center gap-3 border-b border-gray-100 pb-3"
                   >
                     <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                      {item.publishedAt
+                      {item.status_entry !== "Draft"
                         ? statusIcons[item.status_surat]?.icon
                         : statusIcons["Draft"].icon}
                     </div>
@@ -393,7 +397,7 @@ export default async function DashboardPage() {
                           oleh Admin Gudang UPT · {timeAgo(item.updatedAt)}
                         </p>
                       </div>
-                      {item.publishedAt ? (
+                      {item.status_entry !== "Draft" ? (
                         <span
                           className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
                             item.status_surat === "In Progress"

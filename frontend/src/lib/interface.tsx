@@ -50,6 +50,20 @@ export interface Lampiran {
   url: string;
 }
 
+export interface EmailStatus{
+  id: number;
+  documentId: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  is_read: boolean;
+  is_bookmarked: boolean;
+  read_at: string;
+  bookmarked_at: string;
+
+}
+
 export interface EmailItem {
   id: number;
   documentId: string;
@@ -58,7 +72,7 @@ export interface EmailItem {
   to_company: string;
   pesan: string;
   sender: Sender;
-  recipients: Recipient[];
+  recipient: Recipient;
 }
 
 // Surat Jalan
@@ -73,9 +87,9 @@ export interface SuratJalan {
   lokasi_tujuan: string;
   status_surat: string;
   pesan: string;
+  status_entry: string;
   createdAt: string;
   updatedAt: string;
-  publishedAt: string;
   catatan_tambahan: string;
   informasi_kendaraan: string;
   nama_pengemudi: string;
@@ -95,9 +109,9 @@ export interface EmailData {
   pesan: string;
   createdAt: string;
   updatedAt: string;
-  publishedAt: string | null;
   surat_jalan: SuratJalan;
   sender: Sender;
-  recipients: Recipient[];
+  recipient: Recipient;
   attachment_files: any | null;
+  email_statuses: EmailStatus[];
 }

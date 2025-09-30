@@ -382,7 +382,7 @@ export interface ApiCategorySuratCategorySurat
     singularName: 'category-surat';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -470,8 +470,8 @@ export interface ApiEmailEmail extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     pesan: Schema.Attribute.RichText;
     publishedAt: Schema.Attribute.DateTime;
-    recipients: Schema.Attribute.Relation<
-      'manyToMany',
+    recipient: Schema.Attribute.Relation<
+      'manyToOne',
       'plugin::users-permissions.user'
     >;
     sender: Schema.Attribute.Relation<
@@ -498,7 +498,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     singularName: 'surat-jalan';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     catatan_tambahan: Schema.Attribute.Text;
@@ -532,6 +532,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     perihal: Schema.Attribute.Text;
     pesan: Schema.Attribute.Text;
     publishedAt: Schema.Attribute.DateTime;
+    status_entry: Schema.Attribute.Enumeration<['Draft', 'Published']>;
     status_surat: Schema.Attribute.Enumeration<
       ['In Progress', 'Approve', 'Reject']
     >;
@@ -1011,7 +1012,7 @@ export interface PluginUsersPermissionsUser
         minLength: 6;
       }>;
     email_recipients: Schema.Attribute.Relation<
-      'manyToMany',
+      'oneToMany',
       'api::email.email'
     >;
     email_statuses: Schema.Attribute.Relation<

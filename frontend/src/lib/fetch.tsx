@@ -1,10 +1,14 @@
 import qs from "qs";
+import { cookies } from "next/headers";
 
 if (!process.env.API_URL) {
   throw new Error("API_URL environment variable is not defined");
 }
 
 export const apiUrl = process.env.API_URL;
+
+const cookieStore = await cookies();
+const token = cookieStore.get("token")?.value;
 
 interface FetchOptions {
   cache?: RequestCache;
@@ -13,11 +17,17 @@ interface FetchOptions {
   };
 }
 
-async function fetchWithError(url: string, options: FetchOptions = {}) {
+async function fetchWithError(url: string, options: FetchOptions = {}, optionsHeader: RequestInit = {}) {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...optionsHeader.headers,
+  };
+
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `${token}`,
     },
   });
 
@@ -39,7 +49,7 @@ async function fetcher(url: string, options: FetchOptions = {}) {
   return response.json();
 }
 
-export async function getAllSuratJalan(status: string) {
+export async function getAllSuratJalan() {
   try {
     const query = qs.stringify({
       sort: ["createdAt:desc"],
@@ -70,14 +80,13 @@ export async function getAllSuratJalan(status: string) {
             sender: {
               fields: ["name", "email"],
             },
-            recipients: {
+            recipient: {
               fields: ["name", "email"],
             },
             attachment_files: true,
           },
         },
       },
-      status: status,
     });
 
     const data = await fetchWithError(`${apiUrl}/api/surat-jalans?${query}`, {
@@ -93,7 +102,7 @@ export async function getAllSuratJalan(status: string) {
   }
 }
 
-export async function getAllEmails(status: string) {
+export async function getAllEmails() {
   try {
     const query = qs.stringify({
       sort: ["createdAt:desc"],
@@ -120,27 +129,32 @@ export async function getAllEmails(status: string) {
             lampiran: {
               fields: ["name", "url"],
             },
-            emails: {
-              fields: ["subject", "from_department", "to_company", "pesan"],
-            },
+            category_surat: true,
           },
         },
         sender: {
           fields: ["name", "email"],
         },
-        recipients: {
+        recipient: {
           fields: ["name", "email"],
+        },
+        email_statuses: {
+          fields: ['is_read', 'is_bookmarked', 'read_at', 'bookmarked_at'],
+          populate: {
+            user: {
+              fields: ['name', 'email'],
+            },
+          },
         },
         attachment_files: {
           fields: ["name", "url"],
         },
       },
-      status: status,
     });
 
     const data = await fetchWithError(`${apiUrl}/api/emails?${query}`, {
       next: {
-        tags: ["emial"],
+        tags: ["email"],
       },
     });
 

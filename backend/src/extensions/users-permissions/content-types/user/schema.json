@@ -74,9 +74,9 @@
     },
     "email_recipients": {
       "type": "relation",
-      "relation": "manyToMany",
+      "relation": "oneToMany",
       "target": "api::email.email",
-      "mappedBy": "recipients"
+      "mappedBy": "recipient"
     },
     "email_statuses": {
       "type": "relation",

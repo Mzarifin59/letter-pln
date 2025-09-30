@@ -35,9 +35,9 @@
       "target": "plugin::users-permissions.user",
       "inversedBy": "emails"
     },
-    "recipients": {
+    "recipient": {
       "type": "relation",
-      "relation": "manyToMany",
+      "relation": "manyToOne",
       "target": "plugin::users-permissions.user",
       "inversedBy": "email_recipients"
     },

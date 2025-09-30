@@ -7,7 +7,7 @@
     "displayName": "Surat Jalan"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -85,6 +85,13 @@
     },
     "nama_pengemudi": {
       "type": "string"
+    },
+    "status_entry": {
+      "type": "enumeration",
+      "enum": [
+        "Draft",
+        "Published"
+      ]
     }
   }
 }
