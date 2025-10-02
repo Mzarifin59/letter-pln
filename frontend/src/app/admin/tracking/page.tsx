@@ -1,6 +1,40 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-export default function TrackingPage() {
+import { getAllEmails } from "@/lib/fetch";
+import { EmailData } from "@/lib/interface";
+
+function formatDateTime(isoString: string): string {
+  const date = new Date(isoString);
+
+  // Array nama bulan
+  const monthNames = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
+}
+
+export default async function TrackingPage() {
+  const dataEmail: EmailData[] = await getAllEmails();
+
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
       <div className="flex flex-col bg-white rounded-xl shadow-md">
@@ -51,129 +85,92 @@ export default function TrackingPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-t border-[#ADB5BD]">
-                  <td className="py-4 px-6 text-sm text-[#545454]">1</td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    22 Juli 2025 16:05
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Admin Gudang
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    SPV Logistik
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Pelaksanaan Evaluasi Material untuk Usulan Bursa dan
-                    Penghapusan
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="plus-jakarta-sans text-[#188580] font-semibold text-sm px-3 py-1 bg-[#188580]/20 rounded-2xl inline-block">
-                      Approve
-                    </span>
-                  </td>
-                </tr>
-                <tr className="border-t border-[#ADB5BD]">
-                  <td className="py-4 px-6 text-sm text-[#545454]">2</td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    22 Juli 2025 16:05
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Admin Gudang
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    SPV Logistik
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Pelaksanaan Evaluasi Material untuk Usulan Bursa dan
-                    Penghapusan
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="plus-jakarta-sans text-[#D3A518] font-semibold text-sm px-3 py-1 bg-[#D3A518]/20 rounded-2xl inline-block">
-                      In Progress
-                    </span>
-                  </td>
-                </tr>
-                <tr className="border-t border-[#ADB5BD]">
-                  <td className="py-4 px-6 text-sm text-[#545454]">3</td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    22 Juli 2025 16:05
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Admin Gudang
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    SPV Logistik
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#545454]">
-                    Pelaksanaan Evaluasi Material untuk Usulan Bursa dan
-                    Penghapusan
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="plus-jakarta-sans text-[#A62344] font-semibold text-sm px-3 py-1 bg-[#A62344]/20 rounded-2xl inline-block">
-                      Rejected
-                    </span>
-                  </td>
-                </tr>
+                {dataEmail.map((item, index) => (
+                  <tr key={index} className="border-t border-[#ADB5BD]">
+                    <td className="py-4 px-6 text-sm text-[#545454]">{index + 1}</td>
+                    <td className="py-4 px-6 text-sm text-[#545454]">
+                      {formatDateTime(item.surat_jalan.tanggal)}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-[#545454]">
+                      {item.sender.name}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-[#545454]">
+                      {item.recipient.name}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-[#545454]">
+                      {item.surat_jalan.perihal}
+                    </td>
+                    <td className="py-4 px-6">
+                      {item.surat_jalan.status_entry !== "Draft" ? (
+                        <span
+                          className={`${
+                            item.surat_jalan.status_surat === "Approve"
+                              ? "text-[#188580] bg-[#188580]/20"
+                              : item.surat_jalan.status_surat === "Reject"
+                              ? "text-[#A62344] bg-[#A62344]/20"
+                              : "text-[#D3A518] bg-[#D3A518]/20"
+                          } plus-jakarta-sans  font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
+                        >
+                          {item.surat_jalan.status_surat}
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-gray-600 bg-gray-100 plus-jakarta-sans  font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
+                        >
+                          Draft
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
           {/* versi mobile */}
           <div className="space-y-4 md:hidden">
-            {[
-              {
-                no: 1,
-                tgl: "22 Juli 2025 16:05",
-                dari: "Admin Gudang",
-                kepada: "SPV Logistik",
-                perihal:
-                  "Pelaksanaan Evaluasi Material untuk Usulan Bursa dan Penghapusan",
-                status: "Approve",
-                color: "text-[#188580] bg-[#188580]/20",
-              },
-              {
-                no: 2,
-                tgl: "22 Juli 2025 16:05",
-                dari: "Admin Gudang",
-                kepada: "SPV Logistik",
-                perihal:
-                  "Pelaksanaan Evaluasi Material untuk Usulan Bursa dan Penghapusan",
-                status: "In Progress",
-                color: "text-[#D3A518] bg-[#D3A518]/20",
-              },
-              {
-                no: 3,
-                tgl: "22 Juli 2025 16:05",
-                dari: "Admin Gudang",
-                kepada: "SPV Logistik",
-                perihal:
-                  "Pelaksanaan Evaluasi Material untuk Usulan Bursa dan Penghapusan",
-                status: "Rejected",
-                color: "text-[#A62344] bg-[#A62344]/20",
-              },
-            ].map((row) => (
+            {dataEmail.map((row, index) => (
               <div
-                key={row.no}
+                key={index}
                 className="rounded-xl border border-[#ADB5BD] p-4 bg-white shadow-sm"
               >
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-semibold text-[#232323]">
-                    #{row.no}
+                    #{index + 1}
                   </span>
-                  <span
-                    className={`plus-jakarta-sans text-xs font-semibold px-3 py-1 rounded-2xl ${row.color}`}
-                  >
-                    {row.status}
-                  </span>
+                  {row.surat_jalan.status_entry !== "Draft" ? (
+                    <span
+                      className={`${
+                        row.surat_jalan.status_surat === "Approve"
+                          ? "text-[#188580] bg-[#188580]/20"
+                          : row.surat_jalan.status_surat === "Reject"
+                          ? "text-[#A62344] bg-[#A62344]/20"
+                          : "text-[#D3A518] bg-[#D3A518]/20"
+                      } plus-jakarta-sans  font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
+                    >
+                      {row.surat_jalan.status_surat}
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-gray-600 bg-gray-100 plus-jakarta-sans  font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
+                    >
+                      Draft
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 mb-1">{row.tgl}</p>
-                <p className="text-sm text-[#545454]">
-                  <span className="font-medium">Dari:</span> {row.dari}
+                <p className="text-xs text-gray-500 mb-1">
+                  {formatDateTime(row.surat_jalan.tanggal)}
                 </p>
                 <p className="text-sm text-[#545454]">
-                  <span className="font-medium">Kepada:</span> {row.kepada}
+                  <span className="font-medium">Dari:</span> {row.sender.name}
                 </p>
-                <p className="text-sm text-[#545454] mt-1">{row.perihal}</p>
+                <p className="text-sm text-[#545454]">
+                  <span className="font-medium">Kepada:</span>{" "}
+                  {row.recipient.name}
+                </p>
+                <p className="text-sm text-[#545454] mt-1">
+                  {row.surat_jalan.perihal}
+                </p>
               </div>
             ))}
           </div>

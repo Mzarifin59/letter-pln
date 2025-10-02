@@ -105,7 +105,7 @@ export async function getAllSuratJalan() {
 export async function getAllEmails() {
   try {
     const query = qs.stringify({
-      sort: ["createdAt:desc"],
+      sort: ["createdAt:asc"],
       populate: {
         surat_jalan: {
           populate: {

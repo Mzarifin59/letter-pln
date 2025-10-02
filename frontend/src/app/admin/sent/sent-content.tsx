@@ -36,7 +36,7 @@ function formatDate(dateString: string, type: "long" | "short" = "long") {
   return dateString;
 }
 
-interface RejectContentProps {
+interface SentContentProps {
   data: EmailData[];
 }
 
@@ -47,7 +47,7 @@ interface EmailRowProps {
   email: EmailData;
 }
 
-export default function RejectPageContent({ data }: RejectContentProps) {
+export default function SentContent({ data }: SentContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
@@ -84,17 +84,17 @@ export default function RejectPageContent({ data }: RejectContentProps) {
     onSelect,
     onClick,
   }: EmailRowProps): JSX.Element => {
-    const isOpened = openedEmail?.documentId === email.documentId;
+    const isOpened = openedEmail?.id === email.id;
 
     return (
       <div
         className={`
-          px-4 py-3 border-b border-[#ADB5BD] cursor-pointer group
-          hover:bg-[#EDF1FF]
-          ${isSelected ? "bg-blue-50" : ""}
-          ${isOpened ? "bg-blue-100" : ""}
-          flex flex-wrap items-center gap-2
-        `}
+            px-4 py-3 border-b border-[#ADB5BD] cursor-pointer group
+            hover:bg-[#EDF1FF]
+            ${isSelected ? "bg-blue-50" : ""}
+            ${isOpened ? "bg-blue-100" : ""}
+            flex flex-wrap items-center gap-2
+          `}
         onClick={() => onClick?.(email)}
       >
         {/* Checkbox & Star - hidden in mobile when detail open */}
@@ -119,27 +119,20 @@ export default function RejectPageContent({ data }: RejectContentProps) {
         )}
 
         {/* Status */}
-        {!openedEmail && (
-          <div className="text-[#A62344] text-xs sm:text-sm font-semibold">
+        {/* <div className="text-[#A62344] text-xs sm:text-sm font-semibold">
             Dibatalkan
-          </div>
-        )}
+          </div> */}
 
         {/* Sender & Preview */}
         <div className="flex-1 min-w-0">
-          {openedEmail && (
-            <div className="text-[#A62344] text-xs sm:text-sm font-semibold">
-              Dibatalkan
-            </div>
-          )}
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-900 truncate">
-              {email.surat_jalan.penerima.perusahaan_penerima}
+              Kepada : {email.surat_jalan.penerima.perusahaan_penerima}
             </span>
             {!openedEmail && (
               <>
                 <span
-                  className={`max-xl:hidden jtext-sm text-[#545454] block whitespace-normal break-words`}
+                  className={`max-xl:hidden text-sm text-[#545454] block whitespace-normal break-words`}
                 >
                   {email.surat_jalan.perihal}
                 </span>
@@ -153,7 +146,7 @@ export default function RejectPageContent({ data }: RejectContentProps) {
             )}
           </div>
           <span
-            className={` text-sm text-[#545454] block ${
+            className={`text-sm text-[#545454] block ${
               openedEmail
                 ? "whitespace-normal break-words"
                 : "truncate xl:hidden"
@@ -166,11 +159,8 @@ export default function RejectPageContent({ data }: RejectContentProps) {
         {/* Unread Indicator & Actions */}
         {!openedEmail && (
           <div className="flex items-center space-x-2 ml-auto">
-            {!email.email_statuses.find(
-              (item) => item.user.name === user?.name
-            )?.is_read && (
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            )}
+            {!email.email_statuses.find((item) => item.user.name === user?.name)
+              ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
             <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         )}
@@ -179,7 +169,7 @@ export default function RejectPageContent({ data }: RejectContentProps) {
   };
 
   return (
-    <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
+    <div className="lg:ml-72 bg-[#F6F9FF] p-4  overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
         {/* Inbox Panel */}
         <div
@@ -187,71 +177,88 @@ export default function RejectPageContent({ data }: RejectContentProps) {
             openedEmail ? "xl:w-2/5" : "w-full"
           } transition-all duration-300`}
         >
-          <div className="px-4 sm:px-6 py-5 flex flex-col bg-white rounded-xl shadow-md">
+          <div
+            className={`${
+              openedEmail ? "px-[15px] py-[25px]" : "px-[43px] py-[25px]"
+            } flex flex-col bg-white rounded-xl shadow-md`}
+          >
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="plus-jakarta-sans text-2xl sm:text-[32px] font-semibold text-[#353739]">
-                  Dibatalkan
-                </h1>
-                <p className="plus-jakarta-sans text-xs sm:text-sm text-[#7F7F7F]">
-                  2445 messages, 2 Unread
-                </p>
+            <div className="">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="plus-jakarta-sans text-[32px] font-semibold text-[#353739]">
+                    Send
+                  </h1>
+                  <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
+                    2445 messages, 2 Unread
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Toolbar */}
-            <div className="border-b border-gray-200 py-4 sm:py-[25px]">
+            <div className="border-b border-gray-200 py-[25px]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  {!openedEmail && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectAll}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 w-4 h-4 sm:w-5 sm:h-5"
-                      />
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  )}
-                  <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 w-5 h-5"
+                    />
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </div>
+
+                  <RotateCw
+                    width={20}
+                    height={20}
+                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                  />
                   <MoreHorizontal className="w-4 h-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
                 </div>
+
                 <div className="flex items-center space-x-2">
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    1 of 200
-                  </span>
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  <ArrowLeft
+                    width={20}
+                    height={20}
+                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
+                  />
+                  <span className="text-sm text-gray-500">1 of 200</span>
+                  <ArrowRight
+                    width={20}
+                    height={20}
+                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Email List */}
-            <div className="flex-1 overflow-auto py-4">
-              {data.map((email) => (
-                <EmailRow
-                  key={email.id}
-                  email={email}
-                  isSelected={selectedEmails.includes(email.documentId)}
-                  onSelect={handleSelectEmail}
-                  onClick={handleEmailClick}
-                />
-              ))}
+            <div className="flex-1 overflow-auto py-5">
+              {/* Today Section */}
+              <div className="mb-6">
+                {data.map((email) => (
+                  <EmailRow
+                    key={email.id}
+                    email={email}
+                    isSelected={selectedEmails.includes(email.documentId)}
+                    onSelect={handleSelectEmail}
+                    onClick={handleEmailClick}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Email Detail Panel */}
         {openedEmail && (
-          <div className="overflow-hidden">
           <EmailDetail
             email={openedEmail}
             handleCloseDetail={handleCloseDetail}
-            isCanceled={true}
+            isSend={true}
           />
-          </div>
         )}
       </div>
     </div>

@@ -34,7 +34,6 @@ function formatDate(dateString: string, type: "long" | "short" = "long") {
   return dateString;
 }
 
-
 interface DraftContentProps {
   data: EmailData[];
 }
@@ -91,7 +90,8 @@ export default function DraftPageContent({ data }: DraftContentProps) {
           />
           <Star
             className={`w-4 h-4 fill-current ${
-              email.email_statuses.filter(item => item.user.name === user?.name)[0].is_bookmarked
+              email.email_statuses.find((item) => item.user.name === user?.name)
+                ?.is_bookmarked
                 ? "text-yellow-400"
                 : "text-[#E9E9E9]"
             }`}
@@ -132,7 +132,8 @@ export default function DraftPageContent({ data }: DraftContentProps) {
 
         {/* Unread Indicator & Actions */}
         <div className="flex items-center space-x-2 ml-auto">
-          {email.email_statuses.filter(item => item.user.name === user?.name)[0].is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+          {email.email_statuses.find((item) => item.user.name === user?.name)
+            ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
           <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       </div>

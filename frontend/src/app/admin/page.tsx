@@ -41,21 +41,21 @@ function timeAgo(dateString: string) {
   return `${years} tahun lalu`;
 }
 
-function mergeDraftAndPublished(drafts: SuratJalan[], published: SuratJalan[]) {
-  const map = new Map<string, SuratJalan>();
+// function mergeDraftAndPublished(drafts: SuratJalan[], published: SuratJalan[]) {
+//   const map = new Map<string, SuratJalan>();
 
-  // masukkan semua draft dulu
-  drafts.forEach((sj) => {
-    map.set(sj.documentId, sj);
-  });
+//   // masukkan semua draft dulu
+//   drafts.forEach((sj) => {
+//     map.set(sj.documentId, sj);
+//   });
 
-  // kalau ada published dengan documentId sama, replace draft
-  published.forEach((sj) => {
-    map.set(sj.documentId, sj);
-  });
+//   // kalau ada published dengan documentId sama, replace draft
+//   published.forEach((sj) => {
+//     map.set(sj.documentId, sj);
+//   });
 
-  return Array.from(map.values());
-}
+//   return Array.from(map.values());
+// }
 
 const statusIcons: Record<string, { icon: JSX.Element }> = {
   Draft: {
@@ -80,9 +80,12 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
 
 export default async function DashboardPage() {
   const allData: SuratJalan[] = await getAllSuratJalan();
+  console.log(allData);
 
-  const draftData = allData.filter(item => item.status_entry === "Draft");
-  const publishedData = allData.filter(item => item.status_entry === "Published");
+  const draftData = allData.filter((item) => item.status_entry === "Draft");
+  const publishedData = allData.filter(
+    (item) => item.status_entry === "Published"
+  );
 
   const now = new Date();
   const currentMonth = now.getMonth(); // 0 = Januari
@@ -93,7 +96,7 @@ export default async function DashboardPage() {
     const tgl = new Date(sj.tanggal);
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
-
+  
   // filter data published hanya data bulan ini
   const publishedDataThisMonth = publishedData.filter((sj) => {
     const tgl = new Date(sj.tanggal);
@@ -101,12 +104,10 @@ export default async function DashboardPage() {
   });
 
   // merge draft & published -> hilangkan duplikat
-  const suratJalanThisMonth = mergeDraftAndPublished(
-    draftDataThisMonth,
-    publishedDataThisMonth
-  );
-
-  console.log(suratJalanThisMonth)
+  const suratJalanThisMonth = [
+    ...draftDataThisMonth,
+    ...publishedDataThisMonth,
+  ];
 
   // optional: sort by tanggal terbaru
   suratJalanThisMonth.sort(

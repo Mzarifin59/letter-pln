@@ -7,14 +7,14 @@ export default async function RejectedPage() {
   const dataEmail: EmailData[] = await getAllEmails();
 
   const rejectData = dataEmail.filter(
-    (item) => item.surat_jalan.status_surat === "Reject"
+    (item) =>
+      item.surat_jalan.status_surat === "Reject" &&
+      item.surat_jalan.status_entry === "Published"
   );
-
-  console.log(rejectData)
 
   return (
     <div>
-      <RejectPageContent data={rejectData}/>
+      <RejectPageContent data={rejectData} />
     </div>
   );
 }
