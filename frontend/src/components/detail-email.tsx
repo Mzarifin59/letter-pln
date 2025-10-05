@@ -210,14 +210,7 @@ export const EmailDetail = ({
           </span>
         </div>
         <p className="text-[#181818] text-xs sm:text-sm md:text-base">
-          Hello! Good Morning
-        </p>
-        <p className="text-[#181818] text-xs sm:text-sm md:text-base">
-          Berikut saya lampirkan surat jalan untuk pemakaian material, jika ada
-          kendala silahkan hubungi WA berikut : 0821-5678-345
-        </p>
-        <p className="text-[#181818] text-xs sm:text-sm md:text-base">
-          Thanks, Admin Gudang UPT Bandung
+          {email.pesan}
         </p>
       </div>
 
@@ -400,11 +393,17 @@ export const EmailDetail = ({
 
                 {/* Signature Preview */}
                 <div className="h-20 mb-4 flex items-center justify-center">
-                  <div></div>
+                  <img
+                    width={120}
+                    height={120}
+                    src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima.url}`}
+                    alt="TTD penerima"
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </div>
 
                 <div className="text-lg font-bold">
-                  {email.surat_jalan.penerima.nama_penerima}
+                  {`${email.surat_jalan.penerima.nama_penerima}`}
                 </div>
               </div>
 
@@ -416,7 +415,13 @@ export const EmailDetail = ({
 
                 {/* Signature Preview */}
                 <div className="h-20 mb-4 flex items-center justify-center">
-                  <div></div>
+                  <img
+                    width={120}
+                    height={120}
+                    src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
+                    alt="TTD pengirim"
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </div>
 
                 <div className="font-bold text-lg">

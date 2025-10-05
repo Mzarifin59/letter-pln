@@ -15,247 +15,223 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
-// Types
-interface FormData {
-  nomorSuratJalan: string;
-  nomorSuratPermintaan: string;
-  tanggalSurat: string;
-  perihal: string;
-  lokasiAsal: string;
-  lokasiTujuan: string;
-  catatanTambahan: string;
-  informasiKendaraan: string;
-  namaPengemudi: string;
-  perusahaanPenerima: string;
-  namaPenerima: string;
-  perusahaanPengirim: string;
-  namaPengirim: string;
-  uploadTTDPenerima: File | null;
-  signatureDataPenerima: string | null;
-  uploadTTDPengirim: File | null;
-  signatureDataPengirim: string | null;
-}
-
-interface Material {
-  id: number;
-  namaMaterial: string;
-  katalog: string;
-  satuan: string;
-  jumlah: string;
-  keterangan: string;
-}
+import {
+  FormData,
+  MaterialForm,
+  SignatureData,
+  SignatureType,
+} from "@/lib/surat-jalan/surat-jalan.type";
+import {
+  INITIAL_FORM_DATA,
+  API_CONFIG,
+  FILE_VALIDATION,
+  INITIAL_MATERIAL,
+} from "@/lib/surat-jalan/form.constants";
+import { FileUtils } from "@/lib/surat-jalan/file.utils";
+import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
+import PreviewSection from "@/components/preview-surat";
+import { toast } from "sonner";
 
 interface PreviewData {
   upload: string | null;
   signature: string | null;
 }
 
-type SignatureType = "penerima" | "pengirim";
-
-// Constants
-const INITIAL_FORM_DATA: FormData = {
-  nomorSuratJalan: "",
-  nomorSuratPermintaan: "",
-  tanggalSurat: "",
-  perihal: "",
-  lokasiAsal: "",
-  lokasiTujuan: "",
-  catatanTambahan: "",
-  informasiKendaraan: "",
-  namaPengemudi: "",
-  perusahaanPenerima: "",
-  namaPenerima: "",
-  perusahaanPengirim: "",
-  namaPengirim: "",
-  uploadTTDPenerima: null,
-  signatureDataPenerima: null,
-  uploadTTDPengirim: null,
-  signatureDataPengirim: null,
-};
-
-const INITIAL_MATERIAL: Omit<Material, "id"> = {
-  namaMaterial: "",
-  katalog: "",
-  satuan: "",
-  jumlah: "",
-  keterangan: "",
-};
-
-const FILE_VALIDATION = {
-  validTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif"],
-  maxSize: 5 * 1024 * 1024, // 5MB
-};
-
 export default function CreateLetterPage() {
-  // State Management
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
-  const [materials, setMaterials] = useState<Material[]>([
-    { id: 1, ...INITIAL_MATERIAL },
-  ]);
-  const [previewPenerima, setPreviewPenerima] = useState<PreviewData>({
-    upload: null,
-    signature: null,
-  });
-  const [previewPengirim, setPreviewPengirim] = useState<PreviewData>({
-    upload: null,
-    signature: null,
-  });
-  const [lampiran, setLampiran] = useState<File[]>([]);
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const {
+    formData,
+    materials,
+    signaturePenerima,
+    signaturePengirim,
+    lampiran,
 
-  // Refs
+    setFormData,
+    setMaterials,
+    setSignaturePenerima,
+    setSignaturePengirim,
+    setLampiran,
+    handleSubmit: submitForm,
+  } = useSuratJalanForm();
+
+  const [showPreview, setShowPreview] = useState(false);
+
   const signatureRefPenerima = useRef<SignatureCanvas>(null);
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
-  // Event Handlers
+  // Preview data untuk backward compatibility dengan render functions
+  const previewPenerima: PreviewData = {
+    upload: signaturePenerima.preview.upload,
+    signature: signaturePenerima.preview.signature,
+  };
+
+  const previewPengirim: PreviewData = {
+    upload: signaturePengirim.preview.upload,
+    signature: signaturePengirim.preview.signature,
+  };
+
+  // FORM HANDLERS
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMaterialChange = (
-    id: number,
-    field: keyof Material,
-    value: string
-  ): void => {
-    setMaterials((prev) =>
-      prev.map((material) =>
-        material.id === id ? { ...material, [field]: value } : material
-      )
-    );
-  };
-
-  const addMaterial = (): void => {
+  // MATERIAL HANDLERS
+  const addMaterial = () => {
     const newId = Math.max(...materials.map((m) => m.id)) + 1;
     setMaterials((prev) => [...prev, { id: newId, ...INITIAL_MATERIAL }]);
   };
 
-  const removeMaterial = (id: number): void => {
-    setMaterials((prev) => prev.filter((material) => material.id !== id));
+  const removeMaterial = (id: number) => {
+    if (materials.length > 1) {
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+    }
   };
 
-  const validateFile = (file: File): boolean => {
-    if (!FILE_VALIDATION.validTypes.includes(file.type)) {
-      alert("Hanya file gambar (JPEG, PNG, GIF) yang diizinkan");
-      return false;
-    }
-    if (file.size > FILE_VALIDATION.maxSize) {
-      alert("Ukuran file tidak boleh lebih dari 5MB");
-      return false;
-    }
-    return true;
+  const handleMaterialChange = (id: number, field: string, value: string) => {
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+    );
   };
 
-  const handleFileUpload = (
+  const calculateTotal = () => {
+    return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
+  };
+
+  // SIGNATURE HANDLERS
+  const handleFileUpload = async (
     e: ChangeEvent<HTMLInputElement>,
     type: SignatureType
-  ): void => {
+  ) => {
     const file = e.target.files?.[0];
-    if (!file || !validateFile(file)) return;
+    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-
-      if (type === "penerima") {
-        setPreviewPenerima((prev) => ({ ...prev, upload: result }));
-        setFormData((prev) => ({ ...prev, uploadTTDPenerima: file }));
-      } else {
-        setPreviewPengirim((prev) => ({ ...prev, upload: result }));
-        setFormData((prev) => ({ ...prev, uploadTTDPengirim: file }));
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const clearSignature = (type: SignatureType): void => {
-    const ref =
-      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
-
-    if (ref.current) {
-      ref.current.clear();
-
-      if (type === "penerima") {
-        setPreviewPenerima((prev) => ({ ...prev, signature: null }));
-        setFormData((prev) => ({ ...prev, signatureDataPenerima: null }));
-      } else {
-        setPreviewPengirim((prev) => ({ ...prev, signature: null }));
-        setFormData((prev) => ({ ...prev, signatureDataPengirim: null }));
-      }
+    const validation = FileUtils.validate(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
     }
+
+    const preview = await FileUtils.toBase64(file);
+    const setter =
+      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+
+    setter((prev) => ({
+      ...prev,
+      upload: file,
+      preview: { ...prev.preview, upload: preview },
+    }));
   };
 
-  const saveSignature = (type: SignatureType): void => {
+  const saveSignature = (type: SignatureType) => {
     const ref =
       type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
+    const setter =
+      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
 
     if (ref.current && !ref.current.isEmpty()) {
       const dataURL = ref.current.toDataURL();
-
-      if (type === "penerima") {
-        setPreviewPenerima((prev) => ({ ...prev, signature: dataURL }));
-        setFormData((prev) => ({ ...prev, signatureDataPenerima: dataURL }));
-      } else {
-        setPreviewPengirim((prev) => ({ ...prev, signature: dataURL }));
-        setFormData((prev) => ({ ...prev, signatureDataPengirim: dataURL }));
-      }
+      setter((prev) => ({
+        ...prev,
+        signature: dataURL,
+        preview: { ...prev.preview, signature: dataURL },
+      }));
     } else {
       alert("Mohon buat tanda tangan terlebih dahulu");
     }
   };
 
-  const handleFileChangeLampiran = (e: ChangeEvent<HTMLInputElement>): void => {
+  const clearSignature = (type: SignatureType) => {
+    const ref =
+      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
+    const setter =
+      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+
+    if (ref.current) {
+      ref.current.clear();
+      setter((prev) => ({
+        ...prev,
+        signature: null,
+        preview: { ...prev.preview, signature: null },
+      }));
+    }
+  };
+
+  const removeUploadedSignature = (type: SignatureType) => {
+    const setter =
+      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+    setter((prev) => ({
+      ...prev,
+      upload: null,
+      preview: { ...prev.preview, upload: null },
+    }));
+  };
+
+  // LAMPIRAN HANDLERS
+  const handleFileChangeLampiran = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setLampiran((prev) => [...prev, ...Array.from(files)]);
     }
   };
 
-  const handleRemoveLampiran = (index: number): void => {
+  const handleRemoveLampiran = (index: number) => {
     setLampiran((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const removeUploadedSignature = (type: SignatureType): void => {
-    if (type === "penerima") {
-      setPreviewPenerima((prev) => ({ ...prev, upload: null }));
-      setFormData((prev) => ({ ...prev, uploadTTDPenerima: null }));
-    } else {
-      setPreviewPengirim((prev) => ({ ...prev, upload: null }));
-      setFormData((prev) => ({ ...prev, uploadTTDPengirim: null }));
+  // SUBMISSION HANDLERS
+  const handleSubmit = async () => {
+    try {
+      toast.loading("Mengirim surat...", { id: "submit", position: 'top-center' });
+
+      const result = await submitForm(false);
+
+      toast.success("Surat berhasil dikirim 🎉", {
+        id: "submit",
+        position: "top-center",
+        duration: 3000,
+        description: "Surat jalan telah berhasil dikirim ke penerima.",
+      });
+
+      // TODO: redirect atau reset form
+    } catch (error: any) {
+      toast.error(error.message || "Terjadi kesalahan saat mengirim surat 😢", {
+        id: "submit",
+        position: "top-center",
+      });
     }
   };
 
-  // Utility Functions
-  const calculateTotal = (): number => {
-    return materials.reduce((total, material) => {
-      const jumlah = parseFloat(material.jumlah) || 0;
-      return total + jumlah;
-    }, 0);
+  const handleDraft = async () => {
+    try {
+      toast.loading("Menyimpan draft...", { id: "draft", position: 'top-center' });
+
+      const result = await submitForm(true);
+
+      toast.success("Draft berhasil disimpan 📝", {
+        id: "draft",
+        position: "top-center",
+        duration: 3000,
+        description: "Surat jalan disimpan sebagai draft.",
+      });
+    } catch (error: any) {
+      toast.error(error.message || "Gagal menyimpan draft 😢", {
+        id: "draft",
+        position: "top-center",
+      });
+    }
   };
 
-  // Action Handlers
-  const handleSubmit = (): void => {
-    console.log("Form Data:", formData);
-    console.log("Materials:", materials);
-    console.log("Lampiran:", lampiran);
-  };
-
-  const handlePreviewPDF = (): void => {
+  const handlePreviewPDF = () => {
     setShowPreview(true);
   };
 
-  const handleClosePreview = (): void => {
-    setShowPreview(false);
-  };
-
-  const handleDraft = (): void => {
-    console.log("Draft saved");
+  const handleDownloadPDF = () => {
+    console.log("Downloading PDF...");
   };
 
   const renderBasicInformation = () => (
@@ -297,7 +273,9 @@ export default function CreateLetterPage() {
             <input
               type="date"
               name="tanggalSurat"
-              value={formData.tanggalSurat}
+              value={
+                formData.tanggalSurat || new Date().toISOString().split("T")[0]
+              }
               onChange={handleInputChange}
               className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -780,376 +758,23 @@ export default function CreateLetterPage() {
     </div>
   );
 
-  // Preview Component
-  const renderPreview = () => {
-    if (!showPreview) return null;
-
+  if (showPreview) {
     return (
-      <div className="bg-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg w-full h-[90vh]">
-          {/* Preview Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Preview Surat
-            </h2>
-            <div className="flex gap-3">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <Send className="w-4 h-4" />
-                Kirim
-              </button>
-              <button
-                onClick={handleDraft}
-                className="plus-jakarta-sans px-[18px] py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center cursor-pointer"
-              >
-                <StickyNote width={20} height={20} className="text-[#232323]" />
-                Draft
-              </button>
-              <button
-                onClick={handlePreviewPDF}
-                className="plus-jakarta-sans px-[18px] py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center cursor-pointer"
-              >
-                <Download width={24} height={24} className="text-[#232323]" />
-                Download PDF
-              </button>
-              <button
-                onClick={handleClosePreview}
-                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Preview Content */}
-          <div className="bg-[#F6F9FF] p-8">
-            {/* Card */}
-            <div className="bg-white shadow-lg p-8">
-              {/* Company Header */}
-              <div className="flex items-center gap-4 mb-8">
-                <div className="flex items-center justify-center">
-                  <Image
-                    src={`/images/PLN-logo.png`}
-                    alt="PLN Logo"
-                    width={104}
-                    height={104}
-                    className="w-[104px] h-[104px] object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
-                    PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-                  </div>
-                  <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
-                    UNIT PELAKSANA TRANSMISI BANDUNG
-                  </div>
-                  <div className="plus-jakarta-sans text-base text-[#232323]">
-                    Jl. Soekarno-Hatta No. 606 Bandung 40286
-                  </div>
-                </div>
-                <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
-                  <div className="plus-jakarta-sans text-[22px] font-bold text-[#A62344]">
-                    LEMBAR I
-                  </div>
-                  <div className="plus-jakarta-sans text-xl text-[#A62344]">
-                    Pengirim Barang
-                  </div>
-                </div>
-              </div>
-
-              <hr className="border-t-2 border-gray-200 mb-6" />
-              <hr className="border-t-4 border-gray-800 mb-6" />
-
-              {/* Title */}
-              <div className="text-center mb-8">
-                <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                  SURAT JALAN
-                </h1>
-                <div className="text-blue-600 font-semibold text-2xl">
-                  {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
-                </div>
-              </div>
-
-              {/* Form Information */}
-              <div className="grid grid-cols-1 gap-8 mb-6 text-sm">
-                <div>
-                  <div className="mb-2 text-lg">
-                    Mohon diizinkan membawa barang-barang tersebut di bawah ini
-                    :
-                  </div>
-                  <div className="space-y-1 text-lg">
-                    <div>
-                      No Surat Permintaan :{" "}
-                      <span className="font-semibold">
-                        {formData.nomorSuratPermintaan ||
-                          "001.REQ/GD.UPT-BDG/IX/2025"}
-                      </span>
-                    </div>
-                    <div>
-                      Untuk Keperluan :{" "}
-                      <span className="font-semibold">
-                        {formData.perihal ||
-                          "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                      </span>
-                    </div>
-                    <div>
-                      Lokasi Asal :{" "}
-                      <span className="font-semibold">
-                        {formData.lokasiAsal || "GUDANG GARENTING"}
-                      </span>
-                    </div>
-                    <div>
-                      Lokasi Tujuan :{" "}
-                      <span className="font-semibold">
-                        {formData.lokasiTujuan || "GI BANDUNG UTARA"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Materials Table */}
-              <div className="mb-3">
-                <table className="w-full border-t border-b border-gray-300 text-sm">
-                  <thead className="bg-gray-100">
-                    <tr className="text-lg text-center">
-                      <th className="border-2 border-gray-800  px-2 py-2">
-                        NO
-                      </th>
-                      <th className="border-2 border-gray-800 px-2 py-2">
-                        NAMA MATERIAL
-                      </th>
-                      <th className="border-2 border-gray-800 px-2 py-2">
-                        KATALOG
-                      </th>
-                      <th className="border-2 border-gray-800  px-2 py-2">
-                        SATUAN
-                      </th>
-                      <th className="border-2 border-gray-800 px-2 py-2">
-                        JUMLAH
-                      </th>
-                      <th className="border-2 border-gray-800 px-2 py-2">
-                        KETERANGAN (LOKASI TYPE, S/N DLL)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-lg">
-                    {materials.length > 0 &&
-                    materials.some(
-                      (m) =>
-                        m.namaMaterial ||
-                        m.katalog ||
-                        m.satuan ||
-                        m.jumlah ||
-                        m.keterangan
-                    ) ? (
-                      materials.map((material, index) => (
-                        <tr key={material.id}>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {index + 1}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2">
-                            {material.namaMaterial || "-"}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {material.katalog || "-"}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {material.satuan || "-"}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {material.jumlah || "0"}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {material.keterangan || "-"}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <>
-                        <tr>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            1
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2">
-                            KABEL KONTROL 4X4 MM2
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            V0 block
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            M
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            47
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            MK-051
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            2
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2">
-                            KABEL KONTROL 4X4 MM2
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            -
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            M
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            30
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            MK-052
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            3
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2">
-                            KABEL KONTROL 4X4 MM2
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            -
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            M
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            115
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            MK-PANEL AC/DB
-                          </td>
-                        </tr>
-                      </>
-                    )}
-                    <tr className="bg-gray-100 font-semibold">
-                      <td
-                        colSpan={4}
-                        className="border-2 border-gray-800 px-2 py-2 text-center"
-                      >
-                        TOTAL
-                      </td>
-                      <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                        {materials.length > 0 && materials.some((m) => m.jumlah)
-                          ? calculateTotal()
-                          : "192"}
-                      </td>
-                      <td className="border-2 border-gray-800 px-2 py-2"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Notes */}
-              <div className="pb-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
-                <div className="text-lg font-semibold">Keterangan :</div>
-              </div>
-              <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
-                <div className="mt-1 text-lg font-semibold">
-                  {formData.catatanTambahan ||
-                    "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                </div>
-              </div>
-
-              {/* Vehicle and Driver Info */}
-              <div className="pl-3 grid grid-cols-2 gap-8 mb-8 text-lg py-3">
-                <div>
-                  <div>
-                    <span className="font-semibold">Kendaraan</span> :{" "}
-                    {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Pengemudi</span> :{" "}
-                    {formData.namaPengemudi || "AYI"}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div>
-                    Bandung,{" "}
-                    {formData.tanggalSurat
-                      ? new Date(formData.tanggalSurat).toLocaleDateString(
-                          "id-ID",
-                          { day: "numeric", month: "long", year: "numeric" }
-                        )
-                      : "31 Januari 2025"}
-                  </div>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="grid grid-cols-2 gap-16 text-sm text-center">
-                <div>
-                  <div className="mb-2 text-lg">Yang Menerima,</div>
-                  <div className="font-bold mb-4 text-lg">
-                    {formData.perusahaanPenerima || "PT PANDAN WANGI SAE"}
-                  </div>
-
-                  {/* Signature Preview */}
-                  <div className="h-20 mb-4 flex items-center justify-center">
-                    {previewPenerima.signature ? (
-                      <img
-                        src={previewPenerima.signature}
-                        alt="Signature"
-                        className="max-h-full max-w-full"
-                      />
-                    ) : previewPenerima.upload ? (
-                      <img
-                        src={previewPenerima.upload}
-                        alt="Signature"
-                        className="max-h-full max-w-full"
-                      />
-                    ) : (
-                      <div></div>
-                    )}
-                  </div>
-
-                  <div className="text-lg font-bold">
-                    {formData.namaPenerima || "PAK JIMBO"}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 text-lg">Yang menyerahkan,</div>
-                  <div className="font-bold mb-4 text-lg">
-                    {formData.perusahaanPengirim || "LOGISTIK UPT BANDUNG"}
-                  </div>
-
-                  {/* Signature Preview */}
-                  <div className="h-20 mb-4 flex items-center justify-center">
-                    {previewPengirim.signature ? (
-                      <img
-                        src={previewPengirim.signature}
-                        alt="Signature"
-                        className="max-h-full max-w-full"
-                      />
-                    ) : previewPengirim.upload ? (
-                      <img
-                        src={previewPengirim.upload}
-                        alt="Signature"
-                        className="max-h-full max-w-full"
-                      />
-                    ) : (
-                      <div></div>
-                    )}
-                  </div>
-
-                  <div className="font-bold text-lg">
-                    {formData.namaPengirim || "ANDRI SETIAWAN"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="lg:ml-72">
+        <PreviewSection
+          formData={formData}
+          materials={materials}
+          signaturePenerima={signaturePenerima}
+          signaturePengirim={signaturePengirim}
+          onClose={() => setShowPreview(false)}
+          onSubmit={handleSubmit}
+          onDraft={handleDraft}
+          onDownloadPDF={handleDownloadPDF}
+          calculateTotal={calculateTotal}
+        />
       </div>
     );
-  };
+  }
 
   if (!showPreview) {
     return (
@@ -1215,6 +840,19 @@ export default function CreateLetterPage() {
                   placeholder="PENGIRIMAN MATERIAL PASIR, KORAL, DLL UNTUK IN-SITU BETON BAT PB 04"
                 />
               </div>
+              <div>
+                <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+                  Pesan
+                </label>
+                <Textarea
+                  name="pesan"
+                  value={formData.pesan}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  placeholder="Halo Selamat Siang, Ini saya mengirimkan surat..."
+                />
+              </div>
 
               {/* Driver Information - Responsive Grid */}
               <div>
@@ -1275,15 +913,6 @@ export default function CreateLetterPage() {
 
           {/* Attachments Section */}
           {renderAttachmentSection()}
-        </div>
-      </>
-    );
-  } else {
-    return (
-      <>
-        {/* Preview Modal */}
-        <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
-          {renderPreview()}
         </div>
       </>
     );

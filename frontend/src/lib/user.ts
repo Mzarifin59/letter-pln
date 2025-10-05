@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 interface User {
   id: number;
+  documentId : string;
   username: string;
   email: string;
   role?: { name: string };

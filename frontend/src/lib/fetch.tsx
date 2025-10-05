@@ -27,7 +27,7 @@ async function fetchWithError(url: string, options: FetchOptions = {}, optionsHe
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `${token}`,
+      "Authorization": `Bearer ${token}`,
     },
   });
 
