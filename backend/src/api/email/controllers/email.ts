@@ -22,48 +22,115 @@ export default factories.createCoreController(
     },
 
     async markAsRead(ctx) {
-      const { documentId } = ctx.params;
-      const user = ctx.state.user;
+      try {
+        const { documentId } = ctx.params;
+        const user = ctx.state.user;
 
-      let emailStatus = await strapi
-        .documents("api::email-status.email-status")
-        .findMany({
-          filters: {
-            email: {
-              documentId: documentId,
-            },
-            user: {
-              documentId: user.documentId,
-            },
-          },
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
         });
 
-      let result;
+        let emailStatus = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: {
+                documentId: email.documentId,
+              },
+              user: {
+                documentId: user.documentId,
+              },
+            },
+          });
 
-      if (emailStatus.length === 0) {
-        result = await strapi
-          .documents("api::email-status.email-status")
-          .create({
-            data: {
-              email: documentId,
-              user: user.documentId,
-              is_read: true,
-              read_at: new Date(),
-            },
-          });
-      } else {
-        result = await strapi
-          .documents("api::email-status.email-status")
-          .update({
-            documentId: emailStatus[0].documentId,
-            data: {
-              is_read: true,
-              read_at: new Date(),
-            },
-          });
+        let result;
+
+        if (emailStatus[0].is_read == false) {
+          result = await strapi
+            .documents("api::email-status.email-status")
+            .update({
+              documentId: emailStatus[0].documentId,
+              data: {
+                is_read: true,
+                read_at: new Date(),
+              },
+              status : 'published',
+            });
+        }
+
+        return ctx.send({
+          data: result,
+          message: "Email marked as read successfully",
+        });
+      } catch (error) {
+        console.error("Error in markAsRead:", error);
+        return ctx.badRequest("Failed to mark email as read", {
+          error: error.message,
+        });
       }
+    },
 
-      return result;
+    async markAsBookmarked(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const user = ctx.state.user;
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+        });
+
+        let emailStatus = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: {
+                documentId: email.documentId,
+              },
+              user: {
+                documentId: user.documentId,
+              },
+            },
+          });
+
+        let result;
+
+        if (emailStatus[0].is_read == false) {
+          result = await strapi
+            .documents("api::email-status.email-status")
+            .update({
+              documentId: emailStatus[0].documentId,
+              data: {
+                is_bookmarked: true,
+                bookmarked_at: new Date(),
+              },
+              status : 'published',
+            });
+        }
+
+        return ctx.send({
+          data: result,
+          message: "Email marked as bookmarked successfully",
+        });
+      } catch (error) {
+        console.error("Error in markAsBookmarked:", error);
+        return ctx.badRequest("Failed to mark email as bookmarked", {
+          error: error.message,
+        });
+      }
     },
   })
 );

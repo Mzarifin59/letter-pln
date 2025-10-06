@@ -80,7 +80,6 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
 
 export default async function DashboardPage() {
   const allData: SuratJalan[] = await getAllSuratJalan();
-  console.log(allData);
 
   const draftData = allData.filter((item) => item.status_entry === "Draft");
   const publishedData = allData.filter(

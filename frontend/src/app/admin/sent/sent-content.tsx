@@ -38,6 +38,7 @@ function formatDate(dateString: string, type: "long" | "short" = "long") {
 
 interface SentContentProps {
   data: EmailData[];
+  token: string | undefined;
 }
 
 interface EmailRowProps {
@@ -47,9 +48,10 @@ interface EmailRowProps {
   email: EmailData;
 }
 
-export default function SentContent({ data }: SentContentProps) {
+export default function SentContent({ data, token }: SentContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const [emailList, setEmailList] = useState<EmailData[]>(data);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const { user } = getUserLogin();
 
@@ -57,7 +59,7 @@ export default function SentContent({ data }: SentContentProps) {
     if (selectAll) {
       setSelectedEmails([]);
     } else {
-      setSelectedEmails(data.map((email) => email.documentId));
+      setSelectedEmails(emailList.map((email) => email.documentId));
     }
     setSelectAll(!selectAll);
   };
@@ -70,8 +72,102 @@ export default function SentContent({ data }: SentContentProps) {
     }
   };
 
-  const handleEmailClick = (email: EmailData): void => {
+  const markEmailAsRead = async (emailDocumentId: string): Promise<void> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${emailDocumentId}/mark-read`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark email as read");
+      }
+
+      setEmailList((prevEmails) =>
+        prevEmails.map((email) => {
+          if (email.documentId === emailDocumentId) {
+            return {
+              ...email,
+              email_statuses: email.email_statuses.map((status) => {
+                if (status.user.name === user?.name) {
+                  return {
+                    ...status,
+                    is_read: true,
+                    read_at: new Date().toISOString(),
+                  };
+                }
+                return status;
+              }),
+            };
+          }
+          return email;
+        })
+      );
+    } catch (error) {
+      console.error("Error marking email as read:", error);
+    }
+  };
+
+  const markEmailAsBookmarked = async (
+    emailDocumentId: string
+  ): Promise<void> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${emailDocumentId}/mark-bookmarked`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark email as bookmarked");
+      }
+
+      // Update state lokal
+      setEmailList((prevEmails) =>
+        prevEmails.map((email) => {
+          if (email.documentId === emailDocumentId) {
+            return {
+              ...email,
+              email_statuses: email.email_statuses.map((status) => {
+                if (status.user.name === user?.name) {
+                  return {
+                    ...status,
+                    is_bookmarked: !status.is_bookmarked,
+                  };
+                }
+                return status;
+              }),
+            };
+          }
+          return email;
+        })
+      );
+    } catch (error) {
+      console.error("Error marking email as bookmarked:", error);
+    }
+  };
+
+  const handleEmailClick = async (email: EmailData): Promise<void> => {
     setOpenedEmail(email);
+
+    const emailStatus = email.email_statuses.find(
+      (item) => item.user.name === user?.name
+    );
+
+    if (!emailStatus?.is_read) {
+      await markEmailAsRead(email.documentId);
+    }
   };
 
   const handleCloseDetail = (): void => {
@@ -106,22 +202,26 @@ export default function SentContent({ data }: SentContentProps) {
               onChange={() => onSelect(email.documentId)}
               className="rounded border-gray-300"
             />
-            <Star
-              className={`w-4 h-4 fill-current ${
-                email.email_statuses.find(
-                  (item) => item.user.name === user?.name
-                )?.is_bookmarked
-                  ? "text-yellow-400"
-                  : "text-[#E9E9E9]"
-              }`}
-            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                markEmailAsBookmarked(email.documentId);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              aria-label="Toggle bookmark"
+            >
+              <Star
+                className={`w-4 h-4 transition-colors duration-200 ${
+                  email.email_statuses.find(
+                    (item) => item.user.name === user?.name
+                  )?.is_bookmarked
+                    ? "text-yellow-400 fill-yellow-400"
+                    : "text-[#E9E9E9]"
+                }`}
+              />
+            </button>
           </div>
         )}
-
-        {/* Status */}
-        {/* <div className="text-[#A62344] text-xs sm:text-sm font-semibold">
-            Dibatalkan
-          </div> */}
 
         {/* Sender & Preview */}
         <div className="flex-1 min-w-0">
@@ -238,7 +338,7 @@ export default function SentContent({ data }: SentContentProps) {
             <div className="flex-1 overflow-auto py-5">
               {/* Today Section */}
               <div className="mb-6">
-                {data.map((email) => (
+                {emailList.map((email) => (
                   <EmailRow
                     key={email.id}
                     email={email}
