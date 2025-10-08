@@ -1,6 +1,7 @@
 "use client";
 
 import { JSX, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -41,6 +42,7 @@ interface DraftContentProps {
 interface EmailRowProps {
   isSelected: boolean;
   onSelect: (emailId: string) => void;
+  onRowClick: (email: EmailData) => void;
   email: EmailData;
 }
 
@@ -48,6 +50,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const { user } = getUserLogin();
+  const router = useRouter();
 
   const handleSelectAll = (): void => {
     if (selectAll) {
@@ -66,22 +69,47 @@ export default function DraftPageContent({ data }: DraftContentProps) {
     }
   };
 
+  const handleRowClick = (email: EmailData): void => {
+    // Encode data surat jalan ke query params atau localStorage
+    // Opsi 1: Menggunakan query params (untuk data sederhana)
+    // const queryParams = new URLSearchParams({
+    //   documentId: email.documentId,
+    //   mode: 'edit'
+    // });
+    // router.push(`/create-letter?${queryParams.toString()}`);
+
+    // Opsi 2: Menggunakan sessionStorage (lebih aman untuk data kompleks)
+    sessionStorage.setItem('draftData', JSON.stringify(email));
+    router.push(`/admin/create-letter?mode=edit&id=${email.documentId}`);
+  };
+
   const EmailRow = ({
     email,
     isSelected,
     onSelect,
+    onRowClick,
   }: EmailRowProps): JSX.Element => {
+    const handleCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent row click when clicking checkbox
+    };
+
+    const handleTrashClick = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent row click when clicking trash
+      // Add delete logic here
+    };
+
     return (
       <div
+        onClick={() => onRowClick(email)}
         className={`
             px-4 py-3 border-b border-[#ADB5BD] cursor-pointer group
-            hover:bg-[#EDF1FF]
+            hover:bg-[#EDF1FF] transition-colors
             ${isSelected ? "bg-blue-50" : ""}
             flex flex-wrap items-center gap-2
           `}
       >
         {/* Checkbox & Star - hidden in mobile when detail open */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={handleCheckboxClick}>
           <input
             type="checkbox"
             checked={isSelected}
@@ -111,7 +139,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
             </span>
             <>
               <span
-                className={`max-xl:hidden jtext-sm text-[#545454] block whitespace-normal break-words`}
+                className={`max-xl:hidden text-sm text-[#545454] block whitespace-normal break-words`}
               >
                 {email.surat_jalan.perihal}
               </span>
@@ -124,7 +152,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
             </>
           </div>
           <span
-            className={` text-sm text-[#545454] block whitespace-normal break-words truncate xl:hidden`}
+            className={`text-sm text-[#545454] block whitespace-normal break-words truncate xl:hidden`}
           >
             {email.surat_jalan.perihal}
           </span>
@@ -134,7 +162,10 @@ export default function DraftPageContent({ data }: DraftContentProps) {
         <div className="flex items-center space-x-2 ml-auto">
           {email.email_statuses.find((item) => item.user.name === user?.name)
             ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
-          <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Trash2 
+            onClick={handleTrashClick}
+            className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
+          />
         </div>
       </div>
     );
@@ -182,7 +213,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
                 height={20}
                 className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
               />
-              <span className="text-sm text-gray-500">1 of 200</span>
+              <span className="text-sm text-gray-500">1 of {data.length}</span>
               <ArrowRight
                 width={20}
                 height={20}
@@ -196,14 +227,22 @@ export default function DraftPageContent({ data }: DraftContentProps) {
         <div className="flex-1 overflow-auto px-[43px] py-[25px]">
           {/* Today Section */}
           <div className="mb-6">
-            {data.map((email: EmailData) => (
-              <EmailRow
-                key={email.id}
-                email={email}
-                isSelected={selectedEmails.includes(email.documentId)}
-                onSelect={handleSelectEmail}
-              />
-            ))}
+            {data.length > 0 ? (
+              data.map((email: EmailData) => (
+                <EmailRow
+                  key={email.id}
+                  email={email}
+                  isSelected={selectedEmails.includes(email.documentId)}
+                  onSelect={handleSelectEmail}
+                  onRowClick={handleRowClick}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg font-medium">Tidak ada draft</p>
+                <p className="text-sm mt-2">Draft Anda akan muncul di sini</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

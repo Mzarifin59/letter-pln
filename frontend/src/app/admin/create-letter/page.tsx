@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SignatureCanvas from "react-signature-canvas";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -12,6 +13,7 @@ import {
   StickyNote,
   Send,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +32,7 @@ import { FileUtils } from "@/lib/surat-jalan/file.utils";
 import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
 import PreviewSection from "@/components/preview-surat";
 import { toast } from "sonner";
+import { EmailData } from "@/lib/interface";
 
 interface PreviewData {
   upload: string | null;
@@ -37,6 +40,11 @@ interface PreviewData {
 }
 
 export default function CreateLetterPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode");
+  const draftId = searchParams.get("id");
+
   const {
     formData,
     materials,
@@ -53,11 +61,117 @@ export default function CreateLetterPage() {
   } = useSuratJalanForm();
 
   const [showPreview, setShowPreview] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const signatureRefPenerima = useRef<SignatureCanvas>(null);
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
   const previewContentRef = useRef<HTMLDivElement>(null);
+
+  // Load draft data when in edit mode
+  useEffect(() => {
+    if (mode === "edit" && draftId) {
+      setIsEditMode(true);
+      loadDraftData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [mode, draftId]);
+
+  const loadDraftData = async () => {
+    try {
+      // Get data from sessionStorage
+      const draftDataStr = sessionStorage.getItem("draftData");
+
+      if (draftDataStr) {
+        const draftData: EmailData = JSON.parse(draftDataStr);
+        const suratJalan = draftData.surat_jalan;
+
+        // Populate form data
+        setFormData({
+          nomorSuratJalan: suratJalan.no_surat_jalan || "",
+          nomorSuratPermintaan: suratJalan.no_surat_permintaan || "",
+          tanggalSurat:
+            suratJalan.tanggal || new Date().toISOString().split("T")[0],
+          perihal: suratJalan.perihal || "",
+          lokasiAsal: suratJalan.lokasi_asal || "",
+          lokasiTujuan: suratJalan.lokasi_tujuan || "",
+          catatanTambahan: suratJalan.catatan_tambahan || "",
+          pesan: suratJalan.pesan || "",
+          informasiKendaraan: suratJalan.informasi_kendaraan || "",
+          namaPengemudi: suratJalan.nama_pengemudi || "",
+          perusahaanPenerima: suratJalan.penerima.perusahaan_penerima || "",
+          namaPenerima: suratJalan.penerima.nama_penerima || "",
+          perusahaanPengirim: suratJalan.pengirim.departemen_pengirim || "",
+          namaPengirim: suratJalan.pengirim.nama_pengirim || "",
+        });
+
+        // Populate materials
+        if (suratJalan.materials && suratJalan.materials.length > 0) {
+          const loadedMaterials = suratJalan.materials.map(
+            (mat: any, index: number) => ({
+              id: index + 1,
+              namaMaterial: mat.nama_material || "",
+              katalog: mat.katalog || "",
+              satuan: mat.satuan || "",
+              jumlah: mat.jumlah?.toString() || "0",
+              keterangan: mat.keterangan || "",
+            })
+          );
+          setMaterials(loadedMaterials);
+        }
+
+        // Load signatures if available
+        // if (suratJalan.penerima.ttd_penerima) {
+        //   setSignaturePenerima((prev) => ({
+        //     ...prev,
+        //     signature: suratJalan.penerima.tanda_tangan_penerima,
+        //     preview: {
+        //       ...prev.preview,
+        //       signature: suratJalan.penerima.tanda_tangan_penerima,
+        //     },
+        //   }));
+        // }
+
+        // if (suratJalan.pengirim.ttd_pengirim) {
+        //   setSignaturePengirim((prev) => ({
+        //     ...prev,
+        //     signature: suratJalan.pengirim.ttd_pengirim,
+        //     preview: {
+        //       ...prev.preview,
+        //       signature: suratJalan.pengirim.ttd_pengirim,
+        //     },
+        //   }));
+        // }
+
+        // TODO: Load lampiran files if needed
+        // This might require fetching from server if files are stored there
+
+        toast.success("Draft berhasil dimuat", {
+          description: "Anda dapat melanjutkan mengedit surat jalan",
+          position: "top-center",
+        });
+      } else {
+        toast.error("Data draft tidak ditemukan", {
+          position: "top-center",
+        });
+        router.push("/draft");
+      }
+    } catch (error) {
+      console.error("Error loading draft:", error);
+      toast.error("Gagal memuat draft", {
+        position: "top-center",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToDraft = () => {
+    sessionStorage.removeItem("draftData");
+    router.push("/draft");
+  };
 
   // Preview data untuk backward compatibility dengan render functions
   const previewPenerima: PreviewData = {
@@ -184,21 +298,30 @@ export default function CreateLetterPage() {
   // SUBMISSION HANDLERS
   const handleSubmit = async () => {
     try {
-      toast.loading("Mengirim surat...", {
+      toast.loading(isEditMode ? "Memperbarui surat..." : "Mengirim surat...", {
         id: "submit",
         position: "top-center",
       });
 
       const result = await submitForm(false);
 
-      toast.success("Surat berhasil dikirim 🎉", {
-        id: "submit",
-        position: "top-center",
-        duration: 3000,
-        description: "Surat jalan telah berhasil dikirim ke penerima.",
-      });
+      toast.success(
+        isEditMode
+          ? "Surat berhasil diperbarui 🎉"
+          : "Surat berhasil dikirim 🎉",
+        {
+          id: "submit",
+          position: "top-center",
+          duration: 3000,
+          description: isEditMode
+            ? "Perubahan surat jalan telah disimpan dan dikirim."
+            : "Surat jalan telah berhasil dikirim ke penerima.",
+        }
+      );
 
-      // TODO: redirect atau reset form
+      // Clean up and redirect
+      sessionStorage.removeItem("draftData");
+      router.push("/inbox"); // or wherever you want to redirect
     } catch (error: any) {
       toast.error(error.message || "Terjadi kesalahan saat mengirim surat 😢", {
         id: "submit",
@@ -209,19 +332,32 @@ export default function CreateLetterPage() {
 
   const handleDraft = async () => {
     try {
-      toast.loading("Menyimpan draft...", {
-        id: "draft",
-        position: "top-center",
-      });
+      toast.loading(
+        isEditMode ? "Memperbarui draft..." : "Menyimpan draft...",
+        {
+          id: "draft",
+          position: "top-center",
+        }
+      );
 
       const result = await submitForm(true);
 
-      toast.success("Draft berhasil disimpan 📝", {
-        id: "draft",
-        position: "top-center",
-        duration: 3000,
-        description: "Surat jalan disimpan sebagai draft.",
-      });
+      toast.success(
+        isEditMode
+          ? "Draft berhasil diperbarui 📝"
+          : "Draft berhasil disimpan 📝",
+        {
+          id: "draft",
+          position: "top-center",
+          duration: 3000,
+          description: "Surat jalan disimpan sebagai draft.",
+        }
+      );
+
+      if (isEditMode) {
+        sessionStorage.removeItem("draftData");
+        router.push("/admin/draft");
+      }
     } catch (error: any) {
       toast.error(error.message || "Gagal menyimpan draft 😢", {
         id: "draft",
@@ -238,13 +374,12 @@ export default function CreateLetterPage() {
     const element = document.getElementById("preview-content");
     if (!element) return alert("Preview tidak ditemukan!");
 
-    // Pastikan semua font, gambar, dll sudah termuat
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const canvas = await html2canvas(element, {
-      scale: 2, 
-      useCORS: true, 
-      backgroundColor: "#ffffff", 
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
       logging: false,
     });
 
@@ -258,14 +393,12 @@ export default function CreateLetterPage() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Hitung proporsi biar tidak terpotong
     const imgWidth = pageWidth;
     const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
     let position = 0;
     let heightLeft = imgHeight;
 
-    // Tambahkan halaman PDF satu per satu (kalau panjang)
     pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
 
@@ -279,6 +412,7 @@ export default function CreateLetterPage() {
     pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
   };
 
+  // Rest of the render functions remain the same...
   const renderBasicInformation = () => (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -372,6 +506,20 @@ export default function CreateLetterPage() {
       </div>
     </div>
   );
+
+  // Include all other render functions here (renderMaterialsTable, renderSignatureSection, renderAttachmentSection)
+  // [Copy from original code - they remain unchanged]
+
+  if (isLoading) {
+    return (
+      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0] mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat data draft...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderMaterialsTable = () => (
     <div>
@@ -637,7 +785,7 @@ export default function CreateLetterPage() {
                   penColor="black"
                   canvasProps={{
                     className: "w-full h-full",
-                    style: { touchAction: "none" }, // Better touch support
+                    style: { touchAction: "none" },
                   }}
                   backgroundColor="rgba(255,255,255,1)"
                   onEnd={() => saveSignature(type)}
@@ -768,7 +916,6 @@ export default function CreateLetterPage() {
                   <X className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
-                {/* File size indicator */}
                 <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-1 rounded">
                   {(file.size / 1024 / 1024).toFixed(1)}MB
                 </div>
@@ -777,7 +924,6 @@ export default function CreateLetterPage() {
           </div>
         )}
 
-        {/* File info section */}
         {lampiran.length > 0 && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start gap-2">
