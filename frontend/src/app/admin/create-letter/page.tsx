@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, JSX } from "react";
+import { useState, useRef, ChangeEvent } from "react";
 import SignatureCanvas from "react-signature-canvas";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 import {
   Plus,
   Trash2,
@@ -10,7 +12,6 @@ import {
   StickyNote,
   Send,
   X,
-  Download,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,12 +25,7 @@ import {
   SignatureData,
   SignatureType,
 } from "@/lib/surat-jalan/surat-jalan.type";
-import {
-  INITIAL_FORM_DATA,
-  API_CONFIG,
-  FILE_VALIDATION,
-  INITIAL_MATERIAL,
-} from "@/lib/surat-jalan/form.constants";
+import { INITIAL_MATERIAL } from "@/lib/surat-jalan/form.constants";
 import { FileUtils } from "@/lib/surat-jalan/file.utils";
 import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
 import PreviewSection from "@/components/preview-surat";
@@ -60,6 +56,8 @@ export default function CreateLetterPage() {
 
   const signatureRefPenerima = useRef<SignatureCanvas>(null);
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
+
+  const previewContentRef = useRef<HTMLDivElement>(null);
 
   // Preview data untuk backward compatibility dengan render functions
   const previewPenerima: PreviewData = {
@@ -186,7 +184,10 @@ export default function CreateLetterPage() {
   // SUBMISSION HANDLERS
   const handleSubmit = async () => {
     try {
-      toast.loading("Mengirim surat...", { id: "submit", position: 'top-center' });
+      toast.loading("Mengirim surat...", {
+        id: "submit",
+        position: "top-center",
+      });
 
       const result = await submitForm(false);
 
@@ -208,7 +209,10 @@ export default function CreateLetterPage() {
 
   const handleDraft = async () => {
     try {
-      toast.loading("Menyimpan draft...", { id: "draft", position: 'top-center' });
+      toast.loading("Menyimpan draft...", {
+        id: "draft",
+        position: "top-center",
+      });
 
       const result = await submitForm(true);
 
@@ -230,8 +234,49 @@ export default function CreateLetterPage() {
     setShowPreview(true);
   };
 
-  const handleDownloadPDF = () => {
-    console.log("Downloading PDF...");
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("preview-content");
+    if (!element) return alert("Preview tidak ditemukan!");
+
+    // Pastikan semua font, gambar, dll sudah termuat
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const canvas = await html2canvas(element, {
+      scale: 2, 
+      useCORS: true, 
+      backgroundColor: "#ffffff", 
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    // Hitung proporsi biar tidak terpotong
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+    let position = 0;
+    let heightLeft = imgHeight;
+
+    // Tambahkan halaman PDF satu per satu (kalau panjang)
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
   };
 
   const renderBasicInformation = () => (

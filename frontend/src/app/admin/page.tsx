@@ -73,7 +73,7 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
   "In Progress": {
     icon: <Send width={15} height={15} className="text-[#009867]" />,
   },
-  Rejected: {
+  Reject: {
     icon: <ArchiveX width={15} height={15} className="text-[#9D0C19]" />,
   },
 };
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                     Surat Dibuat
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    {draftDataThisMonth.length}
+                    {suratJalanThisMonth.length}
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Bulan ini
@@ -404,7 +404,7 @@ export default async function DashboardPage() {
                               ? "bg-blue-100 text-blue-700"
                               : item.status_surat === "Approve"
                               ? "bg-green-100 text-green-700"
-                              : item.status_surat === "Rejected"
+                              : item.status_surat === "Reject"
                               ? "bg-red-100 text-red-700"
                               : "bg-gray-100 text-gray-600"
                           }`}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FormData, MaterialForm, SignatureData } from "@/lib/surat-jalan/surat-jalan.type";
 
 interface PreviewSectionProps {
+  targetRef?: React.RefObject<HTMLDivElement>;
   formData: FormData;
   materials: MaterialForm[];
   signaturePenerima: SignatureData;
@@ -18,6 +19,7 @@ interface PreviewSectionProps {
 }
 
 export default function PreviewSection({
+  targetRef,
   formData,
   materials,
   signaturePenerima,
@@ -117,9 +119,9 @@ export default function PreviewSection({
 
         {/* Preview Content - Scrollable */}
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
-          <div className="bg-white shadow-lg p-8 max-w-[1200px] mx-auto">
+          <div id="preview-content" className="bg-white shadow-lg p-8 max-w-[1200px] mx-auto">
             {/* Company Header */}
-            <div className="flex items-start gap-4 mb-8">
+            <div className="flex items-center gap-4 mb-8">
               <div className="flex-shrink-0">
                 <Image
                   src="/images/PLN-logo.png"
@@ -140,11 +142,11 @@ export default function PreviewSection({
                   Jl. Soekarno-Hatta No. 606 Bandung 40286
                 </div>
               </div>
-              <div className="flex-shrink-0 bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
-                <div className="text-[22px] font-bold text-[#A62344]">
+              <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-6 py-2 rounded-lg border border-[rgb(166,35,68)]">
+                <div className="text-[22px] font-bold text-[rgb(166,35,68)]">
                   LEMBAR I
                 </div>
-                <div className="text-xl text-[#A62344]">Pengirim Barang</div>
+                <div className="text-xl text-[rgb(166,35,68)]">Pengirim Barang</div>
               </div>
             </div>
 
