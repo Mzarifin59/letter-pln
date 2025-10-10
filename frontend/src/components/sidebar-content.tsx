@@ -39,7 +39,7 @@ export default function SidebarContent({
 
       if (!userEmailStatus) return false;
 
-      const isPublished = item.surat_jalan.status_entry === "Published";
+      const isPublished = item.surat_jalan?.status_entry === "Published";
 
       switch (filterType) {
         case "inbox":

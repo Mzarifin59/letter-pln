@@ -7,9 +7,10 @@ import SidebarContent from "./sidebar-content";
 interface SidebarProps {
   data: EmailData[];
   token: string | undefined;
+  onItemClick?: () => void;
 }
 
-export default function Sidebar({ data, token }: SidebarProps) {
+export default function Sidebar({ data, token, onItemClick }: SidebarProps) {
   const [emailData, setEmailData] = useState<EmailData[]>(data);
 
   // Update data ketika props berubah

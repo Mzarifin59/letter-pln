@@ -161,7 +161,7 @@ export const useSuratJalanForm = () => {
           ttd_penerima: ttdPenerimaId,
         },
         pengirim: {
-          departemen_pengirim: formData.perusahaanPengirim,
+          departemen_pengirim: formData.departemenPengirim,
           nama_pengirim: formData.namaPengirim,
           ttd_pengirim: ttdPengirimId,
         },

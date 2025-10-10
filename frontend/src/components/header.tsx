@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { SidebarContent } from "@/components/sidebar";
+import Sidebar from "@/components/sidebar";
 import { getUserLogin } from "@/lib/user";
 
 export default function Header() {
@@ -52,7 +52,6 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-72">
                 <SheetTitle className="hidden">Menu</SheetTitle>
-                <SidebarContent onItemClick={closeSheet} />
               </SheetContent>
             </Sheet>
 

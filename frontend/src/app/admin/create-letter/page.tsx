@@ -19,20 +19,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 
-import {
-  FormData,
-  MaterialForm,
-  SignatureData,
-  SignatureType,
-} from "@/lib/surat-jalan/surat-jalan.type";
+import { SignatureType } from "@/lib/surat-jalan/surat-jalan.type";
 import { INITIAL_MATERIAL } from "@/lib/surat-jalan/form.constants";
 import { FileUtils } from "@/lib/surat-jalan/file.utils";
 import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
 import PreviewSection from "@/components/preview-surat";
 import { toast } from "sonner";
-import { EmailData } from "@/lib/interface";
+import { EmailData, FileAttachment } from "@/lib/interface";
 
 interface PreviewData {
   upload: string | null;
@@ -67,14 +61,14 @@ export default function CreateLetterPage() {
   const signatureRefPenerima = useRef<SignatureCanvas>(null);
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
-  const previewContentRef = useRef<HTMLDivElement>(null);
-
   // Load draft data when in edit mode
+  const hasLoadedRef = useRef(false);
   useEffect(() => {
-    if (mode === "edit" && draftId) {
+    if (mode === "edit" && draftId && !hasLoadedRef.current) {
+      hasLoadedRef.current = true; // Set flag
       setIsEditMode(true);
       loadDraftData();
-    } else {
+    } else if (!mode || !draftId) {
       setIsLoading(false);
     }
   }, [mode, draftId]);
@@ -92,8 +86,7 @@ export default function CreateLetterPage() {
         setFormData({
           nomorSuratJalan: suratJalan.no_surat_jalan || "",
           nomorSuratPermintaan: suratJalan.no_surat_permintaan || "",
-          tanggalSurat:
-            suratJalan.tanggal || new Date().toISOString().split("T")[0],
+          tanggalSurat: suratJalan.tanggal,
           perihal: suratJalan.perihal || "",
           lokasiAsal: suratJalan.lokasi_asal || "",
           lokasiTujuan: suratJalan.lokasi_tujuan || "",
@@ -103,16 +96,60 @@ export default function CreateLetterPage() {
           namaPengemudi: suratJalan.nama_pengemudi || "",
           perusahaanPenerima: suratJalan.penerima.perusahaan_penerima || "",
           namaPenerima: suratJalan.penerima.nama_penerima || "",
-          perusahaanPengirim: suratJalan.pengirim.departemen_pengirim || "",
+          departemenPengirim: suratJalan.pengirim.departemen_pengirim || "",
           namaPengirim: suratJalan.pengirim.nama_pengirim || "",
         });
+
+        // Helper function untuk generate URL file
+        const getFileUrl = (
+          fileAttachment: FileAttachment | null | undefined
+        ): string => {
+          if (!fileAttachment?.url) return "";
+
+          // Jika URL sudah lengkap (http/https), return as is
+          if (fileAttachment.url.startsWith("http")) {
+            return fileAttachment.url;
+          }
+
+          // Jika URL relatif, tambahkan base URL
+          return `http://localhost:1337${fileAttachment.url}`;
+        };
+
+        // Load signatures - tampilkan di preview.upload (tab Upload File)
+        if (suratJalan.penerima.ttd_penerima) {
+          const signatureUrl = getFileUrl(suratJalan.penerima.ttd_penerima);
+
+          setSignaturePenerima((prev) => ({
+            ...prev,
+            signature: signatureUrl, // Simpan URL asli
+            preview: {
+              ...prev.preview,
+              upload: signatureUrl, // Tampilkan di tab Upload
+              signature: null, // Kosongkan preview draw
+            },
+          }));
+        }
+
+        if (suratJalan.pengirim.ttd_pengirim) {
+          const signatureUrl = getFileUrl(suratJalan.pengirim.ttd_pengirim);
+
+          setSignaturePengirim((prev) => ({
+            ...prev,
+            signature: signatureUrl, // Simpan URL asli
+            preview: {
+              ...prev.preview,
+              upload: signatureUrl, // Tampilkan di tab Upload
+              signature: null, // Kosongkan preview draw
+            },
+          }));
+        }
 
         // Populate materials
         if (suratJalan.materials && suratJalan.materials.length > 0) {
           const loadedMaterials = suratJalan.materials.map(
             (mat: any, index: number) => ({
               id: index + 1,
-              namaMaterial: mat.nama_material || "",
+              namaMaterial: mat.nama || "",
               katalog: mat.katalog || "",
               satuan: mat.satuan || "",
               jumlah: mat.jumlah?.toString() || "0",
@@ -122,31 +159,35 @@ export default function CreateLetterPage() {
           setMaterials(loadedMaterials);
         }
 
-        // Load signatures if available
-        // if (suratJalan.penerima.ttd_penerima) {
-        //   setSignaturePenerima((prev) => ({
-        //     ...prev,
-        //     signature: suratJalan.penerima.tanda_tangan_penerima,
-        //     preview: {
-        //       ...prev.preview,
-        //       signature: suratJalan.penerima.tanda_tangan_penerima,
-        //     },
-        //   }));
-        // }
+        // Load lampiran files
+        if (suratJalan.lampiran && suratJalan.lampiran.length > 0) {
+          try {
+            // Convert FileAttachment[] menjadi File[]
+            const loadedLampiran = await Promise.all(
+              suratJalan.lampiran.map(async (attachment: FileAttachment) => {
+                const fileUrl = getFileUrl(attachment);
 
-        // if (suratJalan.pengirim.ttd_pengirim) {
-        //   setSignaturePengirim((prev) => ({
-        //     ...prev,
-        //     signature: suratJalan.pengirim.ttd_pengirim,
-        //     preview: {
-        //       ...prev.preview,
-        //       signature: suratJalan.pengirim.ttd_pengirim,
-        //     },
-        //   }));
-        // }
+                // Fetch file dari server
+                const response = await fetch(fileUrl);
+                const blob = await response.blob();
 
-        // TODO: Load lampiran files if needed
-        // This might require fetching from server if files are stored there
+                // Buat File object dari blob
+                const file = new File([blob], attachment.name || "lampiran", {
+                  type: attachment.url || blob.type,
+                });
+
+                return file;
+              })
+            );
+
+            setLampiran(loadedLampiran);
+          } catch (error) {
+            console.error("Error loading lampiran:", error);
+            toast.error("Beberapa lampiran gagal dimuat", {
+              position: "top-center",
+            });
+          }
+        }
 
         toast.success("Draft berhasil dimuat", {
           description: "Anda dapat melanjutkan mengedit surat jalan",
@@ -166,11 +207,6 @@ export default function CreateLetterPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleBackToDraft = () => {
-    sessionStorage.removeItem("draftData");
-    router.push("/draft");
   };
 
   // Preview data untuk backward compatibility dengan render functions
@@ -319,9 +355,7 @@ export default function CreateLetterPage() {
         }
       );
 
-      // Clean up and redirect
       sessionStorage.removeItem("draftData");
-      router.push("/inbox"); // or wherever you want to redirect
     } catch (error: any) {
       toast.error(error.message || "Terjadi kesalahan saat mengirim surat 😢", {
         id: "submit",
@@ -412,7 +446,6 @@ export default function CreateLetterPage() {
     pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
   };
 
-  // Rest of the render functions remain the same...
   const renderBasicInformation = () => (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -507,9 +540,6 @@ export default function CreateLetterPage() {
     </div>
   );
 
-  // Include all other render functions here (renderMaterialsTable, renderSignatureSection, renderAttachmentSection)
-  // [Copy from original code - they remain unchanged]
-
   if (isLoading) {
     return (
       <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
@@ -548,7 +578,7 @@ export default function CreateLetterPage() {
                 Nama Material
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
-                Keterangan
+                Katalog
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
                 Satuan
@@ -597,12 +627,11 @@ export default function CreateLetterPage() {
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Keterangan"
+                    placeholder="Katalog"
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <Input
-                    type="text"
+                  <select
                     value={material.satuan}
                     onChange={(e) =>
                       handleMaterialChange(
@@ -611,9 +640,12 @@ export default function CreateLetterPage() {
                         e.target.value
                       )
                     }
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="m³"
-                  />
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">Pilih Satuan</option>
+                    <option value="PCS (Pieces)">PCS (Pieces)</option>
+                    <option value="Kg (Kilogram)">Kg (Kilogram)</option>
+                  </select>
                 </td>
                 <td className="px-4 py-3">
                   <Input
@@ -1092,9 +1124,9 @@ export default function CreateLetterPage() {
                 {renderSignatureSection(
                   "pengirim",
                   "Pengirim",
-                  formData.perusahaanPengirim,
+                  formData.departemenPengirim,
                   formData.namaPengirim,
-                  "perusahaanPengirim",
+                  "departemenPengirim",
                   "namaPengirim",
                   previewPengirim
                 )}

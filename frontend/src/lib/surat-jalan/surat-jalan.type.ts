@@ -21,7 +21,7 @@ export interface FormData {
   namaPengemudi: string;
   perusahaanPenerima: string;
   namaPenerima: string;
-  perusahaanPengirim: string;
+  departemenPengirim: string;
   namaPengirim: string;
 }
 
