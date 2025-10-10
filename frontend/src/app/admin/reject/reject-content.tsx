@@ -302,9 +302,6 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                 <h1 className="plus-jakarta-sans text-2xl sm:text-[32px] font-semibold text-[#353739]">
                   Dibatalkan
                 </h1>
-                <p className="plus-jakarta-sans text-xs sm:text-sm text-[#7F7F7F]">
-                  2445 messages, 2 Unread
-                </p>
               </div>
             </div>
 
@@ -338,15 +335,22 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
             {/* Email List */}
             <div className="flex-1 overflow-auto py-4">
-              {emailList.map((email) => (
-                <EmailRow
-                  key={email.id}
-                  email={email}
-                  isSelected={selectedEmails.includes(email.documentId)}
-                  onSelect={handleSelectEmail}
-                  onClick={handleEmailClick}
-                />
-              ))}
+              {emailList.length > 0 ? (
+                emailList.map((email) => (
+                  <EmailRow
+                    key={email.id}
+                    email={email}
+                    isSelected={selectedEmails.includes(email.documentId)}
+                    onSelect={handleSelectEmail}
+                    onClick={handleEmailClick}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg font-medium">Tidak ada email rejected</p>
+                  <p className="text-sm mt-2">Email rejected anda akan muncul di sini</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

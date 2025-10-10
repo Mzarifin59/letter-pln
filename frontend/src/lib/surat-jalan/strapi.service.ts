@@ -1,4 +1,8 @@
-import { API_CONFIG, API_CONFIG_EMAIL, API_CONFIG_STATUSEMAIL } from "@/lib/surat-jalan/form.constants";
+import {
+  API_CONFIG,
+  API_CONFIG_EMAIL,
+  API_CONFIG_STATUSEMAIL,
+} from "@/lib/surat-jalan/form.constants";
 
 interface StrapiResponse<T = any> {
   data: T;
@@ -49,46 +53,57 @@ export class StrapiAPIService {
   /**
    * Upload single file ke Strapi
    */
-  static async uploadFile(file: File): Promise<any> {
-  const formData = new FormData();
-  formData.append("files", file);
+  static async uploadFile(file: File, customFilename?: string): Promise<any> {
+    const formData = new FormData();
 
-  console.groupCollapsed(`📤 Uploading file: ${file.name}`);
-  console.log("File info:", {
-    name: file.name,
-    size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-    type: file.type,
-  });
+    // Jika ada custom filename, rename file
+    const fileToUpload = customFilename
+      ? new File([file], customFilename, { type: file.type })
+      : file;
 
-  const response = await fetch(
-    `${API_CONFIG.baseURL}${API_CONFIG.endpoints.upload}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.getAuthToken()}`,
-      },
-      body: formData,
-    }
-  );
+    formData.append("files", fileToUpload);
 
-  const data = await this.handleResponse(response);
-  const uploadedFile = Array.isArray(data) ? data[0] : data;
+    console.groupCollapsed(`📤 Uploading file: ${fileToUpload.name}`);
+    console.log("File info:", {
+      name: fileToUpload.name,
+      size: `${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`,
+      type: fileToUpload.type,
+    });
 
-  return uploadedFile;
-}
+    const response = await fetch(
+      `${API_CONFIG.baseURL}${API_CONFIG.endpoints.upload}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.getAuthToken()}`,
+        },
+        body: formData,
+      }
+    );
 
-/**
- * Upload multiple files ke Strapi (versi debug)
- */
-static async uploadFiles(files: File[]): Promise<any[]> {
-  console.groupCollapsed(`📤 Uploading ${files.length} file(s)`);
-  console.table(files.map((f) => ({ name: f.name, size: f.size, type: f.type })));
+    const data = await this.handleResponse(response);
+    const uploadedFile = Array.isArray(data) ? data[0] : data;
 
-  const uploadPromises = files.map((file) => this.uploadFile(file));
-  const results = await Promise.all(uploadPromises);
+    console.log("✅ Upload successful:", uploadedFile);
+    console.groupEnd();
 
-  return results;
-}
+    return uploadedFile;
+  }
+
+  /**
+   * Upload multiple files ke Strapi (versi debug)
+   */
+  static async uploadFiles(files: File[]): Promise<any[]> {
+    console.groupCollapsed(`📤 Uploading ${files.length} file(s)`);
+    console.table(
+      files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
+    );
+
+    const uploadPromises = files.map((file) => this.uploadFile(file));
+    const results = await Promise.all(uploadPromises);
+
+    return results;
+  }
 
   /**
    * Create Surat Jalan baru

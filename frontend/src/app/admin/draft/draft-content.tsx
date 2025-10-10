@@ -70,15 +70,6 @@ export default function DraftPageContent({ data }: DraftContentProps) {
   };
 
   const handleRowClick = (email: EmailData): void => {
-    // Encode data surat jalan ke query params atau localStorage
-    // Opsi 1: Menggunakan query params (untuk data sederhana)
-    // const queryParams = new URLSearchParams({
-    //   documentId: email.documentId,
-    //   mode: 'edit'
-    // });
-    // router.push(`/create-letter?${queryParams.toString()}`);
-
-    // Opsi 2: Menggunakan sessionStorage (lebih aman untuk data kompleks)
     sessionStorage.setItem('draftData', JSON.stringify(email));
     router.push(`/admin/create-letter?mode=edit&id=${email.documentId}`);
   };
@@ -90,12 +81,11 @@ export default function DraftPageContent({ data }: DraftContentProps) {
     onRowClick,
   }: EmailRowProps): JSX.Element => {
     const handleCheckboxClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); // Prevent row click when clicking checkbox
+      e.stopPropagation(); 
     };
 
     const handleTrashClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); // Prevent row click when clicking trash
-      // Add delete logic here
+      e.stopPropagation(); 
     };
 
     return (

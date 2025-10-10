@@ -106,13 +106,14 @@ export const useSuratJalanForm = () => {
       let ttdPenerimaId = null;
       if (signaturePenerima.upload) {
         const uploaded = await StrapiAPIService.uploadFile(
-          signaturePenerima.upload
+          signaturePenerima.upload,
+          `${formData.namaPenerima}_ttd.png` // Tambahkan custom filename
         );
         ttdPenerimaId = uploaded.id;
       } else if (signaturePenerima.signature) {
         const file = await FileUtils.dataURLToFile(
           signaturePenerima.signature,
-          "ttd-penerima.png"
+          `${formData.namaPenerima}_ttd.png` // Custom filename
         );
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPenerimaId = uploaded.id;
@@ -122,13 +123,14 @@ export const useSuratJalanForm = () => {
       let ttdPengirimId = null;
       if (signaturePengirim.upload) {
         const uploaded = await StrapiAPIService.uploadFile(
-          signaturePengirim.upload
+          signaturePengirim.upload,
+          `${formData.namaPengirim}_ttd.png` 
         );
         ttdPengirimId = uploaded.id;
       } else if (signaturePengirim.signature) {
         const file = await FileUtils.dataURLToFile(
           signaturePengirim.signature,
-          "ttd-pengirim.png"
+          `${formData.namaPengirim}_ttd.png` 
         );
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPengirimId = uploaded.id;

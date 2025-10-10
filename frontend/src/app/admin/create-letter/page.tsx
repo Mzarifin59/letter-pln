@@ -13,7 +13,6 @@ import {
   StickyNote,
   Send,
   X,
-  ArrowLeft,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -545,7 +544,7 @@ export default function CreateLetterPage() {
       <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0] mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data draft...</p>
+          <p className="text-gray-600">Memuat Form...</p>
         </div>
       </div>
     );

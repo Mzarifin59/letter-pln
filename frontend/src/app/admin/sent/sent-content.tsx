@@ -289,9 +289,6 @@ export default function SentContent({ data, token }: SentContentProps) {
                   <h1 className="plus-jakarta-sans text-[32px] font-semibold text-[#353739]">
                     Send
                   </h1>
-                  <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                    2445 messages, 2 Unread
-                  </p>
                 </div>
               </div>
             </div>
@@ -338,15 +335,26 @@ export default function SentContent({ data, token }: SentContentProps) {
             <div className="flex-1 overflow-auto py-5">
               {/* Today Section */}
               <div className="mb-6">
-                {emailList.map((email) => (
-                  <EmailRow
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmails.includes(email.documentId)}
-                    onSelect={handleSelectEmail}
-                    onClick={handleEmailClick}
-                  />
-                ))}
+                {emailList.length > 0 ? (
+                  emailList.map((email) => (
+                    <EmailRow
+                      key={email.id}
+                      email={email}
+                      isSelected={selectedEmails.includes(email.documentId)}
+                      onSelect={handleSelectEmail}
+                      onClick={handleEmailClick}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg font-medium">
+                      Tidak ada email rejected
+                    </p>
+                    <p className="text-sm mt-2">
+                      Email rejected anda akan muncul di sini
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
