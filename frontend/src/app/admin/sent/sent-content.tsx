@@ -26,6 +26,36 @@ export default function SentContent({ data, token }: SentContentProps) {
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const { user } = useUserLogin();
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(data.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+  const currentEmail = data.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("send-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
   const handleSelectAll = (): void => {
     if (selectAll) {
       setSelectedEmails([]);
@@ -193,17 +223,35 @@ export default function SentContent({ data, token }: SentContentProps) {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <ArrowLeft
-                    width={20}
-                    height={20}
-                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-                  />
-                  <span className="text-sm text-gray-500">1 of 200</span>
-                  <ArrowRight
-                    width={20}
-                    height={20}
-                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-                  />
+                  <button
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePrevious();
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
+                  <span className="text-xs sm:text-sm text-gray-500">
+                    {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNext();
+                    }}
+                  >
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -212,8 +260,8 @@ export default function SentContent({ data, token }: SentContentProps) {
             <div className="flex-1 overflow-auto py-5">
               {/* Today Section */}
               <div className="mb-6">
-                {emailList.length > 0 ? (
-                  emailList.map((email) => (
+                {currentEmail.length > 0 ? (
+                  currentEmail.map((email) => (
                     <EmailRow
                       key={email.id}
                       email={email}

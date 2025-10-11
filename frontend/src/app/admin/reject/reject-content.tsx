@@ -8,6 +8,15 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
@@ -25,6 +34,36 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const [emailList, setEmailList] = useState<EmailData[]>(data);
   const { user } = useUserLogin();
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(data.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+  const currentEmail = data.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("reject-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const handleSelectAll = (): void => {
     if (selectAll) {
@@ -145,7 +184,6 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     setOpenedEmail(null);
   };
 
-
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
@@ -184,19 +222,35 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                   <MoreHorizontal className="w-4 h-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  <button
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePrevious();
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
                   <span className="text-xs sm:text-sm text-gray-500">
-                    1 of 200
+                    {currentPage} of {totalPages}
                   </span>
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  <button
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNext();
+                    }}
+                  >
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Email List */}
             <div className="flex-1 overflow-auto py-4">
-              {emailList.length > 0 ? (
-                emailList.map((email) => (
+              {currentEmail.length > 0 ? (
+                currentEmail.map((email) => (
                   <EmailRow
                     key={email.id}
                     email={email}
@@ -210,8 +264,12 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                 ))
               ) : (
                 <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg font-medium">Tidak ada email rejected</p>
-                  <p className="text-sm mt-2">Email rejected anda akan muncul di sini</p>
+                  <p className="text-lg font-medium">
+                    Tidak ada email rejected
+                  </p>
+                  <p className="text-sm mt-2">
+                    Email rejected anda akan muncul di sini
+                  </p>
                 </div>
               )}
             </div>

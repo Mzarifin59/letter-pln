@@ -58,6 +58,36 @@ export default function InboxContentPage({ data }: InboxContentProps) {
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(data.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+  const currentData = data.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("draft-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
   const handleSelectAll = (): void => {
     if (selectAll) {
       setSelectedEmails([]);
@@ -83,7 +113,8 @@ export default function InboxContentPage({ data }: InboxContentProps) {
     setOpenedEmail(null);
   };
 
-  const groupedEmails: GroupedEmails = groupEmailsByDate(data);
+  const groupedEmailsCurrent: GroupedEmails = groupEmailsByDate(currentData);
+  const groupedEmailsAll: GroupedEmails = groupEmailsByDate(data);
 
   const SectionHeader = ({
     title,
@@ -124,7 +155,7 @@ export default function InboxContentPage({ data }: InboxContentProps) {
                     Inbox
                   </h1>
                   <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                    2445 messages, 2 Unread
+                    {data.length} messages, 0 Unread
                   </p>
                 </div>
 
@@ -177,67 +208,114 @@ export default function InboxContentPage({ data }: InboxContentProps) {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <ArrowLeft
-                    width={20}
-                    height={20}
-                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-                  />
-                  <span className="text-sm text-gray-500">1 of 200</span>
-                  <ArrowRight
-                    width={20}
-                    height={20}
-                    className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-                  />
+                  <button
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePrevious();
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
+                  <span className="text-xs sm:text-sm text-gray-500">
+                    {totalPages > 0 ? currentPage : "0"} of {totalPages}
+                  </span>
+                  <button
+                    className={
+                      currentPage === totalPages || totalPages === 0
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNext();
+                    }}
+                  >
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Email List */}
             <div className="flex-1 overflow-auto py-5">
-              {/* Today Section */}
-              <div className="mb-6">
-                <SectionHeader title="Today" count={groupedEmails.today.length} />
-                {groupedEmails.today.map((email) => (
-                  <EmailRowInbox
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmails.includes(email.documentId)}
-                    onSelect={handleSelectEmail}
-                    onClick={handleEmailClick}
-                    openedEmail={openedEmail}
+              {groupedEmailsAll.today.length > 0 && (
+                <div className="mb-6">
+                  <SectionHeader
+                    title="Today"
+                    count={groupedEmailsAll.today.length}
                   />
-                ))}
-              </div>
+                  {groupedEmailsCurrent.today.map((email) => (
+                    <EmailRowInbox
+                      key={email.id}
+                      email={email}
+                      isSelected={selectedEmails.includes(email.documentId)}
+                      onSelect={handleSelectEmail}
+                      onClick={handleEmailClick}
+                      openedEmail={openedEmail}
+                    />
+                  ))}
+                  {groupedEmailsCurrent.today.length === 0 && (
+                    <div className="px-4 py-2 text-sm text-gray-400 italic">
+                      No emails on this page
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* Yesterday Section */}
-              <div className="mb-6">
-                <SectionHeader title="Yesterday" count={groupedEmails.yesterday.length} />
-                {groupedEmails.yesterday.map((email) => (
-                  <EmailRowInbox
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmails.includes(email.documentId)}
-                    onSelect={handleSelectEmail}
-                    onClick={handleEmailClick}
-                    openedEmail={openedEmail}
+              {/* Yesterday Section - tampilkan jika ada di ALL data */}
+              {groupedEmailsAll.yesterday.length > 0 && (
+                <div className="mb-6">
+                  <SectionHeader
+                    title="Yesterday"
+                    count={groupedEmailsAll.yesterday.length}
                   />
-                ))}
-              </div>
+                  {groupedEmailsCurrent.yesterday.map((email) => (
+                    <EmailRowInbox
+                      key={email.id}
+                      email={email}
+                      isSelected={selectedEmails.includes(email.documentId)}
+                      onSelect={handleSelectEmail}
+                      onClick={handleEmailClick}
+                      openedEmail={openedEmail}
+                    />
+                  ))}
+                  {groupedEmailsCurrent.yesterday.length === 0 && (
+                    <div className="px-4 py-2 text-sm text-gray-400 italic">
+                      No emails on this page
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* Wednesday Section */}
-              <div className="mb-6">
-                <SectionHeader title="Older" count={groupedEmails.older.length} />
-                {groupedEmails.older.map((email) => (
-                  <EmailRowInbox
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmails.includes(email.documentId)}
-                    onSelect={handleSelectEmail}
-                    onClick={handleEmailClick}
-                    openedEmail={openedEmail} 
+              {/* Older Section - tampilkan jika ada di ALL data */}
+              {groupedEmailsAll.older.length > 0 && (
+                <div className="mb-6">
+                  <SectionHeader
+                    title="Older"
+                    count={groupedEmailsAll.older.length}
                   />
-                ))}
-              </div>
+                  {groupedEmailsCurrent.older.map((email) => (
+                    <EmailRowInbox
+                      key={email.id}
+                      email={email}
+                      isSelected={selectedEmails.includes(email.documentId)}
+                      onSelect={handleSelectEmail}
+                      onClick={handleEmailClick}
+                      openedEmail={openedEmail}
+                    />
+                  ))}
+                  {groupedEmailsCurrent.older.length === 0 && (
+                    <div className="px-4 py-2 text-sm text-gray-400 italic">
+                      No emails on this page
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

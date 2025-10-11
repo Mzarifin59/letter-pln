@@ -52,6 +52,36 @@ export default function DraftPageContent({ data }: DraftContentProps) {
   const { user } = useUserLogin();
   const router = useRouter();
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(data.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+  const currentData = data.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("draft-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
   const handleSelectAll = (): void => {
     if (selectAll) {
       setSelectedEmails([]);
@@ -70,7 +100,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
   };
 
   const handleRowClick = (email: EmailData): void => {
-    sessionStorage.setItem('draftData', JSON.stringify(email));
+    sessionStorage.setItem("draftData", JSON.stringify(email));
     router.push(`/admin/create-letter?mode=edit&id=${email.documentId}`);
   };
 
@@ -81,11 +111,11 @@ export default function DraftPageContent({ data }: DraftContentProps) {
     onRowClick,
   }: EmailRowProps): JSX.Element => {
     const handleCheckboxClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); 
+      e.stopPropagation();
     };
 
     const handleTrashClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); 
+      e.stopPropagation();
     };
 
     return (
@@ -152,9 +182,9 @@ export default function DraftPageContent({ data }: DraftContentProps) {
         <div className="flex items-center space-x-2 ml-auto">
           {email.email_statuses.find((item) => item.user.name === user?.name)
             ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
-          <Trash2 
+          <Trash2
             onClick={handleTrashClick}
-            className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
           />
         </div>
       </div>
@@ -198,17 +228,35 @@ export default function DraftPageContent({ data }: DraftContentProps) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <ArrowLeft
-                width={20}
-                height={20}
-                className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-              />
-              <span className="text-sm text-gray-500">1 of {data.length}</span>
-              <ArrowRight
-                width={20}
-                height={20}
-                className="hover:text-gray-400 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full"
-              />
+              <button
+                className={
+                  currentPage === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePrevious();
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+              </button>
+              <span className="text-xs sm:text-sm text-gray-500">
+                {totalPages > 0 ? currentPage : "0"} of {totalPages}
+              </span>
+              <button
+                className={
+                  currentPage === totalPages || totalPages === 0
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNext();
+                }}
+              >
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+              </button>
             </div>
           </div>
         </div>
@@ -218,7 +266,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
           {/* Today Section */}
           <div className="mb-6">
             {data.length > 0 ? (
-              data.map((email: EmailData) => (
+              currentData.map((email: EmailData) => (
                 <EmailRow
                   key={email.id}
                   email={email}
