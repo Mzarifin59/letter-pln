@@ -127,7 +127,7 @@ export default function SidebarContent({
   };
 
   const handleItemClick = () => {
-    onItemClick?.(); // Menutup sheet ketika item diklik
+    onItemClick?.(); 
   };
 
   return (

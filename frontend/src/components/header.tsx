@@ -4,8 +4,8 @@ import { useState } from "react";
 import {
   Search,
   SlidersVertical,
-  CircleHelp,
-  Settings,
+  // CircleHelp,
+  // Settings,
   Bell,
   ChevronDown,
   Menu,
@@ -25,16 +25,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import Sidebar from "@/components/sidebar";
 import { getUserLogin } from "@/lib/user";
+import Sidebar from "@/components/sidebar";
 
 export default function Header() {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { user, loading } = getUserLogin();
-
-  const closeSheet = () => {
-    setIsSheetOpen(false);
-  };
 
   return (
     <div className="lg:ml-72 flex-1 flex flex-col">
@@ -43,18 +38,6 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Left Section - Mobile Menu + Search */}
           <div className="flex items-center gap-3 flex-1">
-            {/* Mobile Menu Button - hanya muncul di bawah lg */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-              <SheetTrigger asChild>
-                <button className="lg:hidden p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all">
-                  <Menu size={20} />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72">
-                <SheetTitle className="hidden">Menu</SheetTitle>
-              </SheetContent>
-            </Sheet>
-
             {/* Search Section */}
             <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-4 py-3 flex-1 max-w-md">
               <Search size={20} className="text-gray-500" />
