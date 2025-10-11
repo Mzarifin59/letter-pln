@@ -1,19 +1,11 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { useState, useRef, ChangeEvent, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SignatureCanvas from "react-signature-canvas";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
-import {
-  Plus,
-  Trash2,
-  Calendar,
-  Eye,
-  StickyNote,
-  Send,
-  X,
-} from "lucide-react";
+import { Plus, Trash2, Calendar, Eye, StickyNote, Send, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -61,20 +53,8 @@ export default function CreateLetterPage() {
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
   // Load draft data when in edit mode
-  const hasLoadedRef = useRef(false);
-  useEffect(() => {
-    if (mode === "edit" && draftId && !hasLoadedRef.current) {
-      hasLoadedRef.current = true; // Set flag
-      setIsEditMode(true);
-      loadDraftData();
-    } else if (!mode || !draftId) {
-      setIsLoading(false);
-    }
-  }, [mode, draftId]);
-
-  const loadDraftData = async () => {
+  const loadDraftData = useCallback(async () => {
     try {
-      // Get data from sessionStorage
       const draftDataStr = sessionStorage.getItem("draftData");
 
       if (draftDataStr) {
@@ -99,86 +79,56 @@ export default function CreateLetterPage() {
           namaPengirim: suratJalan.pengirim.nama_pengirim || "",
         });
 
-        // Helper function untuk generate URL file
         const getFileUrl = (
           fileAttachment: FileAttachment | null | undefined
         ): string => {
           if (!fileAttachment?.url) return "";
-
-          // Jika URL sudah lengkap (http/https), return as is
-          if (fileAttachment.url.startsWith("http")) {
-            return fileAttachment.url;
-          }
-
-          // Jika URL relatif, tambahkan base URL
+          if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
           return `http://localhost:1337${fileAttachment.url}`;
         };
 
-        // Load signatures - tampilkan di preview.upload (tab Upload File)
         if (suratJalan.penerima.ttd_penerima) {
           const signatureUrl = getFileUrl(suratJalan.penerima.ttd_penerima);
-
           setSignaturePenerima((prev) => ({
             ...prev,
-            signature: signatureUrl, // Simpan URL asli
-            preview: {
-              ...prev.preview,
-              upload: signatureUrl, // Tampilkan di tab Upload
-              signature: null, // Kosongkan preview draw
-            },
+            signature: signatureUrl,
+            preview: { ...prev.preview, upload: signatureUrl, signature: null },
           }));
         }
 
         if (suratJalan.pengirim.ttd_pengirim) {
           const signatureUrl = getFileUrl(suratJalan.pengirim.ttd_pengirim);
-
           setSignaturePengirim((prev) => ({
             ...prev,
-            signature: signatureUrl, // Simpan URL asli
-            preview: {
-              ...prev.preview,
-              upload: signatureUrl, // Tampilkan di tab Upload
-              signature: null, // Kosongkan preview draw
-            },
+            signature: signatureUrl,
+            preview: { ...prev.preview, upload: signatureUrl, signature: null },
           }));
         }
 
-        // Populate materials
         if (suratJalan.materials && suratJalan.materials.length > 0) {
-          const loadedMaterials = suratJalan.materials.map(
-            (mat: any, index: number) => ({
-              id: index + 1,
-              namaMaterial: mat.nama || "",
-              katalog: mat.katalog || "",
-              satuan: mat.satuan || "",
-              jumlah: mat.jumlah?.toString() || "0",
-              keterangan: mat.keterangan || "",
-            })
-          );
+          const loadedMaterials = suratJalan.materials.map((mat, index) => ({
+            id: index + 1,
+            namaMaterial: mat.nama || "",
+            katalog: mat.katalog || "",
+            satuan: mat.satuan || "",
+            jumlah: mat.jumlah?.toString() || "0",
+            keterangan: mat.keterangan || "",
+          }));
           setMaterials(loadedMaterials);
         }
 
-        // Load lampiran files
         if (suratJalan.lampiran && suratJalan.lampiran.length > 0) {
           try {
-            // Convert FileAttachment[] menjadi File[]
             const loadedLampiran = await Promise.all(
               suratJalan.lampiran.map(async (attachment: FileAttachment) => {
                 const fileUrl = getFileUrl(attachment);
-
-                // Fetch file dari server
                 const response = await fetch(fileUrl);
                 const blob = await response.blob();
-
-                // Buat File object dari blob
-                const file = new File([blob], attachment.name || "lampiran", {
-                  type: attachment.url || blob.type,
+                return new File([blob], attachment.name || "lampiran", {
+                  type: blob.type,
                 });
-
-                return file;
               })
             );
-
             setLampiran(loadedLampiran);
           } catch (error) {
             console.error("Error loading lampiran:", error);
@@ -193,20 +143,27 @@ export default function CreateLetterPage() {
           position: "top-center",
         });
       } else {
-        toast.error("Data draft tidak ditemukan", {
-          position: "top-center",
-        });
+        toast.error("Data draft tidak ditemukan", { position: "top-center" });
         router.push("/draft");
       }
     } catch (error) {
       console.error("Error loading draft:", error);
-      toast.error("Gagal memuat draft", {
-        position: "top-center",
-      });
+      toast.error("Gagal memuat draft", { position: "top-center" });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router,  setFormData, setLampiran, setMaterials, setSignaturePenerima, setSignaturePengirim]);
+
+  const hasLoadedRef = useRef(false);
+  useEffect(() => {
+    if (mode === "edit" && draftId && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      setIsEditMode(true);
+      loadDraftData();
+    } else if (!mode || !draftId) {
+      setIsLoading(false);
+    }
+  }, [mode, draftId, loadDraftData]);
 
   // Preview data untuk backward compatibility dengan render functions
   const previewPenerima: PreviewData = {
@@ -338,7 +295,7 @@ export default function CreateLetterPage() {
         position: "top-center",
       });
 
-      const result = await submitForm(false);
+      await submitForm(false);
 
       toast.success(
         isEditMode
@@ -355,8 +312,13 @@ export default function CreateLetterPage() {
       );
 
       sessionStorage.removeItem("draftData");
-    } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan saat mengirim surat 😢", {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan dalam mengirim surat 😢";
+
+      toast.error(message, {
         id: "submit",
         position: "top-center",
       });
@@ -373,7 +335,7 @@ export default function CreateLetterPage() {
         }
       );
 
-      const result = await submitForm(true);
+      await submitForm(true);
 
       toast.success(
         isEditMode
@@ -391,8 +353,11 @@ export default function CreateLetterPage() {
         sessionStorage.removeItem("draftData");
         router.push("/admin/draft");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Gagal menyimpan draft 😢", {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Gagal menyimpan draft 😢";
+
+      toast.error(message, {
         id: "draft",
         position: "top-center",
       });

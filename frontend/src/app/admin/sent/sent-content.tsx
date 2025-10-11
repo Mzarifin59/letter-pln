@@ -11,7 +11,7 @@ import {
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 
 interface SentContentProps {
@@ -24,7 +24,7 @@ export default function SentContent({ data, token }: SentContentProps) {
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [emailList, setEmailList] = useState<EmailData[]>(data);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
 
   const handleSelectAll = (): void => {
     if (selectAll) {

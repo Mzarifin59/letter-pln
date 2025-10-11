@@ -11,7 +11,7 @@ interface User {
   name: string
 }
 
-export function getUserLogin() {
+export function useUserLogin() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 

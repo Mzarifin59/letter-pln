@@ -12,7 +12,7 @@ import {
   INITIAL_MATERIAL,
 } from "@/lib/surat-jalan/form.constants";
 import { SuratJalan } from "../interface";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 export async function getAllSuratJalan() {
   const query = qs.stringify({
@@ -85,7 +85,7 @@ export const useSuratJalanForm = () => {
   });
   const [lampiran, setLampiran] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
 
   /**
    * Prepare data untuk submission ke Strapi

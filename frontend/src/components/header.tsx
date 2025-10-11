@@ -17,10 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 export default function Header() {
-  const { user, loading } = getUserLogin();
+  const { user, loading } = useUserLogin();
 
   return (
     <div className="lg:ml-72 flex-1 flex flex-col">

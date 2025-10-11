@@ -3,7 +3,7 @@
 import { JSX } from "react";
 import { EmailData } from "@/lib/interface";
 import { Star, Trash2 } from "lucide-react";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 interface EmailRow {
   isSelected: boolean;
@@ -57,7 +57,7 @@ export const EmailRowInbox = ({
   openedEmail,
 }: EmailRow): JSX.Element => {
   const isOpened = openedEmail?.id === email.id;
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
 
   return (
     <div
@@ -260,7 +260,7 @@ export const EmailRow = ({
   pageRow,
 }: EmailRow) => {
   const isOpened = openedEmail?.documentId === email.documentId;
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
 
   return (
     <div

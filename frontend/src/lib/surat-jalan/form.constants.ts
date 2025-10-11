@@ -13,7 +13,7 @@ export const INITIAL_FORM_DATA: FormData = {
   namaPengemudi: "",
   perusahaanPenerima: "",
   namaPenerima: "",
-  perusahaanPengirim: "",
+  departemenPengirim: "",
   namaPengirim: "",
 };
 

@@ -16,7 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import { EmailData } from "@/lib/interface";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 function getCompanyAbbreviation(fullName: string, maxLetters = 3): string {
   if (!fullName) return "";
@@ -76,7 +76,7 @@ export const EmailDetail = ({
   isCanceled?: boolean;
   handleCloseDetail: MouseEventHandler;
 }) => {
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
   return (
     <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
       {/* Header */}

@@ -11,7 +11,7 @@ import {
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 
 interface RejectContentProps {
@@ -24,7 +24,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const [emailList, setEmailList] = useState<EmailData[]>(data);
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
 
   const handleSelectAll = (): void => {
     if (selectAll) {

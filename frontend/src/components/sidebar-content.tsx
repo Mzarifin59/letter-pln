@@ -15,7 +15,7 @@ import {
   Send,
   ArchiveX,
 } from "lucide-react";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 interface SidebarContentProps {
   data: EmailData[];
@@ -28,7 +28,7 @@ export default function SidebarContent({
   token,
   onItemClick,
 }: SidebarContentProps) {
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
   const pathname = usePathname();
 
   const getFilteredData = (filterType: string) => {

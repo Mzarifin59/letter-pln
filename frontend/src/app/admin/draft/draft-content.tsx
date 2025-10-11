@@ -12,7 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { EmailData } from "@/lib/interface";
-import { getUserLogin } from "@/lib/user";
+import { useUserLogin } from "@/lib/user";
 
 function formatDate(dateString: string, type: "long" | "short" = "long") {
   const date = new Date(dateString);
@@ -49,7 +49,7 @@ interface EmailRowProps {
 export default function DraftPageContent({ data }: DraftContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  const { user } = getUserLogin();
+  const { user } = useUserLogin();
   const router = useRouter();
 
   const handleSelectAll = (): void => {
