@@ -13,7 +13,8 @@ export default async function SentPage() {
       item.surat_jalan.status_entry === "Published"
   );
 
-  let token = (await cookies()).get('token');
+  const token = (await cookies()).get('token');
+  
   return (
     <div>
       <SentContent data={sentData} token={token?.value}/>

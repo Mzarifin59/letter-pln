@@ -130,6 +130,8 @@ export default function SidebarContent({
     onItemClick?.(); 
   };
 
+  console.log(token)
+
   return (
     <div className="flex flex-col h-full">
       {/* Header Section */}
@@ -163,7 +165,7 @@ export default function SidebarContent({
       {/* Navigation Section */}
       <div className="flex-1 p-4 overflow-y-auto">
         <nav className="flex flex-col gap-1">
-          {navItems.map(({ href, label, icon: Icon, id, count }) => {
+          {navItems.map(({ href, label, icon: Icon, count }) => {
             const active = isActive(href);
             return (
               <Link

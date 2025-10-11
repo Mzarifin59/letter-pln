@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { FormData, MaterialForm, SignatureData } from "@/lib/surat-jalan/surat-jalan.type";
 
 interface PreviewSectionProps {
-  targetRef?: React.RefObject<HTMLDivElement>;
   formData: FormData;
   materials: MaterialForm[];
   signaturePenerima: SignatureData;
@@ -19,7 +18,6 @@ interface PreviewSectionProps {
 }
 
 export default function PreviewSection({
-  targetRef,
   formData,
   materials,
   signaturePenerima,
@@ -347,7 +345,7 @@ export default function PreviewSection({
               <div>
                 <div className="mb-2 text-lg">Yang Menyerahkan,</div>
                 <div className="font-bold mb-4 text-lg">
-                  {formData.perusahaanPengirim || "LOGISTIK UPT BANDUNG"}
+                  {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
                 </div>
 
                 <div className="h-24 mb-4 flex items-center justify-center">

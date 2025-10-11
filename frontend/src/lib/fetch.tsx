@@ -17,12 +17,7 @@ interface FetchOptions {
   };
 }
 
-async function fetchWithError(url: string, options: FetchOptions = {}, optionsHeader: RequestInit = {}) {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...optionsHeader.headers,
-  };
-
+async function fetchWithError(url: string, options: FetchOptions = {}) {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -34,17 +29,6 @@ async function fetchWithError(url: string, options: FetchOptions = {}, optionsHe
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-
-  return response.json();
-}
-
-async function fetcher(url: string, options: FetchOptions = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
 
   return response.json();
 }

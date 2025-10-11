@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Search,
   SlidersVertical,
@@ -8,15 +7,8 @@ import {
   // Settings,
   Bell,
   ChevronDown,
-  Menu,
   LogOut,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -26,7 +18,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { getUserLogin } from "@/lib/user";
-import Sidebar from "@/components/sidebar";
 
 export default function Header() {
   const { user, loading } = getUserLogin();

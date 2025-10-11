@@ -22,8 +22,12 @@ export async function GET() {
 
     const user = await res.json();
     return NextResponse.json(user);
-  } catch (err: any) {
-    console.error("Me API Error:", err.message);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Me API Error:", err.message);
+    } else {
+      console.error("Me API Error:", err);
+    }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

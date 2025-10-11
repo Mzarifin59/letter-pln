@@ -12,14 +12,14 @@ interface SidebarProps {
   onItemClick?: () => void;
 }
 
-export default function Sidebar({ data, token, onItemClick }: SidebarProps) {
+export default function Sidebar({ data, token }: SidebarProps) {
   const [emailData, setEmailData] = useState<EmailData[]>(data);
   const [open, setOpen] = useState(false);
 
   // Update data ketika props berubah
   useEffect(() => {
     setEmailData(data);
-  }, [data]);
+  }, [data, emailData]);
 
 
   // Function untuk update email status
@@ -80,7 +80,7 @@ export default function Sidebar({ data, token, onItemClick }: SidebarProps) {
               <SheetTitle className="sr-only hidden">Menu Sidebar</SheetTitle>
             </SheetHeader>
 
-            <SidebarContent data={data} token={token} />
+            <SidebarContent data={data} token={token}/>
           </SheetContent>
         </Sheet>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, MouseEventHandler } from "react";
+import { MouseEventHandler } from "react";
 import Image from "next/image";
 import {
   MoreHorizontal,

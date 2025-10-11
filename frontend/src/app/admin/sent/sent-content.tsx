@@ -14,27 +14,6 @@ import { EmailData } from "@/lib/interface";
 import { getUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 
-function formatDate(dateString: string, type: "long" | "short" = "long") {
-  const date = new Date(dateString);
-
-  if (type === "long") {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  }
-
-  if (type === "short") {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "short",
-    }).format(date);
-  }
-
-  return dateString;
-}
-
 interface SentContentProps {
   data: EmailData[];
   token: string | undefined;

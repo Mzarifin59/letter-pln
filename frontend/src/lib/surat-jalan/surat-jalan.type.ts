@@ -1,12 +1,3 @@
-import {
-  SuratJalan,
-  Material,
-  FileAttachment,
-  Penerima,
-  Pengirim,
-  EmailData,
-} from "../interface";
-
 // API Response Types
 export interface FormData {
   nomorSuratJalan: string;

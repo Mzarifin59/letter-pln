@@ -112,6 +112,5 @@ export interface EmailData {
   surat_jalan: SuratJalan;
   sender: Sender;
   recipient: Recipient;
-  attachment_files: any | null;
   email_statuses: EmailStatus[];
 }
