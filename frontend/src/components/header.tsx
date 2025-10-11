@@ -74,12 +74,12 @@ export default function Header() {
           <div className="flex items-center gap-4">
             {/* Action Icons */}
             <div className="hidden md:flex items-center gap-3">
-              <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all">
+              {/* <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all">
                 <CircleHelp size={20} />
               </button>
               <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all">
                 <Settings size={20} />
-              </button>
+              </button> */}
               <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all">
                 <Bell size={20} />
               </button>

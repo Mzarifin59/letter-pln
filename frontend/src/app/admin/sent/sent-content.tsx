@@ -1,11 +1,9 @@
 "use client";
 
-import { JSX, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
-  Star,
-  Trash2,
   RotateCw,
   ArrowLeft,
   ArrowRight,
@@ -14,6 +12,7 @@ import {
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
 import { getUserLogin } from "@/lib/user";
+import { EmailRow } from "@/components/email-row";
 
 function formatDate(dateString: string, type: "long" | "short" = "long") {
   const date = new Date(dateString);
@@ -39,13 +38,6 @@ function formatDate(dateString: string, type: "long" | "short" = "long") {
 interface SentContentProps {
   data: EmailData[];
   token: string | undefined;
-}
-
-interface EmailRowProps {
-  isSelected: boolean;
-  onSelect: (emailId: string) => void;
-  onClick?: (email: EmailData) => void;
-  email: EmailData;
 }
 
 export default function SentContent({ data, token }: SentContentProps) {
@@ -174,100 +166,6 @@ export default function SentContent({ data, token }: SentContentProps) {
     setOpenedEmail(null);
   };
 
-  const EmailRow = ({
-    email,
-    isSelected,
-    onSelect,
-    onClick,
-  }: EmailRowProps): JSX.Element => {
-    const isOpened = openedEmail?.id === email.id;
-
-    return (
-      <div
-        className={`
-            px-4 py-3 border-b border-[#ADB5BD] cursor-pointer group
-            hover:bg-[#EDF1FF]
-            ${isSelected ? "bg-blue-50" : ""}
-            ${isOpened ? "bg-blue-100" : ""}
-            flex flex-wrap items-center gap-2
-          `}
-        onClick={() => onClick?.(email)}
-      >
-        {/* Checkbox & Star - hidden in mobile when detail open */}
-        {!openedEmail && (
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => onSelect(email.documentId)}
-              className="rounded border-gray-300"
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                markEmailAsBookmarked(email.documentId);
-              }}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              aria-label="Toggle bookmark"
-            >
-              <Star
-                className={`w-4 h-4 transition-colors duration-200 ${
-                  email.email_statuses.find(
-                    (item) => item.user.name === user?.name
-                  )?.is_bookmarked
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-[#E9E9E9]"
-                }`}
-              />
-            </button>
-          </div>
-        )}
-
-        {/* Sender & Preview */}
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-900 truncate">
-              Kepada : {email.surat_jalan.penerima.perusahaan_penerima}
-            </span>
-            {!openedEmail && (
-              <>
-                <span
-                  className={`max-xl:hidden text-sm text-[#545454] block whitespace-normal break-words`}
-                >
-                  {email.surat_jalan.perihal}
-                </span>
-                <span className="max-sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
-                  {formatDate(email.surat_jalan.createdAt, "long")}
-                </span>
-                <span className="sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
-                  {formatDate(email.surat_jalan.createdAt, "short")}
-                </span>
-              </>
-            )}
-          </div>
-          <span
-            className={`text-sm text-[#545454] block ${
-              openedEmail
-                ? "whitespace-normal break-words"
-                : "truncate xl:hidden"
-            }`}
-          >
-            {email.surat_jalan.perihal}
-          </span>
-        </div>
-
-        {/* Unread Indicator & Actions */}
-        {!openedEmail && (
-          <div className="flex items-center space-x-2 ml-auto">
-            {!email.email_statuses.find((item) => item.user.name === user?.name)
-              ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
-            <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4  overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
@@ -343,6 +241,9 @@ export default function SentContent({ data, token }: SentContentProps) {
                       isSelected={selectedEmails.includes(email.documentId)}
                       onSelect={handleSelectEmail}
                       onClick={handleEmailClick}
+                      openedEmail={openedEmail}
+                      markEmailAsBookmarked={markEmailAsBookmarked}
+                      pageRow="Send"
                     />
                   ))
                 ) : (
