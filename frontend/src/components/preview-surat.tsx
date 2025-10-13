@@ -3,7 +3,12 @@
 import { Send, StickyNote, Download, X } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { FormData, MaterialForm, SignatureData } from "@/lib/surat-jalan/surat-jalan.type";
+import {
+  FormData,
+  MaterialForm,
+  SignatureData,
+} from "@/lib/surat-jalan/surat-jalan.type";
+import { useEffect } from "react";
 
 interface PreviewSectionProps {
   formData: FormData;
@@ -15,6 +20,7 @@ interface PreviewSectionProps {
   onDraft: () => void;
   onDownloadPDF: () => void;
   calculateTotal: () => number;
+  autoDownload?: boolean;
 }
 
 export default function PreviewSection({
@@ -27,7 +33,19 @@ export default function PreviewSection({
   onDraft,
   onDownloadPDF,
   calculateTotal,
+  autoDownload = false,
 }: PreviewSectionProps) {
+  useEffect(() => {
+    if (autoDownload) {
+      // Tunggu render selesai dengan timeout lebih panjang untuk ensure DOM ready
+      const timer = setTimeout(() => {
+        onDownloadPDF();
+      }, 1000); // 1 detik untuk memastikan semua gambar/signature ter-load
+
+      return () => clearTimeout(timer);
+    }
+  }, [autoDownload, onDownloadPDF]);
+
   // Get signature preview (prioritas: drawn signature > uploaded file)
   const getPenerimaSignature = () => {
     return (
@@ -97,7 +115,10 @@ export default function PreviewSection({
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-800">Preview Surat</h2>
           <div className="flex gap-3">
-            <Button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={onSubmit}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <Send className="w-4 h-4 mr-2" />
               Kirim
             </Button>
@@ -117,7 +138,10 @@ export default function PreviewSection({
 
         {/* Preview Content - Scrollable */}
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
-          <div id="preview-content" className="bg-white shadow-lg p-8 max-w-[1200px] mx-auto">
+          <div
+            id="preview-content"
+            className="bg-white shadow-lg p-8 max-w-[1200px] mx-auto"
+          >
             {/* Company Header */}
             <div className="flex items-center gap-4 mb-8">
               <div className="flex-shrink-0">
@@ -144,7 +168,9 @@ export default function PreviewSection({
                 <div className="text-[22px] font-bold text-[rgb(166,35,68)]">
                   LEMBAR I
                 </div>
-                <div className="text-xl text-[rgb(166,35,68)]">Pengirim Barang</div>
+                <div className="text-xl text-[rgb(166,35,68)]">
+                  Pengirim Barang
+                </div>
               </div>
             </div>
 
@@ -220,53 +246,51 @@ export default function PreviewSection({
                   </tr>
                 </thead>
                 <tbody className="text-lg">
-                  {hasMaterialData() ? (
-                    materials.map((material, index) => (
-                      <tr key={material.id}>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {index + 1}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2">
-                          {material.namaMaterial || "-"}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.katalog || "-"}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.satuan || "-"}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.jumlah || "0"}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.keterangan || "-"}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    dummyMaterials.map((material) => (
-                      <tr key={material.no}>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.no}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2">
-                          {material.nama}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.katalog}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.satuan}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.jumlah}
-                        </td>
-                        <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                          {material.keterangan}
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  {hasMaterialData()
+                    ? materials.map((material, index) => (
+                        <tr key={material.id}>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {index + 1}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2">
+                            {material.namaMaterial || "-"}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.katalog || "-"}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.satuan || "-"}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.jumlah || "0"}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.keterangan || "-"}
+                          </td>
+                        </tr>
+                      ))
+                    : dummyMaterials.map((material) => (
+                        <tr key={material.no}>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.no}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2">
+                            {material.nama}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.katalog}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.satuan}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.jumlah}
+                          </td>
+                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                            {material.keterangan}
+                          </td>
+                        </tr>
+                      ))}
                   <tr className="bg-gray-100 font-semibold">
                     <td
                       colSpan={4}
@@ -330,9 +354,7 @@ export default function PreviewSection({
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <div className="text-gray-400 text-sm">
-                      (Tanda Tangan)
-                    </div>
+                    <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
                   )}
                 </div>
 
@@ -356,9 +378,7 @@ export default function PreviewSection({
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <div className="text-gray-400 text-sm">
-                      (Tanda Tangan)
-                    </div>
+                    <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
                   )}
                 </div>
 

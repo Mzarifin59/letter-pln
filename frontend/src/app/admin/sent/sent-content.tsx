@@ -177,48 +177,6 @@ export default function SentContent({ data, token }: SentContentProps) {
     setOpenedEmail(null);
   };
 
-  const handleDownloadPDF = async (no : string) => {
-    const element = document.getElementById("preview-content");
-    if (!element) return alert("Preview tidak ditemukan!");
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
-    let position = 0;
-    let heightLeft = imgHeight;
-
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save(`${no || "surat-jalan"}.pdf`);
-  };
-
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4  overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
