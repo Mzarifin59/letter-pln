@@ -9,14 +9,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
@@ -43,7 +39,6 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  const currentEmail = data.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -184,6 +179,15 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     setOpenedEmail(null);
   };
 
+  const handleSort = (order: "asc" | "desc") => {
+    const sortedData = [...emailList].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return order === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    setEmailList(sortedData);
+  };
+
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
@@ -219,11 +223,39 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                     </div>
                   )}
                   <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
-                  <MoreHorizontal className="w-4 h-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
+
+                  {/* Popover untuk sorting */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-40 p-2">
+                      <div className="flex flex-col text-sm text-gray-700">
+                        <button
+                          onClick={() => handleSort("desc")}
+                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                        >
+                          Terbaru
+                        </button>
+                        <button
+                          onClick={() => handleSort("asc")}
+                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                        >
+                          Terlama
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
+
+                {/* Pagination */}
                 <div className="flex items-center space-x-2">
                   <button
-                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                     onClick={(e) => {
                       e.preventDefault();
                       handlePrevious();
@@ -235,7 +267,11 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                     {currentPage} of {totalPages}
                   </span>
                   <button
-                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                     onClick={(e) => {
                       e.preventDefault();
                       handleNext();
@@ -249,8 +285,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
             {/* Email List */}
             <div className="flex-1 overflow-auto py-4">
-              {currentEmail.length > 0 ? (
-                currentEmail.map((email) => (
+              {emailList.length > 0 ? (
+                emailList.slice(startIndex, endIndex).map((email) => (
                   <EmailRow
                     key={email.id}
                     email={email}

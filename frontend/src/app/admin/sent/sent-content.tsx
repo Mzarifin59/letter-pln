@@ -13,8 +13,11 @@ import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface SentContentProps {
   data: EmailData[];
@@ -24,7 +27,6 @@ interface SentContentProps {
 export default function SentContent({ data, token }: SentContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
-  const [emailList, setEmailList] = useState<EmailData[]>(data);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const { user } = useUserLogin();
 
@@ -36,7 +38,6 @@ export default function SentContent({ data, token }: SentContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  const currentEmail = data.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -177,6 +178,22 @@ export default function SentContent({ data, token }: SentContentProps) {
     setOpenedEmail(null);
   };
 
+  const sortedInitialData = [...data].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+
+  const handleSort = (order: "asc" | "desc") => {
+    const sortedData = [...emailList].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return order === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    setEmailList(sortedData);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4  overflow-hidden">
       <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
@@ -221,7 +238,27 @@ export default function SentContent({ data, token }: SentContentProps) {
                     height={20}
                     className="text-gray-500 hover:text-gray-700 cursor-pointer"
                   />
-                  <MoreHorizontal className="w-4 h-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-40 p-2">
+                      <div className="flex flex-col text-sm text-gray-700">
+                        <button
+                          onClick={() => handleSort("desc")}
+                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                        >
+                          Terbaru
+                        </button>
+                        <button
+                          onClick={() => handleSort("asc")}
+                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                        >
+                          Terlama
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -262,19 +299,21 @@ export default function SentContent({ data, token }: SentContentProps) {
             <div className="flex-1 overflow-auto py-5">
               {/* Today Section */}
               <div className="mb-6">
-                {currentEmail.length > 0 ? (
-                  currentEmail.map((email) => (
-                    <EmailRow
-                      key={email.id}
-                      email={email}
-                      isSelected={selectedEmails.includes(email.documentId)}
-                      onSelect={handleSelectEmail}
-                      onClick={handleEmailClick}
-                      openedEmail={openedEmail}
-                      markEmailAsBookmarked={markEmailAsBookmarked}
-                      pageRow="Send"
-                    />
-                  ))
+                {emailList.length > 0 ? (
+                  emailList
+                    .slice(startIndex, endIndex)
+                    .map((email) => (
+                      <EmailRow
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmails.includes(email.documentId)}
+                        onSelect={handleSelectEmail}
+                        onClick={handleEmailClick}
+                        openedEmail={openedEmail}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                        pageRow="Send"
+                      />
+                    ))
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <p className="text-lg font-medium">

@@ -11,6 +11,11 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { EmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 
@@ -60,7 +65,6 @@ export default function DraftPageContent({ data }: DraftContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  const currentData = data.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -102,6 +106,22 @@ export default function DraftPageContent({ data }: DraftContentProps) {
   const handleRowClick = (email: EmailData): void => {
     sessionStorage.setItem("draftData", JSON.stringify(email));
     router.push(`/admin/create-letter?mode=edit&id=${email.documentId}`);
+  };
+
+  const sortedInitialData = [...data].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+
+  const handleSort = (order: "asc" | "desc") => {
+    const sortedData = [...emailList].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return order === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    setEmailList(sortedData);
+    setCurrentPage(1);
   };
 
   const EmailRow = ({
@@ -180,8 +200,6 @@ export default function DraftPageContent({ data }: DraftContentProps) {
 
         {/* Unread Indicator & Actions */}
         <div className="flex items-center space-x-2 ml-auto">
-          {email.email_statuses.find((item) => item.user.name === user?.name)
-            ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
           <Trash2
             onClick={handleTrashClick}
             className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
@@ -224,7 +242,27 @@ export default function DraftPageContent({ data }: DraftContentProps) {
                 height={20}
                 className="text-gray-500 hover:text-gray-700 cursor-pointer"
               />
-              <MoreHorizontal className="w-4 h-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-40 p-2">
+                  <div className="flex flex-col text-sm text-gray-700">
+                    <button
+                      onClick={() => handleSort("desc")}
+                      className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                    >
+                      Terbaru
+                    </button>
+                    <button
+                      onClick={() => handleSort("asc")}
+                      className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                    >
+                      Terlama
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -266,7 +304,7 @@ export default function DraftPageContent({ data }: DraftContentProps) {
           {/* Today Section */}
           <div className="mb-6">
             {data.length > 0 ? (
-              currentData.map((email: EmailData) => (
+              emailList.slice(startIndex, endIndex).map((email: EmailData) => (
                 <EmailRow
                   key={email.id}
                   email={email}
