@@ -13,11 +13,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toast } from "sonner";
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
+import {
+  DialogFooter,
+  DialogHeader,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface RejectContentProps {
   data: EmailData[];
@@ -30,6 +39,83 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const [emailList, setEmailList] = useState<EmailData[]>(data);
   const { user } = useUserLogin();
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMultipleDelete, setIsMultipleDelete] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (isMultipleDelete) {
+        // 🧹 Multiple delete mode
+        const deletePromises = selectedEmails.map(async (docId) => {
+          const res = await fetch(`${apiUrl}/api/emails/${docId}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!res.ok) throw new Error(`Gagal hapus email ${docId}`);
+        });
+
+        await Promise.all(deletePromises);
+
+        // Update list
+        setEmailList((prev) =>
+          prev.filter((item) => !selectedEmails.includes(item.documentId))
+        );
+
+        toast.success(`${selectedEmails.length} Email berhasil dihapus`, {
+          position: "top-center",
+        });
+
+        // Reset selection
+        setSelectedEmails([]);
+        setSelectAll(false);
+      } else {
+        // 🧍‍♂️ Single delete mode
+        if (!selectedToDelete) return;
+
+        const res = await fetch(
+          `${apiUrl}/api/emails/${selectedToDelete.documentId}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("Gagal menghapus email");
+
+        setEmailList((prev) =>
+          prev.filter((item) => item.documentId !== selectedToDelete.documentId)
+        );
+
+        toast.success("Email berhasil dihapus", {
+          description: selectedToDelete.surat_jalan.perihal,
+          position: "top-center",
+        });
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Gagal menghapus email", { position: "top-center" });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setSelectedToDelete(null);
+      setIsMultipleDelete(false);
+    }
+  };
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,140 +275,207 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   };
 
   return (
-    <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
-      <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
-        {/* Inbox Panel */}
-        <div
-          className={`${
-            openedEmail ? "xl:w-2/5" : "w-full"
-          } transition-all duration-300`}
-        >
-          <div className="px-4 sm:px-6 py-5 flex flex-col bg-white rounded-xl shadow-md">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="plus-jakarta-sans text-2xl sm:text-[32px] font-semibold text-[#353739]">
-                  Dibatalkan
-                </h1>
-              </div>
-            </div>
-
-            {/* Toolbar */}
-            <div className="border-b border-gray-200 py-4 sm:py-[25px]">
+    <>
+      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
+        <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
+          {/* Inbox Panel */}
+          <div
+            className={`${
+              openedEmail ? "xl:w-2/5" : "w-full"
+            } transition-all duration-300`}
+          >
+            <div className="px-4 sm:px-6 py-5 flex flex-col bg-white rounded-xl shadow-md">
+              {/* Header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {!openedEmail && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectAll}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 w-4 h-4 sm:w-5 sm:h-5"
-                      />
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  )}
-                  <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
-
-                  {/* Popover untuk sorting */}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-40 p-2">
-                      <div className="flex flex-col text-sm text-gray-700">
-                        <button
-                          onClick={() => handleSort("desc")}
-                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
-                        >
-                          Terbaru
-                        </button>
-                        <button
-                          onClick={() => handleSort("asc")}
-                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
-                        >
-                          Terlama
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Pagination */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePrevious();
-                    }}
-                  >
-                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
-                  </button>
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleNext();
-                    }}
-                  >
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
-                  </button>
+                <div>
+                  <h1 className="plus-jakarta-sans text-2xl sm:text-[32px] font-semibold text-[#353739]">
+                    Dibatalkan
+                  </h1>
                 </div>
               </div>
-            </div>
 
-            {/* Email List */}
-            <div className="flex-1 overflow-auto py-4">
-              {emailList.length > 0 ? (
-                emailList.slice(startIndex, endIndex).map((email) => (
-                  <EmailRow
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmails.includes(email.documentId)}
-                    onSelect={handleSelectEmail}
-                    onClick={handleEmailClick}
-                    openedEmail={openedEmail}
-                    markEmailAsBookmarked={markEmailAsBookmarked}
-                    pageRow="Reject"
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg font-medium">
-                    Tidak ada email rejected
-                  </p>
-                  <p className="text-sm mt-2">
-                    Email rejected anda akan muncul di sini
-                  </p>
+              {/* Toolbar */}
+              <div className="border-b border-gray-200 py-4 sm:py-[25px]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    {!openedEmail && (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectAll}
+                          onChange={handleSelectAll}
+                          className="rounded border-gray-300 w-4 h-4 sm:w-5 sm:h-5"
+                        />
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
+                    <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+
+                    {/* Popover untuk sorting */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-40 p-2">
+                        <div className="flex flex-col text-sm text-gray-700">
+                          <button
+                            onClick={() => handleSort("desc")}
+                            className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                          >
+                            Terbaru
+                          </button>
+                          <button
+                            onClick={() => handleSort("asc")}
+                            className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                          >
+                            Terlama
+                          </button>
+
+                          {/* 🔥 New: Hapus Email Terpilih */}
+                          {selectedEmails.length > 0 && (
+                            <>
+                              <div className="border-t my-2" />
+                              <button
+                                onClick={() => {
+                                  setIsMultipleDelete(true);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="text-left px-2 py-1 text-red-600 rounded-md hover:bg-red-50"
+                              >
+                                Hapus Email Terpilih ({selectedEmails.length})
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePrevious();
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                    </button>
+                    <span className="text-xs sm:text-sm text-gray-500">
+                      {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNext();
+                      }}
+                    >
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Email List */}
+              <div className="flex-1 overflow-auto py-4">
+                {emailList.length > 0 ? (
+                  emailList
+                    .slice(startIndex, endIndex)
+                    .map((email) => (
+                      <EmailRow
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmails.includes(email.documentId)}
+                        onSelect={handleSelectEmail}
+                        onClick={handleEmailClick}
+                        openedEmail={openedEmail}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                        pageRow="Reject"
+                        onDelete={handleConfirmDelete}
+                      />
+                    ))
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg font-medium">
+                      Tidak ada email rejected
+                    </p>
+                    <p className="text-sm mt-2">
+                      Email rejected anda akan muncul di sini
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Email Detail Panel */}
-        {openedEmail && (
-          <div className="overflow-hidden">
-            <EmailDetail
-              email={openedEmail}
-              handleCloseDetail={handleCloseDetail}
-              isCanceled={true}
-            />
-          </div>
-        )}
+          {/* Email Detail Panel */}
+          {openedEmail && (
+            <div className="overflow-hidden">
+              <EmailDetail
+                email={openedEmail}
+                handleCloseDetail={handleCloseDetail}
+                isCanceled={true}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {isMultipleDelete
+                ? "Hapus Beberapa Draft Email"
+                : "Hapus Draft Email"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">
+            {isMultipleDelete ? (
+              <>
+                Apakah Anda yakin ingin menghapus{" "}
+                <span className="font-semibold">{selectedEmails.length}</span>{" "}
+                draft email terpilih?
+              </>
+            ) : (
+              <>
+                Apakah Anda yakin ingin menghapus draft email ini?
+                <br />
+                <span className="font-semibold">
+                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                </span>
+              </>
+            )}
+          </p>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

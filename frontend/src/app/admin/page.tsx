@@ -318,7 +318,7 @@ export default async function DashboardPage() {
                           </div>
                         </td>
                         <td className="py-4 px-4 text-sm text-[#495057]">
-                          {item.emails[0].recipient.name}
+                          {item.emails[0]?.recipient.name}
                         </td>
                         <td className="py-4 px-4 text-sm text-[#212529]">
                           {item.perihal}

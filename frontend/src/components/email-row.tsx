@@ -13,6 +13,7 @@ interface EmailRow {
   openedEmail: EmailData | null;
   markEmailAsBookmarked?: (id: string) => void;
   pageRow?: "Reject" | "Send" | "Draft";
+  onDelete?: (email: EmailData) => void;
 }
 
 function formatDate(dateString: string, type: "long" | "short" = "long") {
@@ -55,6 +56,7 @@ export const EmailRowInbox = ({
   onSelect,
   onClick,
   openedEmail,
+  onDelete,
 }: EmailRow): JSX.Element => {
   const isOpened = openedEmail?.id === email.id;
   const { user } = useUserLogin();
@@ -243,7 +245,14 @@ export const EmailRowInbox = ({
         <div className="ml-auto flex items-center space-x-2">
           {!email.email_statuses.find((item) => item.user.name === user?.name)
             ?.is_read && <div className="h-2 w-2 rounded-full bg-blue-500" />}
-          <Trash2 className="h-4 w-4 cursor-pointer text-gray-400 transition-opacity hover:text-gray-600 opacity-0 group-hover:opacity-100" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.(email);
+            }}
+          >
+            <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
         </div>
       )}
     </div>
@@ -258,6 +267,7 @@ export const EmailRow = ({
   openedEmail,
   markEmailAsBookmarked,
   pageRow,
+  onDelete,
 }: EmailRow) => {
   const isOpened = openedEmail?.documentId === email.documentId;
   const { user } = useUserLogin();
@@ -372,10 +382,14 @@ export const EmailRow = ({
         <div className="flex items-center space-x-2 ml-auto">
           {!email.email_statuses.find((item) => item.user.name === user?.name)
             ?.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
-          <Trash2
-            className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.(email);
+            }}
+          >
+            <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
         </div>
       )}
     </div>

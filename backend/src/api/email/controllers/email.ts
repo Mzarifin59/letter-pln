@@ -61,7 +61,7 @@ export default factories.createCoreController(
                 is_read: true,
                 read_at: new Date(),
               },
-              status : 'published',
+              status: "published",
             });
         }
 
@@ -117,7 +117,7 @@ export default factories.createCoreController(
                 is_bookmarked: true,
                 bookmarked_at: new Date(),
               },
-              status : 'published',
+              status: "published",
             });
         }
 
@@ -128,6 +128,55 @@ export default factories.createCoreController(
       } catch (error) {
         console.error("Error in markAsBookmarked:", error);
         return ctx.badRequest("Failed to mark email as bookmarked", {
+          error: error.message,
+        });
+      }
+    },
+
+    async deleteEmail(ctx) {
+      try {
+        const { documentId } = ctx.params;
+
+        if (!documentId) {
+          return ctx.badRequest("Missing email documentId");
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId,
+          populate: ["surat_jalan"],
+        });
+
+        if (!email) {
+          return ctx.notFound("Email not found");
+        }
+
+        const emailStatuses = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: { documentId },
+            },
+          });
+
+        for (const status of emailStatuses) {
+          await strapi
+            .documents("api::email-status.email-status")
+            .delete({ documentId: status.documentId });
+        }
+
+        // Hapus email itu sendiri
+        await strapi.documents("api::email.email").delete({ documentId });
+
+        return ctx.send({
+          message: "Email and related statuses deleted successfully",
+          data: {
+            deletedEmail: documentId,
+            deletedStatuses: emailStatuses.map((s) => s.documentId),
+          },
+        });
+      } catch (error) {
+        console.error("Error deleting email:", error);
+        return ctx.internalServerError("Failed to delete email", {
           error: error.message,
         });
       }

@@ -14,13 +14,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DialogFooter,
+  DialogHeader,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailRowInbox } from "@/components/email-row";
 import { EmailData } from "@/lib/interface";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface InboxContentProps {
   data: EmailData[];
+  token?: string;
 }
 
 interface GroupedEmails {
@@ -58,10 +68,87 @@ const groupEmailsByDate = (emails: EmailData[]): GroupedEmails => {
   };
 };
 
-export default function InboxContentPage({ data }: InboxContentProps) {
+export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMultipleDelete, setIsMultipleDelete] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (isMultipleDelete) {
+        // 🧹 Multiple delete mode
+        const deletePromises = selectedEmails.map(async (docId) => {
+          const res = await fetch(`${apiUrl}/api/emails/${docId}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!res.ok) throw new Error(`Gagal hapus email ${docId}`);
+        });
+
+        await Promise.all(deletePromises);
+
+        // Update list
+        setEmailList((prev) =>
+          prev.filter((item) => !selectedEmails.includes(item.documentId))
+        );
+
+        toast.success(`${selectedEmails.length} Email berhasil dihapus`, {
+          position: "top-center",
+        });
+
+        // Reset selection
+        setSelectedEmails([]);
+        setSelectAll(false);
+      } else {
+        // 🧍‍♂️ Single delete mode
+        if (!selectedToDelete) return;
+
+        const res = await fetch(
+          `${apiUrl}/api/emails/${selectedToDelete.documentId}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("Gagal menghapus email");
+
+        setEmailList((prev) =>
+          prev.filter((item) => item.documentId !== selectedToDelete.documentId)
+        );
+
+        toast.success("Email berhasil dihapus", {
+          description: selectedToDelete.surat_jalan.perihal,
+          position: "top-center",
+        });
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Gagal menghapus email", { position: "top-center" });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setSelectedToDelete(null);
+      setIsMultipleDelete(false);
+    }
+  };
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,8 +158,7 @@ export default function InboxContentPage({ data }: InboxContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  const currentData = data.slice(startIndex, endIndex);
-
+  
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
 
@@ -157,220 +243,285 @@ export default function InboxContentPage({ data }: InboxContentProps) {
   );
 
   return (
-    <div className="lg:ml-72 bg-[#F6F9FF] p-4">
-      <div className="flex flex-col xl:flex-row gap-6 lg:gap-6">
-        {/* Inbox Panel */}
-        <div
-          className={`${
-            openedEmail ? "xl:w-2/6" : "w-full"
-          } transition-all duration-300`}
-        >
+    <>
+      <div className="lg:ml-72 bg-[#F6F9FF] p-4">
+        <div className="flex flex-col xl:flex-row gap-6 lg:gap-6">
+          {/* Inbox Panel */}
           <div
             className={`${
-              openedEmail ? "px-[15px] py-[25px]" : "px-[43px] py-[25px]"
-            } flex flex-col bg-white rounded-xl shadow-md`}
+              openedEmail ? "xl:w-2/6" : "w-full"
+            } transition-all duration-300`}
           >
-            {/* Header */}
-            <div className="">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="plus-jakarta-sans text-[32px] font-semibold text-[#353739]">
-                    Inbox
-                  </h1>
-                  <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                    {data.length} messages, 0 Unread
-                  </p>
+            <div
+              className={`${
+                openedEmail ? "px-[15px] py-[25px]" : "px-[43px] py-[25px]"
+              } flex flex-col bg-white rounded-xl shadow-md`}
+            >
+              {/* Header */}
+              <div className="">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="plus-jakarta-sans text-[32px] font-semibold text-[#353739]">
+                      Inbox
+                    </h1>
+                    <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
+                      {data.length} messages, 0 Unread
+                    </p>
+                  </div>
+
+                  {!openedEmail && (
+                    <div className="max-md:hidden flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
+                          From
+                        </span>
+                        <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Jul, 18 2024</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
+                          To
+                        </span>
+                        <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">Jul, 18 2024</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {!openedEmail && (
-                  <div className="max-md:hidden flex items-center space-x-4">
+              {/* Toolbar */}
+              <div className="border-b border-gray-200 py-[25px]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
-                        From
-                      </span>
-                      <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">Jul, 18 2024</span>
-                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 w-5 h-5"
+                      />
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
-                        To
-                      </span>
-                      <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">Jul, 18 2024</span>
+                    <RotateCw
+                      width={20}
+                      height={20}
+                      className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-40 p-2">
+                        <div className="flex flex-col text-sm text-gray-700">
+                          <button
+                            onClick={() => handleSort("desc")}
+                            className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                          >
+                            Terbaru
+                          </button>
+                          <button
+                            onClick={() => handleSort("asc")}
+                            className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
+                          >
+                            Terlama
+                          </button>
+
+                          {/* 🔥 New: Hapus Email Terpilih */}
+                          {selectedEmails.length > 0 && (
+                            <>
+                              <div className="border-t my-2" />
+                              <button
+                                onClick={() => {
+                                  setIsMultipleDelete(true);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="text-left px-2 py-1 text-red-600 rounded-md hover:bg-red-50"
+                              >
+                                Hapus Email Terpilih ({selectedEmails.length})
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePrevious();
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                    </button>
+                    <span className="text-xs sm:text-sm text-gray-500">
+                      {totalPages > 0 ? currentPage : "0"} of {totalPages}
+                    </span>
+                    <button
+                      className={
+                        currentPage === totalPages || totalPages === 0
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNext();
+                      }}
+                    >
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email List */}
+              <div className="flex-1 overflow-auto py-5">
+                {groupedEmailsAll.today.length > 0 && (
+                  <div className="mb-6">
+                    <SectionHeader
+                      title="Today"
+                      count={groupedEmailsAll.today.length}
+                    />
+                    {groupedEmailsCurrent.today.map((email) => (
+                      <EmailRowInbox
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmails.includes(email.documentId)}
+                        onSelect={handleSelectEmail}
+                        onClick={handleEmailClick}
+                        openedEmail={openedEmail}
+                        onDelete={handleConfirmDelete}
+                      />
+                    ))}
+                    {groupedEmailsCurrent.today.length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-400 italic">
+                        No emails on this page
                       </div>
-                    </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Yesterday Section - tampilkan jika ada di ALL data */}
+                {groupedEmailsAll.yesterday.length > 0 && (
+                  <div className="mb-6">
+                    <SectionHeader
+                      title="Yesterday"
+                      count={groupedEmailsAll.yesterday.length}
+                    />
+                    {groupedEmailsCurrent.yesterday.map((email) => (
+                      <EmailRowInbox
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmails.includes(email.documentId)}
+                        onSelect={handleSelectEmail}
+                        onClick={handleEmailClick}
+                        openedEmail={openedEmail}
+                      />
+                    ))}
+                    {groupedEmailsCurrent.yesterday.length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-400 italic">
+                        No emails on this page
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Older Section - tampilkan jika ada di ALL data */}
+                {groupedEmailsAll.older.length > 0 && (
+                  <div className="mb-6">
+                    <SectionHeader
+                      title="Older"
+                      count={groupedEmailsAll.older.length}
+                    />
+                    {groupedEmailsCurrent.older.map((email) => (
+                      <EmailRowInbox
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmails.includes(email.documentId)}
+                        onSelect={handleSelectEmail}
+                        onClick={handleEmailClick}
+                        openedEmail={openedEmail}
+                      />
+                    ))}
+                    {groupedEmailsCurrent.older.length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-400 italic">
+                        No emails on this page
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Toolbar */}
-            <div className="border-b border-gray-200 py-[25px]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 w-5 h-5"
-                    />
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  </div>
-
-                  <RotateCw
-                    width={20}
-                    height={20}
-                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
-                  />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-40 p-2">
-                      <div className="flex flex-col text-sm text-gray-700">
-                        <button
-                          onClick={() => handleSort("desc")}
-                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
-                        >
-                          Terbaru
-                        </button>
-                        <button
-                          onClick={() => handleSort("asc")}
-                          className="text-left px-2 py-1 rounded-md hover:bg-gray-100"
-                        >
-                          Terlama
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <button
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePrevious();
-                    }}
-                  >
-                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
-                  </button>
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    {totalPages > 0 ? currentPage : "0"} of {totalPages}
-                  </span>
-                  <button
-                    className={
-                      currentPage === totalPages || totalPages === 0
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleNext();
-                    }}
-                  >
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 cursor-pointer bg-[#F4F4F4] rounded-full" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Email List */}
-            <div className="flex-1 overflow-auto py-5">
-              {groupedEmailsAll.today.length > 0 && (
-                <div className="mb-6">
-                  <SectionHeader
-                    title="Today"
-                    count={groupedEmailsAll.today.length}
-                  />
-                  {groupedEmailsCurrent.today.map((email) => (
-                    <EmailRowInbox
-                      key={email.id}
-                      email={email}
-                      isSelected={selectedEmails.includes(email.documentId)}
-                      onSelect={handleSelectEmail}
-                      onClick={handleEmailClick}
-                      openedEmail={openedEmail}
-                    />
-                  ))}
-                  {groupedEmailsCurrent.today.length === 0 && (
-                    <div className="px-4 py-2 text-sm text-gray-400 italic">
-                      No emails on this page
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Yesterday Section - tampilkan jika ada di ALL data */}
-              {groupedEmailsAll.yesterday.length > 0 && (
-                <div className="mb-6">
-                  <SectionHeader
-                    title="Yesterday"
-                    count={groupedEmailsAll.yesterday.length}
-                  />
-                  {groupedEmailsCurrent.yesterday.map((email) => (
-                    <EmailRowInbox
-                      key={email.id}
-                      email={email}
-                      isSelected={selectedEmails.includes(email.documentId)}
-                      onSelect={handleSelectEmail}
-                      onClick={handleEmailClick}
-                      openedEmail={openedEmail}
-                    />
-                  ))}
-                  {groupedEmailsCurrent.yesterday.length === 0 && (
-                    <div className="px-4 py-2 text-sm text-gray-400 italic">
-                      No emails on this page
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Older Section - tampilkan jika ada di ALL data */}
-              {groupedEmailsAll.older.length > 0 && (
-                <div className="mb-6">
-                  <SectionHeader
-                    title="Older"
-                    count={groupedEmailsAll.older.length}
-                  />
-                  {groupedEmailsCurrent.older.map((email) => (
-                    <EmailRowInbox
-                      key={email.id}
-                      email={email}
-                      isSelected={selectedEmails.includes(email.documentId)}
-                      onSelect={handleSelectEmail}
-                      onClick={handleEmailClick}
-                      openedEmail={openedEmail}
-                    />
-                  ))}
-                  {groupedEmailsCurrent.older.length === 0 && (
-                    <div className="px-4 py-2 text-sm text-gray-400 italic">
-                      No emails on this page
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
-        </div>
 
-        {/* Email Detail Panel */}
-        {openedEmail && (
-          <EmailDetail
-            email={openedEmail}
-            handleCloseDetail={handleCloseDetail}
-          />
-        )}
+          {/* Email Detail Panel */}
+          {openedEmail && (
+            <EmailDetail
+              email={openedEmail}
+              handleCloseDetail={handleCloseDetail}
+            />
+          )}
+        </div>
       </div>
-    </div>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {isMultipleDelete
+                ? "Hapus Beberapa Draft Email"
+                : "Hapus Draft Email"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">
+            {isMultipleDelete ? (
+              <>
+                Apakah Anda yakin ingin menghapus{" "}
+                <span className="font-semibold">{selectedEmails.length}</span>{" "}
+                draft email terpilih?
+              </>
+            ) : (
+              <>
+                Apakah Anda yakin ingin menghapus draft email ini?
+                <br />
+                <span className="font-semibold">
+                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                </span>
+              </>
+            )}
+          </p>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

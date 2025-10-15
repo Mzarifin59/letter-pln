@@ -65,7 +65,9 @@ export default function CreateLetterPage() {
         setFormData({
           nomorSuratJalan: suratJalan.no_surat_jalan || "",
           nomorSuratPermintaan: suratJalan.no_surat_permintaan || "",
-          tanggalSurat: suratJalan.tanggal,
+          tanggalSurat: suratJalan.tanggal
+            ? new Date(suratJalan.tanggal).toISOString().split("T")[0]
+            : "",
           perihal: suratJalan.perihal || "",
           lokasiAsal: suratJalan.lokasi_asal || "",
           lokasiTujuan: suratJalan.lokasi_tujuan || "",
@@ -152,7 +154,14 @@ export default function CreateLetterPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [router,  setFormData, setLampiran, setMaterials, setSignaturePenerima, setSignaturePengirim]);
+  }, [
+    router,
+    setFormData,
+    setLampiran,
+    setMaterials,
+    setSignaturePenerima,
+    setSignaturePengirim,
+  ]);
 
   const hasLoadedRef = useRef(false);
   useEffect(() => {
