@@ -169,10 +169,10 @@ export const EmailRowInbox = ({
               </div>
               {/* Time */}
               <span className="max-sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                {formatDate(email.surat_jalan.createdAt, "long")}
+                {formatDate(email.surat_jalan.tanggal, "long")}
               </span>
               <span className="sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                {formatDate(email.surat_jalan.createdAt, "short")}
+                {formatDate(email.surat_jalan.tanggal, "short")}
               </span>
             </>
           )}

@@ -73,6 +73,7 @@ export const EmailDetail = ({
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // Convert email data to PreviewSection format
   const formData: FormData = {
@@ -109,7 +110,7 @@ export const EmailDetail = ({
     signature: null, // Canvas signature (untuk form creation)
     preview: {
       signature: null,
-      upload: `http://localhost:1337${email.surat_jalan.penerima.ttd_penerima.url}`,
+      upload: `${apiUrl}${email.surat_jalan.penerima.ttd_penerima.url}`,
     },
   };
 
@@ -118,12 +119,37 @@ export const EmailDetail = ({
     signature: null,
     preview: {
       signature: null,
-      upload: `http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`,
+      upload: `${apiUrl}${email.surat_jalan.pengirim.ttd_pengirim.url}`,
     },
   };
 
   const calculateTotal = () => {
     return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
+  };
+
+  const handleDownloadAttachment = async (
+    fileUrl: string,
+    fileName: string
+  ) => {
+    const fullUrl = `${apiUrl}${fileUrl}`;
+    try {
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error("Gagal mengunduh file");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Gagal mengunduh lampiran. Silakan coba lagi.");
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -631,21 +657,22 @@ export const EmailDetail = ({
                         {attachment.name}
                       </span>
                     </div>
-                    <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+                    <button
+                      onClick={() =>
+                        handleDownloadAttachment(
+                          attachment.url,
+                          attachment.name
+                        )
+                      }
+                    >
+                      <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+                    </button>
                   </div>
                 );
               })}
             </div>
           </div>
         )}
-
-        {/* Action Buttons */}
-        <div className="flex space-x-2 sm:space-x-3">
-          <button className="flex-1 sm:flex-none w-full sm:w-32 md:w-36 h-10 md:h-12 flex items-center justify-center space-x-1 px-3 sm:px-4 bg-[#006AD4] text-white rounded-lg hover:bg-blue-700 cursor-pointer text-xs sm:text-sm md:text-base">
-            <Reply className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={4} />
-            <span>Reply</span>
-          </button>
-        </div>
       </div>
 
       {isGeneratingPDF && (

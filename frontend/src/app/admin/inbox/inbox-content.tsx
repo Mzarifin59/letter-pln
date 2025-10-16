@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, useState } from "react";
+import { JSX, useState, useEffect } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -54,15 +54,15 @@ const groupEmailsByDate = (emails: EmailData[]): GroupedEmails => {
 
   return {
     today: emails.filter((email) => {
-      const emailDate = new Date(email.createdAt);
+      const emailDate = new Date(email.surat_jalan.tanggal);
       return emailDate >= today;
     }),
     yesterday: emails.filter((email) => {
-      const emailDate = new Date(email.createdAt);
+      const emailDate = new Date(email.surat_jalan.tanggal);
       return emailDate >= yesterday && emailDate < today;
     }),
     older: emails.filter((email) => {
-      const emailDate = new Date(email.createdAt);
+      const emailDate = new Date(email.surat_jalan.tanggal);
       return emailDate < yesterday;
     }),
   };
@@ -72,6 +72,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
@@ -79,6 +81,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
+  const [isFiltered, setIsFiltered] = useState(false);
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -153,12 +156,20 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
+  const sortedInitialData = [...data].sort(
+    (a, b) => new Date(b.surat_jalan.tanggal).getTime() - new Date(a.surat_jalan.tanggal).getTime()
+  );
+
+  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+
   const itemPerPage = 15;
-  const totalPages = Math.ceil(data.length / itemPerPage);
+  const totalPages = Math.ceil(emailList.length / itemPerPage);
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  
+
+  const currentPageEmails = emailList.slice(startIndex, endIndex);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
 
@@ -183,7 +194,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     if (selectAll) {
       setSelectedEmails([]);
     } else {
-      setSelectedEmails(data.map((email) => email.documentId));
+      setSelectedEmails(currentPageEmails.map((email) => email.documentId));
     }
     setSelectAll(!selectAll);
   };
@@ -204,12 +215,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     setOpenedEmail(null);
   };
 
-  const sortedInitialData = [...data].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
-
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
@@ -220,10 +225,37 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     setCurrentPage(1);
   };
 
-  const groupedEmailsCurrent: GroupedEmails = groupEmailsByDate(
-    sortedInitialData.slice(startIndex, endIndex)
-  );
-  const groupedEmailsAll: GroupedEmails = groupEmailsByDate(data);
+  // Auto filter ketika fromDate atau toDate berubah
+  useEffect(() => {
+    if (fromDate && toDate) {
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+
+      const filtered = sortedInitialData.filter((email) => {
+        const emailDate = new Date(email.surat_jalan.tanggal);
+        return emailDate >= start && emailDate <= end;
+      });
+
+      if (filtered.length === 0) {
+        toast.info("Tidak ada email dalam rentang tanggal tersebut", {
+          position: "top-center",
+        });
+      }
+
+      setEmailList(filtered);
+      setCurrentPage(1);
+      setIsFiltered(true);
+    } else if (!fromDate && !toDate) {
+      // Reset ke data awal jika kedua tanggal dikosongkan
+      setEmailList(sortedInitialData);
+      setCurrentPage(1);
+      setIsFiltered(false);
+    }
+  }, [fromDate, toDate]);
+
+  const groupedEmailsCurrent: GroupedEmails = groupEmailsByDate(currentPageEmails);
+  const groupedEmailsAll: GroupedEmails = groupEmailsByDate(emailList);
 
   const SectionHeader = ({
     title,
@@ -265,29 +297,41 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                       Inbox
                     </h1>
                     <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                      {data.length} messages, 0 Unread
+                      {emailList.length} messages, 0 Unread
                     </p>
                   </div>
 
                   {!openedEmail && (
                     <div className="max-md:hidden flex items-center space-x-4">
+                      {/* From Date */}
                       <div className="flex items-center space-x-2">
                         <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
                           From
                         </span>
                         <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
                           <Calendar className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">Jul, 18 2024</span>
+                          <input
+                            type="date"
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                            className="text-sm outline-none border-none bg-transparent"
+                          />
                         </div>
                       </div>
 
+                      {/* To Date */}
                       <div className="flex items-center space-x-2">
                         <span className="plus-jakarta-sans text-sm font-semibold text-[#232323]">
                           To
                         </span>
                         <div className="flex items-center space-x-1 px-3 py-1 border border-[#EBEBEB] rounded-2xl">
                           <Calendar className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">Jul, 18 2024</span>
+                          <input
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            className="text-sm outline-none border-none bg-transparent"
+                          />
                         </div>
                       </div>
                     </div>
@@ -389,79 +433,101 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
               {/* Email List */}
               <div className="flex-1 overflow-auto py-5">
-                {groupedEmailsAll.today.length > 0 && (
-                  <div className="mb-6">
-                    <SectionHeader
-                      title="Today"
-                      count={groupedEmailsAll.today.length}
-                    />
-                    {groupedEmailsCurrent.today.map((email) => (
-                      <EmailRowInbox
-                        key={email.id}
-                        email={email}
-                        isSelected={selectedEmails.includes(email.documentId)}
-                        onSelect={handleSelectEmail}
-                        onClick={handleEmailClick}
-                        openedEmail={openedEmail}
-                        onDelete={handleConfirmDelete}
-                      />
-                    ))}
-                    {groupedEmailsCurrent.today.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-400 italic">
-                        No emails on this page
+                {/* Jika filtered, tampilkan langsung tanpa grouping */}
+                {isFiltered ? (
+                  <>
+                    {currentPageEmails.length > 0 ? (
+                      currentPageEmails.map((email) => (
+                        <EmailRowInbox
+                          key={email.id}
+                          email={email}
+                          isSelected={selectedEmails.includes(email.documentId)}
+                          onSelect={handleSelectEmail}
+                          onClick={handleEmailClick}
+                          openedEmail={openedEmail}
+                        />
+                      ))
+                    ) : (
+                      <div className="px-4 py-8 text-center text-gray-400">
+                        Tidak ada email yang ditemukan
                       </div>
                     )}
-                  </div>
-                )}
+                  </>
+                ) : (
+                  <>
+                    {/* Tampilkan dengan grouping jika tidak filtered */}
+                    {groupedEmailsAll.today.length > 0 && (
+                      <div className="mb-6">
+                        <SectionHeader
+                          title="Today"
+                          count={groupedEmailsAll.today.length}
+                        />
+                        {groupedEmailsCurrent.today.map((email) => (
+                          <EmailRowInbox
+                            key={email.id}
+                            email={email}
+                            isSelected={selectedEmails.includes(email.documentId)}
+                            onSelect={handleSelectEmail}
+                            onClick={handleEmailClick}
+                            openedEmail={openedEmail}
+                          />
+                        ))}
+                        {groupedEmailsCurrent.today.length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-400 italic">
+                            No emails on this page
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                {/* Yesterday Section - tampilkan jika ada di ALL data */}
-                {groupedEmailsAll.yesterday.length > 0 && (
-                  <div className="mb-6">
-                    <SectionHeader
-                      title="Yesterday"
-                      count={groupedEmailsAll.yesterday.length}
-                    />
-                    {groupedEmailsCurrent.yesterday.map((email) => (
-                      <EmailRowInbox
-                        key={email.id}
-                        email={email}
-                        isSelected={selectedEmails.includes(email.documentId)}
-                        onSelect={handleSelectEmail}
-                        onClick={handleEmailClick}
-                        openedEmail={openedEmail}
-                      />
-                    ))}
-                    {groupedEmailsCurrent.yesterday.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-400 italic">
-                        No emails on this page
+                    {groupedEmailsAll.yesterday.length > 0 && (
+                      <div className="mb-6">
+                        <SectionHeader
+                          title="Yesterday"
+                          count={groupedEmailsAll.yesterday.length}
+                        />
+                        {groupedEmailsCurrent.yesterday.map((email) => (
+                          <EmailRowInbox
+                            key={email.id}
+                            email={email}
+                            isSelected={selectedEmails.includes(email.documentId)}
+                            onSelect={handleSelectEmail}
+                            onClick={handleEmailClick}
+                            openedEmail={openedEmail}
+                          />
+                        ))}
+                        {groupedEmailsCurrent.yesterday.length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-400 italic">
+                            No emails on this page
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Older Section - tampilkan jika ada di ALL data */}
-                {groupedEmailsAll.older.length > 0 && (
-                  <div className="mb-6">
-                    <SectionHeader
-                      title="Older"
-                      count={groupedEmailsAll.older.length}
-                    />
-                    {groupedEmailsCurrent.older.map((email) => (
-                      <EmailRowInbox
-                        key={email.id}
-                        email={email}
-                        isSelected={selectedEmails.includes(email.documentId)}
-                        onSelect={handleSelectEmail}
-                        onClick={handleEmailClick}
-                        openedEmail={openedEmail}
-                      />
-                    ))}
-                    {groupedEmailsCurrent.older.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-400 italic">
-                        No emails on this page
+                    {groupedEmailsAll.older.length > 0 && (
+                      <div className="mb-6">
+                        <SectionHeader
+                          title="Older"
+                          count={groupedEmailsAll.older.length}
+                        />
+                        {groupedEmailsCurrent.older.map((email) => (
+                          <EmailRowInbox
+                            key={email.id}
+                            email={email}
+                            isSelected={selectedEmails.includes(email.documentId)}
+                            onSelect={handleSelectEmail}
+                            onClick={handleEmailClick}
+                            openedEmail={openedEmail}
+                          />
+                        ))}
+                        {groupedEmailsCurrent.older.length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-400 italic">
+                            No emails on this page
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
