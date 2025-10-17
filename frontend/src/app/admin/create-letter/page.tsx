@@ -306,6 +306,36 @@ export default function CreateLetterPage() {
 
       await submitForm(false);
 
+      setFormData({
+        nomorSuratJalan: "",
+        nomorSuratPermintaan: "",
+        tanggalSurat: "",
+        perihal: "",
+        lokasiAsal: "",
+        lokasiTujuan: "",
+        catatanTambahan: "",
+        pesan: "",
+        informasiKendaraan: "",
+        namaPengemudi: "",
+        perusahaanPenerima: "",
+        namaPenerima: "",
+        departemenPengirim: "",
+        namaPengirim: "",
+      });
+
+      setLampiran([]);
+      setSignaturePenerima({
+        upload: null,
+        signature: null,
+        preview: { upload: null, signature: null },
+      });
+      setSignaturePengirim({
+        upload: null,
+        signature: null,
+        preview: { upload: null, signature: null },
+      });
+      setMaterials([{ id: 1, ...INITIAL_MATERIAL }]);
+
       toast.success(
         isEditMode
           ? "Surat berhasil diperbarui 🎉"
@@ -345,6 +375,36 @@ export default function CreateLetterPage() {
       );
 
       await submitForm(true);
+
+      setFormData({
+        nomorSuratJalan: "",
+        nomorSuratPermintaan: "",
+        tanggalSurat: "",
+        perihal: "",
+        lokasiAsal: "",
+        lokasiTujuan: "",
+        catatanTambahan: "",
+        pesan: "",
+        informasiKendaraan: "",
+        namaPengemudi: "",
+        perusahaanPenerima: "",
+        namaPenerima: "",
+        departemenPengirim: "",
+        namaPengirim: "",
+      });
+
+      setLampiran([]);
+      setSignaturePenerima({
+        upload: null,
+        signature: null,
+        preview: { upload: null, signature: null },
+      });
+      setSignaturePengirim({
+        upload: null,
+        signature: null,
+        preview: { upload: null, signature: null },
+      });
+      setMaterials([{ id: 1, ...INITIAL_MATERIAL }]);
 
       toast.success(
         isEditMode

@@ -61,7 +61,6 @@ export interface EmailStatus{
   is_bookmarked: boolean;
   read_at: string;
   bookmarked_at: string;
-
 }
 
 export interface EmailItem {

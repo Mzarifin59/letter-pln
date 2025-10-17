@@ -3,8 +3,6 @@
 import {
   Search,
   SlidersVertical,
-  // CircleHelp,
-  // Settings,
   Bell,
   ChevronDown,
   LogOut,
@@ -23,6 +21,7 @@ import { useUserLogin } from "@/lib/user";
 import qs from "qs";
 import { useEffect, useState } from "react";
 import { EmailData } from "@/lib/interface";
+import { useRouter } from "next/navigation";
 
 async function getEmail() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -82,7 +81,9 @@ async function getEmail() {
 export default function Header() {
   const [emails, setEmails] = useState<EmailData[]>([]);
   const [emailLoading, setEmailLoading] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const { user, loading } = useUserLogin();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchEmails = async () => {
@@ -106,7 +107,7 @@ export default function Header() {
 
   const unReadEmail = emails.filter((email) => {
     if (!email.email_statuses || email.email_statuses.length === 0) {
-      return true; 
+      return true;
     }
 
     const userStatus = email.email_statuses.find(
@@ -118,10 +119,25 @@ export default function Header() {
 
   const unreadCount = unReadEmail.length;
 
+  // Handle search
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Handle search on Enter key
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch(e as unknown as React.FormEvent);
+    }
+  };
+
   // Handler untuk redirect berdasarkan status
   const handleNotificationClick = (status: string) => {
     const statusRoutes: { [key: string]: string } = {
-      "Rejected" : "/admin/reject",
+      Rejected: "/admin/reject",
       "In Progress": "/admin/sent",
     };
 
@@ -166,18 +182,26 @@ export default function Header() {
           {/* Left Section - Mobile Menu + Search */}
           <div className="flex items-center gap-3 flex-1">
             {/* Search Section */}
-            <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-4 py-3 flex-1 max-w-md">
-              <Search size={20} className="text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search All"
-                className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500"
-              />
-              <div className="h-5 w-px bg-[#0056B0] mx-2"></div>
-              <button className="text-gray-500 hover:text-[#0056B0] transition-colors">
-                <SlidersVertical size={20} />
-              </button>
-            </div>
+            <form onSubmit={handleSearch} className="flex-1 max-w-md">
+              <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-4 py-3">
+                <Search size={20} className="text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search by No. Surat Jalan"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500"
+                />
+                <div className="h-5 w-px bg-[#0056B0] mx-2"></div>
+                <button
+                  type="submit"
+                  className="text-gray-500 hover:text-[#0056B0] transition-colors"
+                >
+                  <SlidersVertical size={20} />
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Right Section */}
@@ -198,7 +222,10 @@ export default function Header() {
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-96 max-h-[500px] overflow-y-auto">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-96 max-h-[500px] overflow-y-auto"
+                >
                   <DropdownMenuLabel className="flex items-center justify-between">
                     <span>Notifications</span>
                     {unreadCount > 0 && (
@@ -235,7 +262,8 @@ export default function Header() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
                               <p className="font-semibold text-sm text-gray-900 line-clamp-1">
-                                {email.surat_jalan?.no_surat_jalan || "No Number"}
+                                {email.surat_jalan?.no_surat_jalan ||
+                                  "No Number"}
                               </p>
                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                                 <Clock size={12} />
