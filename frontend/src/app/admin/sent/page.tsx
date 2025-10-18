@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 
 import SentContent from "./sent-content";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function SentPage() {
   const dataEmail: EmailData[] = await getAllEmails();
 

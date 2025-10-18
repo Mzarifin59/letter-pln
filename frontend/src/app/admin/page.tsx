@@ -78,6 +78,9 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
   },
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const allData: EmailData[] = await getAllEmails();
 
@@ -378,7 +381,7 @@ export default async function DashboardPage() {
               </div>
               <div className="space-y-2">
                 {/* Activity Item 1 */}
-                {suratJalanThisMonth.slice(0, 4).map((item, index) => (
+                {suratJalanThisMonth.slice(0, 5).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-3 border-b border-gray-100 pb-3"

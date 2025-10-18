@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 
 import DraftPageContent from "./draft-content"
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DraftPage() {
   const dataEmail : EmailData[] = await getAllEmails();
 

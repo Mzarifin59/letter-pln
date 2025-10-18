@@ -7,9 +7,6 @@ if (!process.env.API_URL) {
 
 export const apiUrl = process.env.API_URL;
 
-const cookieStore = await cookies();
-const token = cookieStore.get("token")?.value;
-
 interface FetchOptions {
   cache?: RequestCache;
   next?: {
@@ -18,11 +15,13 @@ interface FetchOptions {
 }
 
 async function fetchWithError(url: string, options: FetchOptions = {}) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -123,10 +122,10 @@ export async function getAllEmails() {
           fields: ["name", "email"],
         },
         email_statuses: {
-          fields: ['is_read', 'is_bookmarked', 'read_at', 'bookmarked_at'],
+          fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at"],
           populate: {
             user: {
-              fields: ['name', 'email'],
+              fields: ["name", "email"],
             },
           },
         },

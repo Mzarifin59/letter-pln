@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 
 import RejectPageContent from "./reject-content";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function RejectedPage() {
   const dataEmail: EmailData[] = await getAllEmails();
 
