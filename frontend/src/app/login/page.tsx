@@ -58,7 +58,7 @@ export default function LoginPage() {
         });
         setIsLoading(false);
       }
-    } catch (error) {
+    } catch {
       toast.error("Terjadi kesalahan", {
         description: "Tidak dapat terhubung ke server. Coba lagi nanti.",
         position: "top-center",

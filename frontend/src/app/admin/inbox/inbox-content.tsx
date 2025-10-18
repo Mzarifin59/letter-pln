@@ -252,7 +252,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       setCurrentPage(1);
       setIsFiltered(false);
     }
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, sortedInitialData]);
 
   const groupedEmailsCurrent: GroupedEmails = groupEmailsByDate(currentPageEmails);
   const groupedEmailsAll: GroupedEmails = groupEmailsByDate(emailList);

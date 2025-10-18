@@ -16,7 +16,6 @@ import { EmailData } from "@/lib/interface";
 import qs from "qs";
 import Link from "next/link";
 import { EmailDetail } from "@/components/detail-email";
-import { useUserLogin } from "@/lib/user";
 
 async function searchEmails(query: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -86,7 +85,6 @@ export default function SearchPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchInput, setSearchInput] = useState<string>(query);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
-  const { user } = useUserLogin();
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -140,9 +138,9 @@ export default function SearchPage() {
   const handleEmailClick = async (email: EmailData): Promise<void> => {
     setOpenedEmail(email);
 
-    const emailStatus = email.email_statuses.find(
-      (item) => item.user.name === user?.name
-    );
+    // const emailStatus = email.email_statuses.find(
+    //   (item) => item.user.name === user?.name
+    // );
   };
 
   const handleCloseDetail = (): void => {

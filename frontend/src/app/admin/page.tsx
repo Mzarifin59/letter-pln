@@ -1,7 +1,7 @@
 import { StickyNote, Check, Send, ArchiveX } from "lucide-react";
 
-import { getAllSuratJalan } from "@/lib/fetch";
-import { SuratJalan } from "@/lib/interface";
+import { getAllEmails } from "@/lib/fetch";
+import { EmailData} from "@/lib/interface";
 import { JSX } from "react";
 
 function formatDateTime(isoString: string): string {
@@ -79,11 +79,11 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
 };
 
 export default async function DashboardPage() {
-  const allData: SuratJalan[] = await getAllSuratJalan();
+  const allData: EmailData[] = await getAllEmails();
 
-  const draftData = allData.filter((item) => item.status_entry === "Draft");
+  const draftData = allData.filter((item) => item.surat_jalan.status_entry === "Draft");
   const publishedData = allData.filter(
-    (item) => item.status_entry === "Published"
+    (item) => item.surat_jalan.status_entry === "Published"
   );
 
   const now = new Date();
@@ -92,13 +92,13 @@ export default async function DashboardPage() {
 
   // filter semua data hanya data bulan ini
   const draftDataThisMonth = draftData.filter((sj) => {
-    const tgl = new Date(sj.tanggal);
+    const tgl = new Date(sj.surat_jalan.tanggal);
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
   
   // filter data published hanya data bulan ini
   const publishedDataThisMonth = publishedData.filter((sj) => {
-    const tgl = new Date(sj.tanggal);
+    const tgl = new Date(sj.surat_jalan.tanggal);
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
 
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
 
   // optional: sort by tanggal terbaru
   suratJalanThisMonth.sort(
-    (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+    (a, b) => new Date(b.surat_jalan.tanggal).getTime() - new Date(a.surat_jalan.tanggal).getTime()
   );
 
   return (
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
                     {
                       publishedDataThisMonth.filter(
-                        (item) => item.status_surat === "In Progress"
+                        (item) => item.surat_jalan.status_surat === "In Progress"
                       ).length
                     }
                   </p>
@@ -314,39 +314,39 @@ export default async function DashboardPage() {
                       <tr key={index} className="border-b border-gray-50">
                         <td className="py-4 px-4">
                           <div className="text-sm text-[#212529]">
-                            <div>{formatDateTime(item.tanggal)}</div>
+                            <div>{formatDateTime(item.surat_jalan.tanggal)}</div>
                           </div>
                         </td>
                         <td className="py-4 px-4 text-sm text-[#495057]">
-                          {item.emails[0]?.recipient.name}
+                          {item.recipient.name}
                         </td>
                         <td className="py-4 px-4 text-sm text-[#212529]">
-                          {item.perihal}
+                          {item.surat_jalan.perihal}
                         </td>
                         <td className="py-4 px-4 text-sm text-[#495057]">
-                          {item.no_surat_jalan}
+                          {item.surat_jalan.no_surat_jalan}
                         </td>
                         <td className="py-4 px-4">
-                          {item.status_entry !== "Draft" ? (
+                          {item.surat_jalan.status_entry !== "Draft" ? (
                             <div
                               className={`px-3 py-1 rounded-xl ${
-                                item.status_surat === "In Progress"
+                                item.surat_jalan.status_surat === "In Progress"
                                   ? "bg-yellow-100"
-                                  : item.status_surat === "Approve"
+                                  : item.surat_jalan.status_surat === "Approve"
                                   ? "bg-[#188580]/20"
                                   : "bg-red-100"
                               }`}
                             >
                               <span
                                 className={`plus-jakarta-sans text-xs font-medium ${
-                                  item.status_surat === "In Progress"
+                                  item.surat_jalan.status_surat === "In Progress"
                                     ? "text-yellow-700"
-                                    : item.status_surat === "Approve"
+                                    : item.surat_jalan.status_surat === "Approve"
                                     ? "text-green-700"
                                     : "text-red-700"
                                 }`}
                               >
-                                {item.status_surat}
+                                {item.surat_jalan.status_surat}
                               </span>
                             </div>
                           ) : (
@@ -384,8 +384,8 @@ export default async function DashboardPage() {
                     className="flex items-center gap-3 border-b border-gray-100 pb-3"
                   >
                     <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                      {item.status_entry !== "Draft"
-                        ? statusIcons[item.status_surat]?.icon
+                      {item.surat_jalan.status_entry !== "Draft"
+                        ? statusIcons[item.surat_jalan.status_surat]?.icon
                         : statusIcons["Draft"].icon}
                     </div>
                     <div className="flex items-center max-xl:gap-6 min-w-0">
@@ -397,21 +397,21 @@ export default async function DashboardPage() {
                           oleh Admin Gudang UPT · {timeAgo(item.updatedAt)}
                         </p>
                       </div>
-                      {item.status_entry !== "Draft" ? (
+                      {item.surat_jalan.status_entry !== "Draft" ? (
                         <span
                           className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-                            item.status_surat === "In Progress"
+                            item.surat_jalan.status_surat === "In Progress"
                               ? "bg-blue-100 text-blue-700"
-                              : item.status_surat === "Approve"
+                              : item.surat_jalan.status_surat === "Approve"
                               ? "bg-green-100 text-green-700"
-                              : item.status_surat === "Reject"
+                              : item.surat_jalan.status_surat === "Reject"
                               ? "bg-red-100 text-red-700"
                               : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {item.status_surat === "Approve"
+                          {item.surat_jalan.status_surat === "Approve"
                             ? "Disetujui"
-                            : item.status_surat === "In Progress"
+                            : item.surat_jalan.status_surat === "In Progress"
                             ? "Terkirim"
                             : "Dibatalkan"}
                         </span>

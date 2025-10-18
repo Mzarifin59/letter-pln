@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { EmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
-import PreviewSection from "@/components/preview-surat";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import {
@@ -213,7 +212,7 @@ export const EmailDetail = ({
     };
 
     generatePDF();
-  }, [isGeneratingPDF]);
+  }, [isGeneratingPDF, formData.nomorSuratJalan]);
 
   const handlePrintClick = () => {
     setIsGeneratingPDF(true);

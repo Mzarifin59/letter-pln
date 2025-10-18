@@ -20,6 +20,10 @@ const eslintConfig = [
       "next-env.d.ts",
       "src/lib/surat-jalan/strapi.service.ts",
     ],
+    rules: {
+      "avoidEscape": true,
+      "allowTemplateLiterals": true,
+    }
   },
 ];
 

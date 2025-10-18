@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SignatureCanvas from "react-signature-canvas";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
-import { Plus, Trash2, Calendar, Eye, StickyNote, Send, X } from "lucide-react";
+import { Plus, Trash2, Eye, StickyNote, Send, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
