@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
 
   // protect admin route
-  if (req.nextUrl.pathname.startsWith("/admin")) {
+  if (req.nextUrl.pathname.startsWith("/")) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }

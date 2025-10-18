@@ -192,7 +192,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
   const handleRowClick = (email: EmailData): void => {
     sessionStorage.setItem("draftData", JSON.stringify(email));
-    router.push(`/admin/create-letter?mode=edit&id=${email.documentId}`);
+    router.push(`/create-letter?mode=edit&id=${email.documentId}`);
   };
 
   const sortedInitialData = [...data].sort(

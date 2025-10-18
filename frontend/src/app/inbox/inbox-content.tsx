@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, useState, useEffect } from "react";
+import { JSX, useState, useEffect, useMemo } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -156,9 +156,13 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
-  const sortedInitialData = [...data].sort(
-    (a, b) => new Date(b.surat_jalan.tanggal).getTime() - new Date(a.surat_jalan.tanggal).getTime()
-  );
+  const sortedInitialData = useMemo(() => {
+    return [...data].sort(
+      (a, b) =>
+        new Date(b.surat_jalan.tanggal).getTime() -
+        new Date(a.surat_jalan.tanggal).getTime()
+    );
+  }, [data]);
 
   const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
 
@@ -247,14 +251,14 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       setCurrentPage(1);
       setIsFiltered(true);
     } else if (!fromDate && !toDate) {
-      // Reset ke data awal jika kedua tanggal dikosongkan
       setEmailList(sortedInitialData);
       setCurrentPage(1);
       setIsFiltered(false);
     }
   }, [fromDate, toDate, sortedInitialData]);
 
-  const groupedEmailsCurrent: GroupedEmails = groupEmailsByDate(currentPageEmails);
+  const groupedEmailsCurrent: GroupedEmails =
+    groupEmailsByDate(currentPageEmails);
   const groupedEmailsAll: GroupedEmails = groupEmailsByDate(emailList);
 
   const SectionHeader = ({
@@ -466,7 +470,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                           <EmailRowInbox
                             key={email.id}
                             email={email}
-                            isSelected={selectedEmails.includes(email.documentId)}
+                            isSelected={selectedEmails.includes(
+                              email.documentId
+                            )}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}
@@ -490,7 +496,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                           <EmailRowInbox
                             key={email.id}
                             email={email}
-                            isSelected={selectedEmails.includes(email.documentId)}
+                            isSelected={selectedEmails.includes(
+                              email.documentId
+                            )}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}
@@ -514,7 +522,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                           <EmailRowInbox
                             key={email.id}
                             email={email}
-                            isSelected={selectedEmails.includes(email.documentId)}
+                            isSelected={selectedEmails.includes(
+                              email.documentId
+                            )}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}

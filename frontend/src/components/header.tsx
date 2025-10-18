@@ -123,7 +123,7 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -137,8 +137,8 @@ export default function Header() {
   // Handler untuk redirect berdasarkan status
   const handleNotificationClick = (status: string) => {
     const statusRoutes: { [key: string]: string } = {
-      Rejected: "/admin/reject",
-      "In Progress": "/admin/sent",
+      Rejected: "/reject",
+      "In Progress": "/sent",
     };
 
     const route = statusRoutes[status] || "/";
@@ -303,7 +303,7 @@ export default function Header() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-center text-[#0056B0] hover:text-[#0056B0] font-medium cursor-pointer justify-center"
-                        onClick={() => (window.location.href = "/admin/inbox")}
+                        onClick={() => (window.location.href = "/inbox")}
                       >
                         View all emails
                       </DropdownMenuItem>

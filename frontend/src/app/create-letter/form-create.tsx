@@ -420,7 +420,7 @@ export default function FormCreatePage() {
 
       if (isEditMode) {
         sessionStorage.removeItem("draftData");
-        router.push("/admin/draft");
+        router.push("/draft");
       }
     } catch (error: unknown) {
       const message =

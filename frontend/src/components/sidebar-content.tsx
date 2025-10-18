@@ -79,42 +79,42 @@ export default function SidebarContent({
 
   const navItems = [
     {
-      href: "/admin",
+      href: "/",
       label: "Dashboard",
       icon: LayoutGrid,
       id: "home",
       count: 0, 
     },
     {
-      href: "/admin/inbox",
+      href: "/inbox",
       label: "Inbox",
       icon: Inbox,
       id: "inbox",
       count: getFilteredData("inbox").length,
     },
     {
-      href: "/admin/tracking",
+      href: "/tracking",
       label: "Tracking",
       icon: CheckSquare,
       id: "tracking",
       count: 0,
     },
     {
-      href: "/admin/draft",
+      href: "/draft",
       label: "Drafts",
       icon: StickyNote,
       id: "draft",
       count: 0,
     },
     {
-      href: "/admin/sent",
+      href: "/sent",
       label: "Sent",
       icon: Send,
       id: "sent",
       count: getFilteredData("sent").length,
     },
     {
-      href: "/admin/reject",
+      href: "/reject",
       label: "Dibatalkan",
       icon: ArchiveX,
       id: "reject",
@@ -154,7 +154,7 @@ export default function SidebarContent({
           </div>
         </div>
 
-        <Link href={`/admin/create-letter`} onClick={handleItemClick}>
+        <Link href={`/create-letter`} onClick={handleItemClick}>
           <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
             <Plus size={18} />
             Buat Surat

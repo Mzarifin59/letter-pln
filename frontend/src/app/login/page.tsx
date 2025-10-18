@@ -49,7 +49,7 @@ export default function LoginPage() {
         });
         
         setTimeout(() => {
-          window.location.href = "/admin";
+          window.location.href = "/";
         }, 500);
       } else {
         toast.error("Akses ditolak", {

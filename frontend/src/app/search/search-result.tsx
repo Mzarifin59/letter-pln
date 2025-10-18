@@ -110,7 +110,7 @@ export default function SearchResultPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      window.location.href = `/admin/search?q=${encodeURIComponent(
+      window.location.href = `/search?q=${encodeURIComponent(
         searchInput.trim()
       )}`;
     }
@@ -154,7 +154,7 @@ export default function SearchResultPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Back Button */}
           <Link
-            href="/admin/inbox"
+            href="/inbox"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-[#0056B0] mb-4 transition-colors"
           >
             <ArrowLeft size={20} />

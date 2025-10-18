@@ -33,11 +33,11 @@ function formatDateTime(isoString: string): string {
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
-interface TrackingContentProps{
-    data : EmailData[];
+interface TrackingContentProps {
+  data: EmailData[];
 }
 
-export default function TrackingContentPage({data} : TrackingContentProps) {
+export default function TrackingContentPage({ data }: TrackingContentProps) {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -67,6 +67,12 @@ export default function TrackingContentPage({data} : TrackingContentProps) {
       handlePageChange(currentPage + 1);
     }
   };
+
+  const dataEmail = data.sort(
+    (a, b) =>
+      new Date(b.surat_jalan.tanggal).getTime() -
+      new Date(a.surat_jalan.tanggal).getTime()
+  );
 
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
