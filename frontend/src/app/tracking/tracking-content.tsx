@@ -38,6 +38,12 @@ interface TrackingContentProps {
 }
 
 export default function TrackingContentPage({ data }: TrackingContentProps) {
+  const dataEmail = data.sort(
+    (a, b) =>
+      new Date(b.surat_jalan.tanggal).getTime() -
+      new Date(a.surat_jalan.tanggal).getTime()
+  );
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -46,7 +52,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+  const currentData = dataEmail.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -67,12 +73,6 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
       handlePageChange(currentPage + 1);
     }
   };
-
-  const dataEmail = data.sort(
-    (a, b) =>
-      new Date(b.surat_jalan.tanggal).getTime() -
-      new Date(a.surat_jalan.tanggal).getTime()
-  );
 
   return (
     <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">

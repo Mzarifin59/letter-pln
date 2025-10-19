@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUserLogin } from "@/lib/user";
 import qs from "qs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { EmailData } from "@/lib/interface";
 import { useRouter } from "next/navigation";
 
@@ -84,26 +84,66 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { user, loading } = useUserLogin();
   const router = useRouter();
+  
+  // Ref untuk tracking polling interval
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isComponentMountedRef = useRef<boolean>(true);
+
+  // Memoized fetch function
+  const fetchEmails = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) {
+        setEmailLoading(true);
+      }
+      const data = await getEmail();
+      
+      // Hanya update jika component masih mounted
+      if (isComponentMountedRef.current) {
+        setEmails(data);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching emails:", err);
+      } else {
+        console.error("Unknown error:", err);
+      }
+    } finally {
+      if (isComponentMountedRef.current && showLoading) {
+        setEmailLoading(false);
+      }
+    }
+  }, []);
+
+  // Setup polling untuk realtime updates
+  useEffect(() => {
+    isComponentMountedRef.current = true;
+    fetchEmails(true);
+
+    pollingIntervalRef.current = setInterval(() => {
+      fetchEmails(false);
+    }, 10000);
+
+    return () => {
+      isComponentMountedRef.current = false;
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [fetchEmails]);
 
   useEffect(() => {
-    const fetchEmails = async () => {
-      try {
-        setEmailLoading(true);
-        const data = await getEmail();
-        setEmails(data);
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("Error fetching emails:", err);
-        } else {
-          console.error("Unknown error:", err);
-        }
-      } finally {
-        setEmailLoading(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && isComponentMountedRef.current) {
+        fetchEmails(false);
       }
     };
 
-    fetchEmails();
-  }, []);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchEmails]);
 
   const unReadEmail = emails.filter((email) => {
     if (!email.email_statuses || email.email_statuses.length === 0) {
@@ -114,7 +154,7 @@ export default function Header() {
       (status) => status.user.email === user?.email
     );
 
-    return !userStatus || userStatus.is_read === false;
+    return !userStatus || userStatus.is_read === false && email.surat_jalan.status_entry !== "Draft";
   });
 
   const unreadCount = unReadEmail.length;
@@ -213,7 +253,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all relative">
                     <Bell size={20} />
-                    {/* Badge untuk unread emails */}
+                    {/* Badge untuk unread emails dengan animasi */}
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                         {unreadCount > 9 ? "9+" : unreadCount}

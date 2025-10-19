@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { EmailData } from "@/lib/interface";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import SidebarContent from "./sidebar-content";
+import qs from "qs";
 
 interface SidebarProps {
   data: EmailData[];
@@ -12,17 +13,129 @@ interface SidebarProps {
   onItemClick?: () => void;
 }
 
-export default function Sidebar({ data, token }: SidebarProps) {
-  const [emailData, setEmailData] = useState<EmailData[]>(data);
+async function getEmail() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const query = qs.stringify({
+    sort: ["createdAt:asc"],
+    populate: {
+      surat_jalan: {
+        populate: {
+          materials: true,
+          penerima: {
+            fields: ["perusahaan_penerima", "nama_penerima"],
+            populate: {
+              ttd_penerima: {
+                fields: ["name", "url"],
+              },
+            },
+          },
+          pengirim: {
+            fields: ["departemen_pengirim", "nama_pengirim"],
+            populate: {
+              ttd_pengirim: {
+                fields: ["name", "url"],
+              },
+            },
+          },
+          lampiran: {
+            fields: ["name", "url"],
+          },
+          category_surat: true,
+        },
+      },
+      sender: {
+        fields: ["name", "email"],
+      },
+      recipient: {
+        fields: ["name", "email"],
+      },
+      email_statuses: {
+        fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at"],
+        populate: {
+          user: {
+            fields: ["name", "email"],
+          },
+        },
+      },
+      attachment_files: {
+        fields: ["name", "url"],
+      },
+    },
+  });
+
+  const res = await fetch(`${apiUrl}/api/emails?${query}`);
+  const data = await res.json();
+  return data.data;
+}
+
+export default function Sidebar({ data: initialData, token }: SidebarProps) {
+  const [emailData, setEmailData] = useState<EmailData[]>(initialData);
   const [open, setOpen] = useState(false);
+  
+  // Refs untuk polling management
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isComponentMountedRef = useRef<boolean>(true);
 
-  // Update data ketika props berubah
+  // Memoized fetch function untuk realtime updates
+  const fetchEmails = useCallback(async () => {
+    try {
+      const data = await getEmail();
+      
+      // Hanya update jika component masih mounted
+      if (isComponentMountedRef.current) {
+        setEmailData(data);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching emails:", err);
+      } else {
+        console.error("Unknown error:", err);
+      }
+    }
+  }, []);
+
+  // Setup realtime polling
   useEffect(() => {
-    setEmailData(data);
-  }, [data, emailData]);
+    isComponentMountedRef.current = true;
 
+    // Initial fetch untuk sync dengan data terbaru
+    fetchEmails();
 
-  // Function untuk update email status
+    // Setup polling - fetch setiap 10 detik
+    pollingIntervalRef.current = setInterval(() => {
+      fetchEmails();
+    }, 10000); // 10 detik
+
+    // Cleanup function
+    return () => {
+      isComponentMountedRef.current = false;
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [fetchEmails]);
+
+  // Fetch saat tab menjadi visible lagi (untuk mobile/multi-tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && isComponentMountedRef.current) {
+        fetchEmails();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchEmails]);
+
+  // Update data ketika props berubah (fallback)
+  useEffect(() => {
+    setEmailData(initialData);
+  }, [initialData]);
+
+  // Function untuk update email status (local optimistic update)
   const updateEmailStatus = (emailId: number) => {
     setEmailData((prevData) =>
       prevData.map((email) => {
@@ -38,6 +151,11 @@ export default function Sidebar({ data, token }: SidebarProps) {
         return email;
       })
     );
+
+    // Fetch ulang untuk sync dengan server
+    setTimeout(() => {
+      fetchEmails();
+    }, 500);
   };
 
   // Listen untuk event custom dari detail email
@@ -57,7 +175,7 @@ export default function Sidebar({ data, token }: SidebarProps) {
     <>
       {/* ✅ Sidebar versi desktop */}
       <div className="hidden lg:fixed left-0 top-0 max-w-2xs h-screen bg-white border-r border-gray-200 lg:flex flex-col z-10">
-        <SidebarContent data={data} token={token} />
+        <SidebarContent data={emailData} token={token} />
       </div>
 
       {/* ✅ Tombol untuk mobile */}
@@ -80,7 +198,7 @@ export default function Sidebar({ data, token }: SidebarProps) {
               <SheetTitle className="sr-only hidden">Menu Sidebar</SheetTitle>
             </SheetHeader>
 
-            <SidebarContent data={data} token={token}/>
+            <SidebarContent data={emailData} token={token}/>
           </SheetContent>
         </Sheet>
       </div>
