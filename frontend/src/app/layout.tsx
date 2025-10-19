@@ -3,12 +3,6 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-import Sidebar from "@/components/sidebar";
-import Header from "@/components/header";
-import { getAllEmails } from "@/lib/fetch";
-import { EmailData } from "@/lib/interface";
-import { cookies } from "next/headers";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -29,21 +23,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const dataEmail: EmailData[] = await getAllEmails();
-  const token = await (await cookies()).get("token")?.value;
 
   return (
     <html lang="en">
       <body
         className={`${inter.className} ${plusJakartaSans.variable} antialiased bg-[#F6F9FF]`}
       >
-        <div className="flex">
-          <Sidebar data={dataEmail} token={`${token}`} />
-          <div className="flex-1">
-            <Header />
-            {children}
-          </div>
-        </div>
+        {children}
         <Toaster />
       </body>
     </html>

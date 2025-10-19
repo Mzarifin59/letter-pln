@@ -82,10 +82,10 @@ export default function SidebarContent({
         }
       });
     };
-  }, [data, user?.name]);
+  }, [data, user?.name, user?.role]);
 
-  const navItems = useMemo(
-    () => [
+  const navItems = useMemo(() => {
+    const allItems = [
       {
         href: "/",
         label: "Dashboard",
@@ -113,6 +113,7 @@ export default function SidebarContent({
         icon: StickyNote,
         id: "draft",
         count: 0,
+        hideForRoles: ["Spv"], 
       },
       {
         href: "/sent",
@@ -120,6 +121,7 @@ export default function SidebarContent({
         icon: Send,
         id: "sent",
         count: getFilteredData("sent").length,
+        hideForRoles: ["Spv"], 
       },
       {
         href: "/reject",
@@ -127,10 +129,18 @@ export default function SidebarContent({
         icon: ArchiveX,
         id: "reject",
         count: getFilteredData("reject").length,
+        hideForRoles: ["Spv"], 
       },
-    ],
-    [getFilteredData]
-  );
+    ];
+
+    // Filter berdasarkan role user
+    return allItems.filter((item) => {
+      if (item.hideForRoles && user?.role) {
+        return !item.hideForRoles.includes(user.role.name);
+      }
+      return true;
+    });
+  }, [getFilteredData, user?.role]);
 
   const isActive = (href: string) => {
     return pathname === href;

@@ -15,13 +15,13 @@ interface FetchOptions {
 }
 
 async function fetchWithError(url: string, options: FetchOptions = {}) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  // const cookieStore = await cookies();
+  // const token = cookieStore.get("token")?.value;
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      // Authorization: `Bearer ${token}`,
     },
   });
 
@@ -143,7 +143,7 @@ export async function getAllEmails() {
 
     return data.data;
   } catch (error) {
-    console.error("Error fetching Data Email:", error);
+    console.error("Error fetching Data Email Gue:", error);
     throw error;
   }
 }
