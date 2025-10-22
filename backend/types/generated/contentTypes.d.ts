@@ -493,7 +493,7 @@ export interface ApiEmailEmail extends Struct.CollectionTypeSchema {
 export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
   collectionName: 'surat_jalans';
   info: {
-    displayName: 'Surat Jalan';
+    displayName: 'Surat';
     pluralName: 'surat-jalans';
     singularName: 'surat-jalan';
   };
@@ -511,6 +511,9 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     emails: Schema.Attribute.Relation<'oneToMany', 'api::email.email'>;
     informasi_kendaraan: Schema.Attribute.String;
+    kategori_surat: Schema.Attribute.Enumeration<
+      ['Surat Jalan', 'Surat Bongkaran']
+    >;
     lampiran: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',
       true

@@ -4,7 +4,7 @@
   "info": {
     "singularName": "surat-jalan",
     "pluralName": "surat-jalans",
-    "displayName": "Surat Jalan"
+    "displayName": "Surat"
   },
   "options": {
     "draftAndPublish": false
@@ -91,6 +91,13 @@
       "enum": [
         "Draft",
         "Published"
+      ]
+    },
+    "kategori_surat": {
+      "type": "enumeration",
+      "enum": [
+        "Surat Jalan",
+        "Surat Bongkaran"
       ]
     }
   }

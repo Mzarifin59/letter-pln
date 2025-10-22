@@ -8,6 +8,7 @@ import {
   LogOut,
   Mail,
   Clock,
+  Check,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { useUserLogin } from "@/lib/user";
 import qs from "qs";
@@ -82,12 +84,19 @@ export default function Header() {
   const [emails, setEmails] = useState<EmailData[]>([]);
   const [emailLoading, setEmailLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const { user, loading } = useUserLogin();
   const router = useRouter();
-  
+
   // Ref untuk tracking polling interval
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isComponentMountedRef = useRef<boolean>(true);
+
+  // Daftar kategori yang tersedia
+  const availableCategories = [
+    { value: "Surat Jalan", label: "Surat Jalan" },
+    { value: "Surat Bongkaran", label: "Surat Bongkaran" },
+  ];
 
   // Memoized fetch function
   const fetchEmails = useCallback(async (showLoading = true) => {
@@ -96,7 +105,7 @@ export default function Header() {
         setEmailLoading(true);
       }
       const data = await getEmail();
-      
+
       // Hanya update jika component masih mounted
       if (isComponentMountedRef.current) {
         setEmails(data);
@@ -133,7 +142,10 @@ export default function Header() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && isComponentMountedRef.current) {
+      if (
+        document.visibilityState === "visible" &&
+        isComponentMountedRef.current
+      ) {
         fetchEmails(false);
       }
     };
@@ -154,16 +166,39 @@ export default function Header() {
       (status) => status.user.email === user?.email
     );
 
-    return !userStatus || userStatus.is_read === false && email.surat_jalan.status_entry !== "Draft";
+    return (
+      !userStatus ||
+      (userStatus.is_read === false &&
+        email.surat_jalan.status_entry !== "Draft")
+    );
   });
 
   const unreadCount = unReadEmail.length;
 
-  // Handle search
+  // Handle category toggle
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(category)) {
+        return prev.filter((c) => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
+
+  // Handle search with filters
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const params = new URLSearchParams();
+      params.set("q", searchQuery.trim());
+
+      // Tambahkan filter kategori jika ada
+      if (selectedCategories.length > 0) {
+        params.set("categories", selectedCategories.join(","));
+      }
+
+      router.push(`/search?${params.toString()}`);
     }
   };
 
@@ -234,13 +269,81 @@ export default function Header() {
                   className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500"
                 />
                 <div className="h-5 w-px bg-[#0056B0] mx-2"></div>
-                <button
-                  type="submit"
-                  className="text-gray-500 hover:text-[#0056B0] transition-colors"
-                >
-                  <SlidersVertical size={20} />
-                </button>
+
+                {/* Filter Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
+                    >
+                      <SlidersVertical size={20} />
+                      {/* Badge untuk active filters */}
+                      {selectedCategories.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                          {selectedCategories.length}
+                        </span>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    {availableCategories.map((category) => (
+                      <DropdownMenuCheckboxItem
+                        key={category.value}
+                        checked={selectedCategories.includes(category.value)}
+                        onCheckedChange={() =>
+                          handleCategoryToggle(category.value)
+                        }
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{category.label}</span>
+                          {selectedCategories.includes(category.value) && (
+                            <Check size={16} className="text-[#0056B0]" />
+                          )}
+                        </div>
+                      </DropdownMenuCheckboxItem>
+                    ))}
+
+                    {selectedCategories.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setSelectedCategories([])}
+                          className="text-red-500 hover:text-red-600 cursor-pointer justify-center font-medium"
+                        >
+                          Clear Filters
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
+
+              {/* Active Filter Pills */}
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedCategories.map((category) => (
+                    <span
+                      key={category}
+                      className="inline-flex items-center gap-1 bg-[#0056B0] text-white text-xs px-3 py-1 rounded-full"
+                    >
+                      {category}
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryToggle(category)}
+                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </form>
           </div>
 

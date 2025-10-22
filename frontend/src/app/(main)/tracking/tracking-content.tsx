@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useUserLogin } from "@/lib/user";
 
 // Types
 interface SuratJalan {
@@ -76,15 +77,13 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
       new Date(a.surat_jalan.tanggal).getTime()
   );
 
-  // Simulate user - ganti dengan useUserLogin() yang sebenarnya
-  const user = { role: { name: "Spv" } }; 
-
   const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<EmailData | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectMessage, setRejectMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useUserLogin();
 
   const itemPerPage = 15;
   const totalPages = Math.ceil(data.length / itemPerPage);
@@ -162,10 +161,10 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
-      toast.success("Surat berhasil disetujui", {position: 'top-center'});
+      toast.success("Surat berhasil disetujui", { position: "top-center" });
 
       handleCloseDialog();
-      
+
       // Refresh halaman atau update state
       setTimeout(() => {
         window.location.reload();
@@ -184,7 +183,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
 
   const handleRejectSubmit = async () => {
     if (!rejectMessage.trim()) {
-      toast.error("Pesan penolakan harus diisi", {position: 'top-center'});
+      toast.error("Pesan penolakan harus diisi", { position: "top-center" });
       return;
     }
 
@@ -231,10 +230,10 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         throw new Error("Gagal mengupdate pesan email");
       }
 
-      toast.success("Surat berhasil ditolak", {position: 'top-center'});
+      toast.success("Surat berhasil ditolak", { position: "top-center" });
 
       handleCloseDialog();
-      
+
       setTimeout(() => {
         window.location.reload();
       }, 1000);
@@ -247,7 +246,6 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
   };
 
   const isSPV = user?.role?.name === "Spv";
-  console.log();
 
   return (
     <>
@@ -460,7 +458,8 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
                 Tanggal
               </label>
               <p className="text-base text-[#545454]">
-                {selectedItem && formatDateTime(selectedItem.surat_jalan.tanggal)}
+                {selectedItem &&
+                  formatDateTime(selectedItem.surat_jalan.tanggal)}
               </p>
             </div>
 
@@ -469,7 +468,9 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
               <label className="text-sm font-medium text-gray-600 block mb-1">
                 Dari
               </label>
-              <p className="text-base text-[#545454]">{selectedItem?.sender.name}</p>
+              <p className="text-base text-[#545454]">
+                {selectedItem?.sender.name}
+              </p>
             </div>
 
             {/* Kepada */}
@@ -477,7 +478,9 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
               <label className="text-sm font-medium text-gray-600 block mb-1">
                 Kepada
               </label>
-              <p className="text-base text-[#545454]">{selectedItem?.recipient.name}</p>
+              <p className="text-base text-[#545454]">
+                {selectedItem?.recipient.name}
+              </p>
             </div>
 
             {/* Perihal */}

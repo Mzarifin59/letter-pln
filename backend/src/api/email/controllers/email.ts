@@ -106,9 +106,11 @@ export default factories.createCoreController(
             },
           });
 
+        console.log("EmailStatus:", emailStatus);
+
         let result;
 
-        if (emailStatus[0].is_read == false) {
+        if (emailStatus[0].is_bookmarked == false) {
           result = await strapi
             .documents("api::email-status.email-status")
             .update({
@@ -119,7 +121,20 @@ export default factories.createCoreController(
               },
               status: "published",
             });
+        } else {
+          result = await strapi
+            .documents("api::email-status.email-status")
+            .update({
+              documentId: emailStatus[0].documentId,
+              data: {
+                is_bookmarked: false,
+                bookmarked_at: null,
+              },
+              status: "published",
+            });
         }
+
+        console.log("result:", result);
 
         return ctx.send({
           data: result,

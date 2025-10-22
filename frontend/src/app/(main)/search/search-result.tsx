@@ -11,6 +11,7 @@ import {
   User,
   Clock,
   ArrowLeft,
+  X,
 } from "lucide-react";
 import { EmailData } from "@/lib/interface";
 import qs from "qs";
@@ -82,6 +83,9 @@ async function searchEmails(query: string) {
 export default function SearchResultPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const categoriesParam = searchParams.get("categories") || "";
+  const selectedCategories = categoriesParam ? categoriesParam.split(",") : [];
+  
   const [results, setResults] = useState<EmailData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchInput, setSearchInput] = useState<string>(query);
@@ -99,11 +103,18 @@ export default function SearchResultPage() {
         setLoading(true);
         const data: EmailData[] = await searchEmails(query);
 
-        // Filter di sini
-        const filteredData =
+        // Filter berdasarkan role user
+        let filteredData =
           user?.role?.name === "Spv"
             ? data.filter((item) => item.surat_jalan.status_entry !== "Draft")
             : data;
+
+        // Filter berdasarkan kategori jika ada
+        if (selectedCategories.length > 0) {
+          filteredData = filteredData.filter((item) =>
+            selectedCategories.includes(item.surat_jalan?.kategori_surat || "")
+          );
+        }
 
         setResults(filteredData);
       } catch (err) {
@@ -114,15 +125,35 @@ export default function SearchResultPage() {
     };
 
     fetchResults();
-  }, [query, user?.role?.name]);
+  }, [query, categoriesParam, user?.role?.name]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(
-        searchInput.trim()
-      )}`;
+      // Pertahankan filter kategori saat search ulang
+      const params = new URLSearchParams();
+      params.set("q", searchInput.trim());
+      if (categoriesParam) {
+        params.set("categories", categoriesParam);
+      }
+      window.location.href = `/search?${params.toString()}`;
     }
+  };
+
+  const handleRemoveCategory = (category: string) => {
+    const newCategories = selectedCategories.filter((c) => c !== category);
+    const params = new URLSearchParams();
+    params.set("q", query);
+    if (newCategories.length > 0) {
+      params.set("categories", newCategories.join(","));
+    }
+    window.location.href = `/search?${params.toString()}`;
+  };
+
+  const handleClearAllFilters = () => {
+    const params = new URLSearchParams();
+    params.set("q", query);
+    window.location.href = `/search?${params.toString()}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -144,12 +175,16 @@ export default function SearchResultPage() {
     return colors[status] || "bg-blue-100 text-blue-700 border-blue-200";
   };
 
+  const getCategoryBadgeColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      "Surat Jalan": "bg-blue-100 text-blue-700 border-blue-200",
+      "Surat Bongkaran": "bg-purple-100 text-purple-700 border-purple-200",
+    };
+    return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
+  };
+
   const handleEmailClick = async (email: EmailData): Promise<void> => {
     setOpenedEmail(email);
-
-    // const emailStatus = email.email_statuses.find(
-    //   (item) => item.user.name === user?.name
-    // );
   };
 
   const handleCloseDetail = (): void => {
@@ -191,11 +226,48 @@ export default function SearchResultPage() {
             </div>
           </form>
 
+          {/* Active Filters */}
+          {selectedCategories.length > 0 && (
+            <div className="mt-4 flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-gray-600 font-medium">
+                Filtered by:
+              </span>
+              {selectedCategories.map((category) => (
+                <span
+                  key={category}
+                  className="inline-flex items-center gap-2 bg-[#0056B0] text-white text-sm px-3 py-1.5 rounded-lg"
+                >
+                  {category}
+                  <button
+                    onClick={() => handleRemoveCategory(category)}
+                    className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+              <button
+                onClick={handleClearAllFilters}
+                className="text-sm text-red-600 hover:text-red-700 font-medium underline"
+                type="button"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+
           {/* Search Info */}
           {query && (
             <p className="mt-4 text-sm text-gray-600">
               Showing results for:{" "}
               <span className="font-semibold text-gray-900">"{query}"</span>
+              {selectedCategories.length > 0 && (
+                <span className="text-gray-500">
+                  {" "}
+                  in {selectedCategories.join(", ")}
+                </span>
+              )}
               {!loading && (
                 <span className="ml-2">
                   ({results.length} result{results.length !== 1 ? "s" : ""}{" "}
@@ -239,8 +311,18 @@ export default function SearchResultPage() {
                   No Results Found
                 </h3>
                 <p className="text-gray-500 text-center max-w-md">
-                  We couldn't find any surat jalan matching "{query}". Try
-                  searching with a different number.
+                  {selectedCategories.length > 0 ? (
+                    <>
+                      We couldn't find any surat  matching "{query}" in{" "}
+                      {selectedCategories.join(", ")}. Try removing filters or
+                      searching with a different number.
+                    </>
+                  ) : (
+                    <>
+                      We couldn't find any surat jalan matching "{query}". Try
+                      searching with a different number.
+                    </>
+                  )}
                 </p>
               </div>
             ) : (
@@ -257,10 +339,19 @@ export default function SearchResultPage() {
                       {/* Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="text-lg font-semibold text-gray-900">
                               {email.surat_jalan?.no_surat_jalan || "No Number"}
                             </h3>
+                            {email.surat_jalan?.kategori_surat && (
+                              <span
+                                className={`text-xs px-3 py-1 rounded-full font-medium border ${getCategoryBadgeColor(
+                                  email.surat_jalan.kategori_surat
+                                )}`}
+                              >
+                                {email.surat_jalan.kategori_surat}
+                              </span>
+                            )}
                             {email.surat_jalan?.status_surat && (
                               <span
                                 className={`text-xs px-3 py-1 rounded-full font-medium border ${getStatusColor(
@@ -277,7 +368,7 @@ export default function SearchResultPage() {
                         </div>
                       </div>
 
-                      {/* Details Grid — ⭐ Hidden saat detail terbuka */}
+                      {/* Details Grid */}
                       <div
                         className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 transition-all duration-200 ${
                           openedEmail ? "hidden lg:grid" : "grid"

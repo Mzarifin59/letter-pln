@@ -87,6 +87,7 @@ export interface SuratJalan {
   status_surat: string;
   pesan: string;
   status_entry: string;
+  kategori_surat: string;
   createdAt: string;
   updatedAt: string;
   catatan_tambahan: string;

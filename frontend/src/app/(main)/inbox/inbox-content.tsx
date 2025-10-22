@@ -43,7 +43,11 @@ interface GroupedEmails {
 interface SectionHeaderProps {
   title: string;
   count: number;
-  isExpanded?: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  sectionEmails: EmailData[];
+  selectedEmails: string[];
+  onSelectSection: (emailIds: string[]) => void;
 }
 
 // Fungsi helper untuk mengelompokkan email berdasarkan tanggal
@@ -84,6 +88,13 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
   const [isFiltered, setIsFiltered] = useState(false);
   const { user } = useUserLogin();
+
+  // State untuk toggle section
+  const [expandedSections, setExpandedSections] = useState({
+    today: true,
+    yesterday: true,
+    older: true,
+  });
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -164,31 +175,34 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   }, [data]);
 
   const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+  let emailListFiltered: EmailData[];
+
+  if (user?.role?.name === "Admin") {
+    emailListFiltered = emailList.filter(
+      (item) =>
+        item.recipient.name === "Admin Gudang" &&
+        item.surat_jalan.status_entry !== "Draft"
+    );
+  } else {
+    emailListFiltered = emailList.filter(
+      (item) =>
+        item.recipient.name === "Spv" &&
+        item.surat_jalan.status_entry !== "Draft"
+    );
+  }
+
+  const unreadCount = emailListFiltered.filter((email) =>
+    email.email_statuses.some((status) => !status.is_read)
+  ).length;
 
   const itemPerPage = 15;
   const totalPages = Math.ceil(emailList.length / itemPerPage);
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
-  let currentPageEmails;
+  let currentPageEmails = emailListFiltered.slice(startIndex, endIndex);
 
-  if (user?.role?.name === "Admin") {
-    currentPageEmails = emailList
-      .filter(
-        (item) =>
-          item.recipient.name === "Admin" &&
-          item.surat_jalan.status_entry !== "Draft"
-      )
-      .slice(startIndex, endIndex);
-  } else {
-    currentPageEmails = emailList
-      .filter(
-        (item) =>
-          item.recipient.name === "Spv" &&
-          item.surat_jalan.status_entry !== "Draft"
-      )
-      .slice(startIndex, endIndex);
-  }
+  console.log("Data CurrentEmail:", currentPageEmails);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -224,6 +238,38 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       setSelectedEmails(selectedEmails.filter((id) => id !== emailId));
     } else {
       setSelectedEmails([...selectedEmails, emailId]);
+    }
+  };
+
+  // Handler untuk toggle section
+  const handleToggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  // Handler untuk select all dalam section
+  const handleSelectSection = (
+    emailIds: string[],
+    section: keyof typeof expandedSections
+  ) => {
+    const sectionEmailIds = emailIds;
+    const allSelected = sectionEmailIds.every((id) =>
+      selectedEmails.includes(id)
+    );
+
+    if (allSelected) {
+      // Deselect semua email di section ini
+      setSelectedEmails((prev) =>
+        prev.filter((id) => !sectionEmailIds.includes(id))
+      );
+    } else {
+      // Select semua email di section ini
+      setSelectedEmails((prev) => [
+        ...prev.filter((id) => !sectionEmailIds.includes(id)),
+        ...sectionEmailIds,
+      ]);
     }
   };
 
@@ -369,24 +415,48 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   const groupedEmailsCurrent: GroupedEmails =
     groupEmailsByDate(currentPageEmails);
-  const groupedEmailsAll: GroupedEmails = groupEmailsByDate(emailList);
+  const groupedEmailsAll: GroupedEmails = groupEmailsByDate(emailListFiltered);
 
   const SectionHeader = ({
     title,
     count,
-    isExpanded = true,
-  }: SectionHeaderProps): JSX.Element => (
-    <div className="flex items-center px-4 py-2">
-      <input type="checkbox" className="mr-3 rounded border-gray-300" />
-      <ChevronDown
-        className={`w-4 h-4 text-gray-500 mr-2 transition-transform ${
-          !isExpanded ? "-rotate-90" : ""
-        }`}
-      />
-      <span className="text-sm font-medium text-gray-700">{title}</span>
-      <span className="text-sm text-gray-500 ml-2">{count}</span>
-    </div>
-  );
+    isExpanded,
+    onToggle,
+    sectionEmails,
+    selectedEmails,
+    onSelectSection,
+  }: SectionHeaderProps): JSX.Element => {
+    const sectionEmailIds = sectionEmails.map((email) => email.documentId);
+    const allSelected =
+      sectionEmailIds.length > 0 &&
+      sectionEmailIds.every((id) => selectedEmails.includes(id));
+    const someSelected =
+      !allSelected && sectionEmailIds.some((id) => selectedEmails.includes(id));
+
+    return (
+      <div className="flex items-center px-4 py-2 hover:bg-gray-50">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(input) => {
+            if (input) {
+              input.indeterminate = someSelected;
+            }
+          }}
+          onChange={() => onSelectSection(sectionEmailIds)}
+          className="mr-3 rounded border-gray-300 cursor-pointer"
+        />
+        <ChevronDown
+          onClick={onToggle}
+          className={`w-4 h-4 text-gray-500 mr-2 transition-transform cursor-pointer ${
+            !isExpanded ? "-rotate-90" : ""
+          }`}
+        />
+        <span className="text-sm font-medium text-gray-700">{title}</span>
+        <span className="text-sm text-gray-500 ml-2">{count}</span>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -411,12 +481,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                       Inbox
                     </h1>
                     <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                      {user?.role?.name === "Admin"
-                        ? emailList.length
-                        : emailList.filter(
-                            (item) => item.surat_jalan.status_entry !== "Draft"
-                          ).length}{" "}
-                      messages, 0 Unread
+                      {emailListFiltered.length} messages, {unreadCount} Unread
                     </p>
                   </div>
 
@@ -581,24 +646,35 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                         <SectionHeader
                           title="Today"
                           count={groupedEmailsAll.today.length}
+                          isExpanded={expandedSections.today}
+                          onToggle={() => handleToggleSection("today")}
+                          sectionEmails={groupedEmailsCurrent.today}
+                          selectedEmails={selectedEmails}
+                          onSelectSection={(ids) =>
+                            handleSelectSection(ids, "today")
+                          }
                         />
-                        {groupedEmailsCurrent.today.map((email) => (
-                          <EmailRowInbox
-                            key={email.id}
-                            email={email}
-                            isSelected={selectedEmails.includes(
-                              email.documentId
+                        {expandedSections.today && (
+                          <>
+                            {groupedEmailsCurrent.today.map((email) => (
+                              <EmailRowInbox
+                                key={email.id}
+                                email={email}
+                                isSelected={selectedEmails.includes(
+                                  email.documentId
+                                )}
+                                markEmailAsBookmarked={markEmailAsBookmarked}
+                                onSelect={handleSelectEmail}
+                                onClick={handleEmailClick}
+                                openedEmail={openedEmail}
+                              />
+                            ))}
+                            {groupedEmailsCurrent.today.length === 0 && (
+                              <div className="px-4 py-2 text-sm text-gray-400 italic">
+                                No emails on this page
+                              </div>
                             )}
-                            markEmailAsBookmarked={markEmailAsBookmarked}
-                            onSelect={handleSelectEmail}
-                            onClick={handleEmailClick}
-                            openedEmail={openedEmail}
-                          />
-                        ))}
-                        {groupedEmailsCurrent.today.length === 0 && (
-                          <div className="px-4 py-2 text-sm text-gray-400 italic">
-                            No emails on this page
-                          </div>
+                          </>
                         )}
                       </div>
                     )}
@@ -608,24 +684,35 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                         <SectionHeader
                           title="Yesterday"
                           count={groupedEmailsAll.yesterday.length}
+                          isExpanded={expandedSections.yesterday}
+                          onToggle={() => handleToggleSection("yesterday")}
+                          sectionEmails={groupedEmailsCurrent.yesterday}
+                          selectedEmails={selectedEmails}
+                          onSelectSection={(ids) =>
+                            handleSelectSection(ids, "yesterday")
+                          }
                         />
-                        {groupedEmailsCurrent.yesterday.map((email) => (
-                          <EmailRowInbox
-                            key={email.id}
-                            email={email}
-                            isSelected={selectedEmails.includes(
-                              email.documentId
+                        {expandedSections.yesterday && (
+                          <>
+                            {groupedEmailsCurrent.yesterday.map((email) => (
+                              <EmailRowInbox
+                                key={email.id}
+                                email={email}
+                                isSelected={selectedEmails.includes(
+                                  email.documentId
+                                )}
+                                markEmailAsBookmarked={markEmailAsBookmarked}
+                                onSelect={handleSelectEmail}
+                                onClick={handleEmailClick}
+                                openedEmail={openedEmail}
+                              />
+                            ))}
+                            {groupedEmailsCurrent.yesterday.length === 0 && (
+                              <div className="px-4 py-2 text-sm text-gray-400 italic">
+                                No emails on this page
+                              </div>
                             )}
-                            markEmailAsBookmarked={markEmailAsBookmarked}
-                            onSelect={handleSelectEmail}
-                            onClick={handleEmailClick}
-                            openedEmail={openedEmail}
-                          />
-                        ))}
-                        {groupedEmailsCurrent.yesterday.length === 0 && (
-                          <div className="px-4 py-2 text-sm text-gray-400 italic">
-                            No emails on this page
-                          </div>
+                          </>
                         )}
                       </div>
                     )}
@@ -635,24 +722,35 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                         <SectionHeader
                           title="Older"
                           count={groupedEmailsAll.older.length}
+                          isExpanded={expandedSections.older}
+                          onToggle={() => handleToggleSection("older")}
+                          sectionEmails={groupedEmailsCurrent.older}
+                          selectedEmails={selectedEmails}
+                          onSelectSection={(ids) =>
+                            handleSelectSection(ids, "older")
+                          }
                         />
-                        {groupedEmailsCurrent.older.map((email) => (
-                          <EmailRowInbox
-                            key={email.id}
-                            email={email}
-                            isSelected={selectedEmails.includes(
-                              email.documentId
+                        {expandedSections.older && (
+                          <>
+                            {groupedEmailsCurrent.older.map((email) => (
+                              <EmailRowInbox
+                                key={email.id}
+                                email={email}
+                                isSelected={selectedEmails.includes(
+                                  email.documentId
+                                )}
+                                markEmailAsBookmarked={markEmailAsBookmarked}
+                                onSelect={handleSelectEmail}
+                                onClick={handleEmailClick}
+                                openedEmail={openedEmail}
+                              />
+                            ))}
+                            {groupedEmailsCurrent.older.length === 0 && (
+                              <div className="px-4 py-2 text-sm text-gray-400 italic">
+                                No emails on this page
+                              </div>
                             )}
-                            markEmailAsBookmarked={markEmailAsBookmarked}
-                            onSelect={handleSelectEmail}
-                            onClick={handleEmailClick}
-                            openedEmail={openedEmail}
-                          />
-                        ))}
-                        {groupedEmailsCurrent.older.length === 0 && (
-                          <div className="px-4 py-2 text-sm text-gray-400 italic">
-                            No emails on this page
-                          </div>
+                          </>
                         )}
                       </div>
                     )}
