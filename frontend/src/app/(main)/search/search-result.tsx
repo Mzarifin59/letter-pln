@@ -16,6 +16,7 @@ import { EmailData } from "@/lib/interface";
 import qs from "qs";
 import Link from "next/link";
 import { EmailDetail } from "@/components/detail-email";
+import { useUserLogin } from "@/lib/user";
 
 async function searchEmails(query: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -85,6 +86,7 @@ export default function SearchResultPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchInput, setSearchInput] = useState<string>(query);
   const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const { user } = useUserLogin();
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -95,8 +97,15 @@ export default function SearchResultPage() {
 
       try {
         setLoading(true);
-        const data = await searchEmails(query);
-        setResults(data);
+        const data: EmailData[] = await searchEmails(query);
+
+        // Filter di sini
+        const filteredData =
+          user?.role?.name === "Spv"
+            ? data.filter((item) => item.surat_jalan.status_entry !== "Draft")
+            : data;
+
+        setResults(filteredData);
       } catch (err) {
         console.error("Error searching:", err);
       } finally {
@@ -105,7 +114,7 @@ export default function SearchResultPage() {
     };
 
     fetchResults();
-  }, [query]);
+  }, [query, user?.role?.name]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

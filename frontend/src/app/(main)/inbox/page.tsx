@@ -10,7 +10,7 @@ export const revalidate = 0;
 export default async function InboxPage() {
   const dataEmail : EmailData[] = await getAllEmails();
 
-  const emailInbox = dataEmail.filter(item => item.recipient.name === "Admin Gudang");
+  const emailInbox = dataEmail;
   const token = (await cookies()).get('token');
   return(
     <div>

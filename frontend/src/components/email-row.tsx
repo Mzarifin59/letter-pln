@@ -57,6 +57,7 @@ export const EmailRowInbox = ({
   onClick,
   openedEmail,
   onDelete,
+  markEmailAsBookmarked,
 }: EmailRow): JSX.Element => {
   const isOpened = openedEmail?.id === email.id;
   const { user } = useUserLogin();
@@ -81,14 +82,24 @@ export const EmailRowInbox = ({
             onChange={() => onSelect(email.documentId)}
             className="rounded border-gray-300"
           />
-          <Star
-            className={`h-4 w-4 fill-current ${
-              email.email_statuses.find((item) => item.user.name === user?.name)
-                ?.is_bookmarked
-                ? "text-yellow-400"
-                : "text-[#E9E9E9]"
-            }`}
-          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              markEmailAsBookmarked?.(email.documentId);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition-colors"
+            aria-label="Toggle bookmark"
+          >
+            <Star
+              className={`w-4 h-4 transition-colors duration-200 ${
+                email.email_statuses.find(
+                  (item) => item.user.name === user?.name
+                )?.is_bookmarked
+                  ? "text-yellow-400 fill-yellow-400"
+                  : "text-[#E9E9E9]"
+              }`}
+            />
+          </button>
         </div>
       )}
 

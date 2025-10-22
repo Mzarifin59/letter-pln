@@ -27,6 +27,7 @@ import { EmailRowInbox } from "@/components/email-row";
 import { EmailData } from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useUserLogin } from "@/lib/user";
 
 interface InboxContentProps {
   data: EmailData[];
@@ -82,10 +83,10 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
   const [isFiltered, setIsFiltered] = useState(false);
+  const { user } = useUserLogin();
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
-
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -113,11 +114,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           position: "top-center",
         });
 
-        // Reset selection
         setSelectedEmails([]);
         setSelectAll(false);
       } else {
-        // 🧍‍♂️ Single delete mode
         if (!selectedToDelete) return;
 
         const res = await fetch(
@@ -171,8 +170,25 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
+  let currentPageEmails;
 
-  const currentPageEmails = emailList.slice(startIndex, endIndex);
+  if (user?.role?.name === "Admin") {
+    currentPageEmails = emailList
+      .filter(
+        (item) =>
+          item.recipient.name === "Admin" &&
+          item.surat_jalan.status_entry !== "Draft"
+      )
+      .slice(startIndex, endIndex);
+  } else {
+    currentPageEmails = emailList
+      .filter(
+        (item) =>
+          item.recipient.name === "Spv" &&
+          item.surat_jalan.status_entry !== "Draft"
+      )
+      .slice(startIndex, endIndex);
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -211,8 +227,102 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     }
   };
 
-  const handleEmailClick = (email: EmailData): void => {
+  const markEmailAsRead = async (emailDocumentId: string): Promise<void> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${emailDocumentId}/mark-read`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark email as read");
+      }
+
+      setEmailList((prevEmails) =>
+        prevEmails.map((email) => {
+          if (email.documentId === emailDocumentId) {
+            return {
+              ...email,
+              email_statuses: email.email_statuses.map((status) => {
+                if (status.user.name === user?.name) {
+                  return {
+                    ...status,
+                    is_read: true,
+                    read_at: new Date().toISOString(),
+                  };
+                }
+                return status;
+              }),
+            };
+          }
+          return email;
+        })
+      );
+    } catch (error) {
+      console.error("Error marking email as read:", error);
+    }
+  };
+
+  const markEmailAsBookmarked = async (
+    emailDocumentId: string
+  ): Promise<void> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${emailDocumentId}/mark-bookmarked`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark email as bookmarked");
+      }
+
+      // Update state lokal
+      setEmailList((prevEmails) =>
+        prevEmails.map((email) => {
+          if (email.documentId === emailDocumentId) {
+            return {
+              ...email,
+              email_statuses: email.email_statuses.map((status) => {
+                if (status.user.name === user?.name) {
+                  return {
+                    ...status,
+                    is_bookmarked: !status.is_bookmarked,
+                  };
+                }
+                return status;
+              }),
+            };
+          }
+          return email;
+        })
+      );
+    } catch (error) {
+      console.error("Error marking email as bookmarked:", error);
+    }
+  };
+
+  const handleEmailClick = async (email: EmailData): Promise<void> => {
     setOpenedEmail(email);
+
+    const emailStatus = email.email_statuses.find(
+      (item) => item.user.name === user?.name
+    );
+
+    if (!emailStatus?.is_read) {
+      await markEmailAsRead(email.documentId);
+    }
   };
 
   const handleCloseDetail = (): void => {
@@ -301,7 +411,12 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                       Inbox
                     </h1>
                     <p className="plus-jakarta-sans text-sm text-[#7F7F7F]">
-                      {emailList.length} messages, 0 Unread
+                      {user?.role?.name === "Admin"
+                        ? emailList.length
+                        : emailList.filter(
+                            (item) => item.surat_jalan.status_entry !== "Draft"
+                          ).length}{" "}
+                      messages, 0 Unread
                     </p>
                   </div>
 
@@ -448,6 +563,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                           isSelected={selectedEmails.includes(email.documentId)}
                           onSelect={handleSelectEmail}
                           onClick={handleEmailClick}
+                          markEmailAsBookmarked={markEmailAsBookmarked}
                           openedEmail={openedEmail}
                         />
                       ))
@@ -473,6 +589,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             isSelected={selectedEmails.includes(
                               email.documentId
                             )}
+                            markEmailAsBookmarked={markEmailAsBookmarked}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}
@@ -499,6 +616,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             isSelected={selectedEmails.includes(
                               email.documentId
                             )}
+                            markEmailAsBookmarked={markEmailAsBookmarked}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}
@@ -525,6 +643,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             isSelected={selectedEmails.includes(
                               email.documentId
                             )}
+                            markEmailAsBookmarked={markEmailAsBookmarked}
                             onSelect={handleSelectEmail}
                             onClick={handleEmailClick}
                             openedEmail={openedEmail}

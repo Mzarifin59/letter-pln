@@ -32,6 +32,8 @@ export default function SidebarContent({
   const { user } = useUserLogin();
   const pathname = usePathname();
 
+  const Spv = user?.role?.name === "Spv";
+
   // Memoize filtered data untuk performa
   const getFilteredData = useMemo(() => {
     return (filterType: string) => {
@@ -113,7 +115,7 @@ export default function SidebarContent({
         icon: StickyNote,
         id: "draft",
         count: 0,
-        hideForRoles: ["Spv"], 
+        hideForRoles: ["Spv"],
       },
       {
         href: "/sent",
@@ -121,7 +123,7 @@ export default function SidebarContent({
         icon: Send,
         id: "sent",
         count: getFilteredData("sent").length,
-        hideForRoles: ["Spv"], 
+        hideForRoles: ["Spv"],
       },
       {
         href: "/reject",
@@ -129,7 +131,7 @@ export default function SidebarContent({
         icon: ArchiveX,
         id: "reject",
         count: getFilteredData("reject").length,
-        hideForRoles: ["Spv"], 
+        hideForRoles: ["Spv"],
       },
     ];
 
@@ -149,8 +151,6 @@ export default function SidebarContent({
   const handleItemClick = () => {
     onItemClick?.();
   };
-
-  console.log(token);
 
   return (
     <div className="flex flex-col h-full">
@@ -174,12 +174,14 @@ export default function SidebarContent({
           </div>
         </div>
 
-        <Link href={`/create-letter`} onClick={handleItemClick}>
-          <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
-            <Plus size={18} />
-            Buat Surat
-          </Button>
-        </Link>
+        {user?.role?.name === "Admin" && (
+          <Link href={`/create-letter`} onClick={handleItemClick}>
+            <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
+              <Plus size={18} />
+              Buat Surat
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Navigation Section */}
