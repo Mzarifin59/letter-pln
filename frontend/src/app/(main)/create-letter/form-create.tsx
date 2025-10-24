@@ -437,43 +437,53 @@ export default function FormCreatePage() {
     setShowPreview(true);
   };
 
+  const scaleToFit = (element: HTMLElement, targetHeightMM = 297) => {
+    const targetHeightPx = targetHeightMM * 3.78;
+    const actualHeightPx = element.scrollHeight;
+
+    if (actualHeightPx > targetHeightPx) {
+      const scale = targetHeightPx / actualHeightPx;
+      element.style.transform = `scale(${scale})`;
+      element.style.transformOrigin = "top left";
+    } else {
+      element.style.transform = "scale(1)";
+    }
+  };
+
   const handleDownloadPDF = async () => {
-    const element = document.getElementById("preview-content");
-    if (!element) return alert("Preview tidak ditemukan!");
+    const pages = document.querySelectorAll(".surat");
+    if (!pages.length) return alert("Preview tidak ditemukan!");
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i] as HTMLElement;
 
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+      // 🔹 Auto scale sebelum render
+      scaleToFit(page);
 
-    let position = 0;
-    let heightLeft = imgHeight;
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
 
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+      // Reset transform agar tidak merusak tampilan asli
+      page.style.transform = "";
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const imgData = canvas.toDataURL("image/png");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
     }
 
     pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);

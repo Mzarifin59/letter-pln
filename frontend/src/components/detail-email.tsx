@@ -151,6 +151,19 @@ export const EmailDetail = ({
     }
   };
 
+  const scaleToFit = (element: HTMLElement, targetHeightMM = 297) => {
+    const targetHeightPx = targetHeightMM * 3.78;
+    const actualHeightPx = element.scrollHeight;
+
+    if (actualHeightPx > targetHeightPx) {
+      const scale = targetHeightPx / actualHeightPx;
+      element.style.transform = `scale(${scale})`;
+      element.style.transformOrigin = "top left";
+    } else {
+      element.style.transform = "scale(1)";
+    }
+  };
+
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
@@ -158,47 +171,44 @@ export const EmailDetail = ({
       // Wait for DOM to render
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const element = document.getElementById("hidden-preview-content");
-      if (!element) {
+      const pages = document.querySelectorAll(".surat");
+      if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
         setIsGeneratingPDF(false);
         return;
       }
 
       try {
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          width: 794, // A4 width in pixels at 96 DPI
-          windowWidth: 794,
-        });
-
-        const imgData = canvas.toDataURL("image/png");
         const pdf = new jsPDF({
           orientation: "portrait",
           unit: "mm",
           format: "a4",
         });
 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i] as HTMLElement;
 
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * pageWidth) / canvas.width;
+          // 🔹 Auto scale sebelum render
+          scaleToFit(page);
 
-        let position = 0;
-        let heightLeft = imgHeight;
+          const canvas = await html2canvas(page, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+          });
 
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+          // Reset transform agar tidak merusak tampilan asli
+          page.style.transform = "";
 
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+          const imgData = canvas.toDataURL("image/png");
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
         }
 
         pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
@@ -680,431 +690,472 @@ export const EmailDetail = ({
             position: "fixed",
             left: "-10000px",
             top: 0,
-            width: "794px", // A4 width at 96 DPI (210mm)
             backgroundColor: "#ffffff",
             zIndex: -1,
           }}
         >
-          <div
-            id="hidden-preview-content"
-            className="bg-white"
-            style={{ width: "794px", padding: "24px" }}
-          >
-            {/* Company Header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                marginBottom: "16px",
-              }}
-            >
-              <div style={{ flexShrink: 0 }}>
-                <img
-                  src="/images/PLN-logo.png"
-                  alt="PLN Logo"
-                  width={80}
-                  height={80}
+          <div id="hidden-preview-content">
+            {[0, 1, 2, 3].map((index) => (
+              <div
+                key={index}
+                className="bg-white surat w-[210mm] max-w-[1200px] px-8 py-4"
+              >
+                {/* Company Header */}
+                <div
                   style={{
-                    width: "80px",
-                    height: "80px",
-                    objectFit: "contain",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "16px",
                   }}
-                  crossOrigin="anonymous"
+                >
+                  <div style={{ flexShrink: 0 }}>
+                    <img
+                      src="/images/PLN-logo.png"
+                      alt="PLN Logo"
+                      width={104}
+                      height={104}
+                      style={{
+                        width: "104px",
+                        height: "104px",
+                        objectFit: "contain",
+                      }}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#232323",
+                        lineHeight: "1.3",
+                      }}
+                    >
+                      PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#232323",
+                        lineHeight: "1.3",
+                      }}
+                    >
+                      UNIT PELAKSANA TRANSMISI BANDUNG
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        color: "#232323",
+                        lineHeight: "1.3",
+                      }}
+                    >
+                      Jl. Soekarno-Hatta No. 606 Bandung 40286
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      backgroundColor: "rgba(166,35,68,0.1)",
+                      padding: "8px 24px",
+                      borderRadius: "8px",
+                      border: "1px solid rgb(166,35,68)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: 700,
+                        color: "rgb(166,35,68)",
+                      }}
+                    >
+                      LEMBAR {index + 1}
+                    </div>
+                    <div style={{ fontSize: "20px", color: "rgb(166,35,68)" }}>
+                      Pengirim Barang
+                    </div>
+                  </div>
+                </div>
+
+                <hr
+                  style={{
+                    borderTop: "4px solid #1f2937",
+                    marginBottom: "16px",
+                  }}
                 />
-              </div>
-              <div style={{ flex: 1 }}>
+
+                {/* Title */}
+                <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                  <h1
+                    style={{
+                      fontSize: "36px",
+                      fontWeight: 800,
+                      color: "#111827",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    SURAT JALAN
+                  </h1>
+                  <div
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: 600,
+                      fontSize: "24px",
+                    }}
+                  >
+                    {formData.nomorSuratJalan ||
+                      "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
+                  </div>
+                </div>
+
+                {/* Form Information */}
+                <div style={{ marginBottom: "24px" }}>
+                  <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                    Mohon diizinkan membawa barang-barang tersebut di bawah ini
+                    :
+                  </div>
+                  <div style={{ fontSize: "18px", lineHeight: "1.4" }}>
+                    <div style={{ marginBottom: "4px" }}>
+                      No Surat Permintaan :{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {formData.nomorSuratPermintaan ||
+                          "001.REQ/GD.UPT-BDG/IX/2025"}
+                      </span>
+                    </div>
+                    <div style={{ marginBottom: "4px" }}>
+                      Untuk Keperluan :{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {formData.perihal ||
+                          "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                      </span>
+                    </div>
+                    <div style={{ marginBottom: "4px" }}>
+                      Lokasi Asal :{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {formData.lokasiAsal || "GUDANG GARENTING"}
+                      </span>
+                    </div>
+                    <div>
+                      Lokasi Tujuan :{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Materials Table */}
+                <div style={{ marginBottom: "24px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ backgroundColor: "#f3f4f6" }}>
+                      <tr style={{ fontSize: "18px", textAlign: "center" }}>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          NO
+                        </th>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          NAMA MATERIAL
+                        </th>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          KATALOG
+                        </th>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          SATUAN
+                        </th>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          JUMLAH
+                        </th>
+                        <th
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        >
+                          KETERANGAN (LOKASI TYPE, S/N DLL)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ fontSize: "18px" }}>
+                      {materials.map(
+                        (material, index) => (
+                          <tr key={material.id}>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {index + 1}
+                            </td>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                              }}
+                            >
+                              {material.namaMaterial || "-"}
+                            </td>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {material.katalog || "-"}
+                            </td>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {material.satuan || "-"}
+                            </td>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {material.jumlah || "0"}
+                            </td>
+                            <td
+                              style={{
+                                border: "2px solid #1f2937",
+                                padding: "8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {material.keterangan || "-"}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                      <tr
+                        style={{ backgroundColor: "#f3f4f6", fontWeight: 600 }}
+                      >
+                        <td
+                          colSpan={4}
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                            textAlign: "center",
+                          }}
+                        >
+                          TOTAL
+                        </td>
+                        <td
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {calculateTotal()}
+                        </td>
+                        <td
+                          style={{
+                            border: "2px solid #1f2937",
+                            padding: "8px",
+                          }}
+                        ></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Notes */}
                 <div
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#232323",
-                    lineHeight: "1.3",
+                    paddingBottom: "12px",
+                    paddingLeft: "12px",
+                    borderBottom: "2px solid #1f2937",
                   }}
                 >
-                  PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                  <div style={{ fontSize: "18px", fontWeight: 600 }}>
+                    Keterangan :
+                  </div>
                 </div>
                 <div
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#232323",
-                    lineHeight: "1.3",
+                    padding: "12px",
+                    paddingLeft: "12px",
+                    borderBottom: "2px solid #1f2937",
                   }}
                 >
-                  UNIT PELAKSANA TRANSMISI BANDUNG
+                  <div style={{ fontSize: "18px", fontWeight: 600 }}>
+                    {formData.catatanTambahan ||
+                      "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                  </div>
                 </div>
+
+                {/* Vehicle and Driver Info */}
                 <div
                   style={{
-                    fontSize: "13px",
-                    color: "#232323",
-                    lineHeight: "1.3",
-                  }}
-                >
-                  Jl. Soekarno-Hatta No. 606 Bandung 40286
-                </div>
-              </div>
-              <div
-                style={{
-                  flexShrink: 0,
-                  backgroundColor: "rgba(166,35,68,0.1)",
-                  padding: "6px 20px",
-                  borderRadius: "6px",
-                  border: "1px solid rgb(166,35,68)",
-                }}
-              >
-                <div
-                  style={{
+                    paddingLeft: "12px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "32px",
+                    marginBottom: "32px",
                     fontSize: "18px",
-                    fontWeight: 700,
-                    color: "rgb(166,35,68)",
+                    paddingTop: "12px",
+                    paddingBottom: "12px",
                   }}
                 >
-                  LEMBAR I
+                  <div>
+                    <div>
+                      <span style={{ fontWeight: 600 }}>Kendaraan</span> :{" "}
+                      {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+                    </div>
+                    <div>
+                      <span style={{ fontWeight: 600 }}>Pengemudi</span> :{" "}
+                      {formData.namaPengemudi || "AYI"}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div>Bandung, {formatDateTimeEN(formData.tanggalSurat)}</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: "16px", color: "rgb(166,35,68)" }}>
-                  Pengirim Barang
-                </div>
-              </div>
-            </div>
 
-            <hr
-              style={{ borderTop: "1px solid #e5e7eb", marginBottom: "12px" }}
-            />
-            <hr
-              style={{ borderTop: "3px solid #1f2937", marginBottom: "16px" }}
-            />
-
-            {/* Title */}
-            <div style={{ textAlign: "center", marginBottom: "16px" }}>
-              <h1
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 800,
-                  color: "#111827",
-                  marginBottom: "4px",
-                }}
-              >
-                SURAT JALAN
-              </h1>
-              <div
-                style={{ color: "#2563eb", fontWeight: 600, fontSize: "18px" }}
-              >
-                {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
-              </div>
-            </div>
-
-            {/* Form Information */}
-            <div style={{ marginBottom: "12px" }}>
-              <div style={{ marginBottom: "4px", fontSize: "14px" }}>
-                Mohon diizinkan membawa barang-barang tersebut di bawah ini :
-              </div>
-              <div style={{ fontSize: "14px", lineHeight: "1.4" }}>
-                <div>
-                  No Surat Permintaan :{" "}
-                  <span style={{ fontWeight: 600 }}>
-                    {formData.nomorSuratPermintaan ||
-                      "001.REQ/GD.UPT-BDG/IX/2025"}
-                  </span>
-                </div>
-                <div>
-                  Untuk Keperluan :{" "}
-                  <span style={{ fontWeight: 600 }}>{formData.perihal}</span>
-                </div>
-                <div>
-                  Lokasi Asal :{" "}
-                  <span style={{ fontWeight: 600 }}>{formData.lokasiAsal}</span>
-                </div>
-                <div>
-                  Lokasi Tujuan :{" "}
-                  <span style={{ fontWeight: 600 }}>
-                    {formData.lokasiTujuan}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Materials Table */}
-            <div style={{ marginBottom: "12px" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ backgroundColor: "#f3f4f6" }}>
-                  <tr style={{ fontSize: "13px", textAlign: "center" }}>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      NO
-                    </th>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      NAMA MATERIAL
-                    </th>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      KATALOG
-                    </th>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      SATUAN
-                    </th>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      JUMLAH
-                    </th>
-                    <th
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    >
-                      KETERANGAN
-                    </th>
-                  </tr>
-                </thead>
-                <tbody style={{ fontSize: "13px" }}>
-                  {materials.map((material, index) => (
-                    <tr key={material.id}>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                        }}
-                      >
-                        {material.namaMaterial || "-"}
-                      </td>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {material.katalog || "-"}
-                      </td>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {material.satuan || "-"}
-                      </td>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {material.jumlah || "0"}
-                      </td>
-                      <td
-                        style={{
-                          border: "2px solid #1f2937",
-                          padding: "4px 6px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {material.keterangan || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr style={{ backgroundColor: "#f3f4f6", fontWeight: 600 }}>
-                    <td
-                      colSpan={4}
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                        textAlign: "center",
-                      }}
-                    >
-                      TOTAL
-                    </td>
-                    <td
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {calculateTotal()}
-                    </td>
-                    <td
-                      style={{
-                        border: "2px solid #1f2937",
-                        padding: "4px 6px",
-                      }}
-                    ></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Notes */}
-            <div
-              style={{
-                paddingBottom: "6px",
-                paddingLeft: "8px",
-                borderBottom: "2px solid #1f2937",
-              }}
-            >
-              <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                Keterangan :
-              </div>
-            </div>
-            <div
-              style={{ padding: "6px 8px", borderBottom: "2px solid #1f2937" }}
-            >
-              <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                {formData.catatanTambahan}
-              </div>
-            </div>
-
-            {/* Vehicle and Driver Info */}
-            <div
-              style={{
-                paddingLeft: "8px",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "24px",
-                marginBottom: "16px",
-                fontSize: "14px",
-                paddingTop: "8px",
-                paddingBottom: "8px",
-              }}
-            >
-              <div>
-                <div>
-                  <span style={{ fontWeight: 600 }}>Kendaraan</span> :{" "}
-                  {formData.informasiKendaraan}
-                </div>
-                <div>
-                  <span style={{ fontWeight: 600 }}>Pengemudi</span> :{" "}
-                  {formData.namaPengemudi}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div>Bandung, {formatDateTimeEN(formData.tanggalSurat)}</div>
-              </div>
-            </div>
-
-            {/* Signatures */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "48px",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <div style={{ marginBottom: "6px", fontSize: "14px" }}>
-                  Yang Menerima,
-                </div>
+                {/* Signatures */}
                 <div
                   style={{
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    fontSize: "14px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "64px",
+                    textAlign: "center",
                   }}
                 >
-                  {formData.perusahaanPenerima}
-                </div>
-                <div
-                  style={{
-                    height: "70px",
-                    marginBottom: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {signaturePenerima.preview.upload && (
+                  {/* Penerima */}
+                  <div>
+                    <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                      Yang Menerima,
+                    </div>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        marginBottom: "16px",
+                        fontSize: "18px",
+                      }}
+                    >
+                      {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+                    </div>
+                    <div
+                      style={{
+                        height: "96px",
+                        marginBottom: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {signaturePenerima.preview.upload && (
+                        <img
+                          src={signaturePenerima.preview.upload}
+                          alt="Signature Penerima"
+                          style={{
+                            maxHeight: "100%",
+                            maxWidth: "100%",
+                            objectFit: "contain",
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                      )}
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: 700 }}>
+                      {formData.namaPenerima || "PAK RUDI"}
+                    </div>
+                  </div>
+
+                  {/* Pengirim */}
+                  <div style={{ position: "relative" }}>
+                    <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                      Yang Menyerahkan,
+                    </div>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        marginBottom: "16px",
+                        fontSize: "18px",
+                      }}
+                    >
+                      {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+                    </div>
                     <img
-                      src={signaturePenerima.preview.upload}
-                      alt="Signature Penerima"
+                      src="/images/ttd.png"
+                      alt="TTD"
+                      width={140}
+                      height={140}
                       style={{
-                        maxHeight: "100%",
-                        maxWidth: "100%",
-                        objectFit: "contain",
+                        position: "absolute",
+                        zIndex: 0,
+                        left: "80px",
+                        bottom: "24px",
+                        width: "140px",
+                        height: "140px",
                       }}
                       crossOrigin="anonymous"
                     />
-                  )}
-                </div>
-                <div style={{ fontSize: "14px", fontWeight: 700 }}>
-                  {formData.namaPenerima}
-                </div>
-              </div>
-
-              <div>
-                <div style={{ marginBottom: "6px", fontSize: "14px" }}>
-                  Yang Menyerahkan,
-                </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    fontSize: "14px",
-                  }}
-                >
-                  {formData.departemenPengirim}
-                </div>
-                <div
-                  style={{
-                    height: "70px",
-                    marginBottom: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {signaturePengirim.preview.upload && (
-                    <img
-                      src={signaturePengirim.preview.upload}
-                      alt="Signature Pengirim"
+                    <div
                       style={{
-                        maxHeight: "100%",
-                        maxWidth: "100%",
-                        objectFit: "contain",
+                        height: "96px",
+                        marginBottom: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        position: "relative",
+                        zIndex: 20,
                       }}
-                      crossOrigin="anonymous"
-                    />
-                  )}
-                </div>
-                <div style={{ fontWeight: 700, fontSize: "14px" }}>
-                  {formData.namaPengirim}
+                    >
+                      {signaturePengirim.preview.upload && (
+                        <img
+                          src={signaturePengirim.preview.upload}
+                          alt="Signature Pengirim"
+                          style={{
+                            maxHeight: "100%",
+                            maxWidth: "100%",
+                            objectFit: "contain",
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                      )}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "18px" }}>
+                      {formData.namaPengirim || "ANDRI SETIAWAN"}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

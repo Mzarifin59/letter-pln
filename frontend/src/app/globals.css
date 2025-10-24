@@ -148,3 +148,33 @@
 .plus-jakarta-sans {
   font-family: "Plus Jakarta Sans", "Inter";
 }
+
+/* For PDF */
+/* Ukuran A4 sebenarnya */
+.page {
+  width: 210mm;
+  height: 297mm; /* <— ganti dari min-height */
+  padding: 10mm 15mm; /* sesuaikan padding */
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  position: relative;
+  page-break-after: always;
+  overflow: hidden; /* cegah isi keluar halaman */
+}
+
+
+/* Saat print atau generate PDF */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+

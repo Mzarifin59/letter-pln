@@ -157,7 +157,27 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         }
       );
 
-      if (!response.ok) {
+      const responseTwo = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              sender: {
+                connect: [`${user?.documentId}`],
+              },
+              recipient: {
+                connect: ["rzsqmsg3fgzi0d7wmm4njvtg"],
+              },
+            },
+          }),
+        }
+      );
+
+      if (!response.ok && !responseTwo.ok) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
@@ -206,7 +226,27 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         }
       );
 
-      if (!suratJalanResponse.ok) {
+      const responseTwo = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              sender: {
+                connect: [`${user?.documentId}`],
+              },
+              recipient: {
+                connect: ["rzsqmsg3fgzi0d7wmm4njvtg"],
+              },
+            },
+          }),
+        }
+      );
+
+      if (!suratJalanResponse.ok && !responseTwo.ok) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
