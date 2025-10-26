@@ -465,6 +465,7 @@ export interface ApiEmailEmail extends Struct.CollectionTypeSchema {
       'api::email-status.email-status'
     >;
     from_department: Schema.Attribute.String;
+    isHaveStatus: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::email.email'> &
       Schema.Attribute.Private;

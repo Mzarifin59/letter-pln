@@ -107,6 +107,7 @@ export interface EmailData {
   from_department: string;
   to_company: string;
   pesan: string;
+  isHaveStatus: boolean;
   createdAt: string;
   updatedAt: string;
   surat_jalan: SuratJalan;

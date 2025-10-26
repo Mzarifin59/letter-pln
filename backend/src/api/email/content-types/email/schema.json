@@ -56,6 +56,10 @@
         "videos",
         "audios"
       ]
+    },
+    "isHaveStatus": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

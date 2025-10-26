@@ -269,6 +269,35 @@ export default function SentContent({ data, token }: SentContentProps) {
   );
 
   const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+  let emailListFiltered: EmailData[];
+
+  if (user?.role?.name === "Admin") {
+    emailListFiltered = emailList.filter((item) => {
+      const hasAdminGudangStatus = item.email_statuses.some(
+        (status) => status.user.name === "Admin Gudang"
+      );
+
+      return (
+        hasAdminGudangStatus &&
+        ((item.recipient.name === "Admin Gudang" || item.recipient.name === "Spv" &&
+          item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
+  } else {
+    emailListFiltered = emailList.filter((item) => {
+      const hasSpvStatus = item.email_statuses.some(
+        (status) => status.user.name === "Spv"
+      );
+
+      return (
+        hasSpvStatus &&
+        ((item.recipient.name === "Spv" || item.recipient.name === "Admin Gudang" &&
+          item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
+  }
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
@@ -402,8 +431,8 @@ export default function SentContent({ data, token }: SentContentProps) {
               <div className="flex-1 overflow-auto py-5">
                 {/* Today Section */}
                 <div className="mb-6">
-                  {emailList.length > 0 ? (
-                    emailList
+                  {emailListFiltered.length > 0 ? (
+                    emailListFiltered
                       .slice(startIndex, endIndex)
                       .map((email) => (
                         <EmailRow

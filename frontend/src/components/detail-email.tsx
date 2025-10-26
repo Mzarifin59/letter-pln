@@ -555,8 +555,8 @@ export const EmailDetail = ({
                   {/* Signature Preview */}
                   <div className="h-20 mb-4 flex items-center justify-center">
                     <img
-                      width={120}
-                      height={120}
+                      width={200}
+                      height={200}
                       src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima.url}`}
                       alt="TTD penerima"
                       className="max-h-full max-w-full object-contain"
@@ -575,13 +575,14 @@ export const EmailDetail = ({
                   </div>
 
                   {/* Signature Preview */}
-                  <div className="h-20 mb-4 flex items-center justify-center">
-                    <img
-                      width={120}
-                      height={120}
+                  <div className="relative h-20 mb-4 flex items-center justify-center">
+                    <Image src={`/images/ttd.png`} alt="TTD" width={100} height={100} className="absolute z-0" />
+                    <Image
+                      width={200}
+                      height={200}
                       src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
                       alt="TTD pengirim"
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-full max-w-full object-contain z-10"
                     />
                   </div>
 

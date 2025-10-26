@@ -167,9 +167,7 @@ export default function Header() {
     );
 
     return (
-      !userStatus ||
-      (userStatus.is_read === false &&
-        email.surat_jalan.status_entry !== "Draft")
+      userStatus?.is_read === false && email.surat_jalan.status_entry !== "Draft"
     );
   });
 

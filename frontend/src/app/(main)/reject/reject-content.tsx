@@ -47,6 +47,19 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
 
+  let emailListFiltered: EmailData[] = emailList.filter((item) => {
+    const hasAdminGudangStatus = item.email_statuses.some(
+      (status) => status.user.name === "Admin Gudang"
+    );
+
+    return (
+      hasAdminGudangStatus &&
+      ((item.recipient.name === "Admin Gudang" &&
+        item.surat_jalan.status_entry !== "Draft") ||
+        item.isHaveStatus === true)
+    );
+  });
+
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
 
@@ -388,8 +401,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
               {/* Email List */}
               <div className="flex-1 overflow-auto py-4">
-                {emailList.length > 0 ? (
-                  emailList
+                {emailListFiltered.length > 0 ? (
+                  emailListFiltered
                     .slice(startIndex, endIndex)
                     .map((email) => (
                       <EmailRow

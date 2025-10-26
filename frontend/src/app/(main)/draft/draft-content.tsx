@@ -200,6 +200,13 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   );
 
   const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
+  let emailListFiltered: EmailData[] = emailList.filter((item) => {
+    const hasAdminGudangStatus = item.email_statuses.some(
+      (status) => status.user.name === "Admin Gudang"
+    );
+
+    return hasAdminGudangStatus && item.recipient.name === "Spv";
+  });
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
@@ -408,8 +415,8 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
           <div className="flex-1 overflow-auto px-[43px] py-[25px]">
             {/* Today Section */}
             <div className="mb-6">
-              {data.length > 0 ? (
-                emailList
+              {emailListFiltered.length > 0 ? (
+                emailListFiltered
                   .slice(startIndex, endIndex)
                   .map((email: EmailData) => (
                     <EmailRow

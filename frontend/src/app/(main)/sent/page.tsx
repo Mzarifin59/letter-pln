@@ -12,7 +12,6 @@ export default async function SentPage() {
 
   const sentData = dataEmail.filter(
     (item) =>
-      item.surat_jalan.status_surat === "In Progress" &&
       item.surat_jalan.status_entry === "Published"
   );
 

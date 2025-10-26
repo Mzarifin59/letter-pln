@@ -227,6 +227,7 @@ export const useSuratJalanForm = () => {
       // Create Email
       let resultEmail;
       let resultStatusEmail;
+      let resultStatusEmailSpv;
 
       if (existingSurat) {
         result = await StrapiAPIService.updateSuratJalan(
@@ -263,8 +264,21 @@ export const useSuratJalanForm = () => {
           },
         };
 
+        const dataStatusEmailForSpv = {
+          email: {
+            connect: [`${resultEmail.data.documentId}`],
+          },
+          user: {
+            connect: [`gwwhxmgwxn7o4cv7rr11zb32`],
+          },
+        };
+
         resultStatusEmail = await StrapiAPIService.createStatusEmail(
           dataStatusEmail
+        );
+
+        resultStatusEmailSpv = await StrapiAPIService.createStatusEmail(
+          dataStatusEmailForSpv
         );
       }
 
@@ -272,6 +286,7 @@ export const useSuratJalanForm = () => {
         result,
         resultEmail,
         resultStatusEmail,
+        resultStatusEmailSpv,
       };
     } catch (error) {
       console.error("Error submitting form:", error);

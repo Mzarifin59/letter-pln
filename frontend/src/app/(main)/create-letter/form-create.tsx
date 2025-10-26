@@ -861,7 +861,7 @@ export default function FormCreatePage() {
                     className: "w-full h-full",
                     style: { touchAction: "none" },
                   }}
-                  backgroundColor="rgba(255,255,255,1)"
+                  backgroundColor="transparent"
                   onEnd={() => saveSignature(type)}
                 />
               </div>

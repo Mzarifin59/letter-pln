@@ -102,16 +102,46 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (isMultipleDelete) {
-        // 🧹 Multiple delete mode
-        const deletePromises = selectedEmails.map(async (docId) => {
-          const res = await fetch(`${apiUrl}/api/emails/${docId}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (!res.ok) throw new Error(`Gagal hapus email ${docId}`);
+        const deletePromises = selectedEmails.map(async (emailDocId) => {
+          const emailToDelete = emailList.find(
+            (e) => e.documentId === emailDocId
+          );
+
+          if (!emailToDelete) {
+            console.warn(`Email ${emailDocId} tidak ditemukan`);
+            return;
+          }
+
+          // Cari email_status untuk user ini
+          const userEmailStatus = emailToDelete.email_statuses?.find(
+            (item) =>
+              item.user?.name === user?.name || item.user?.email === user?.email
+          );
+
+          if (!userEmailStatus) {
+            console.warn(
+              `Email status tidak ditemukan untuk user ${user?.name}`
+            );
+            return;
+          }
+
+          const emailStatusId =
+            userEmailStatus.documentId || userEmailStatus.id;
+
+          const res = await fetch(
+            `${apiUrl}/api/email-statuses/${emailStatusId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error(`Gagal hapus email status ${emailStatusId}`);
+          }
         });
 
         await Promise.all(deletePromises);
@@ -128,10 +158,41 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         setSelectedEmails([]);
         setSelectAll(false);
       } else {
-        if (!selectedToDelete) return;
+        if (!selectedToDelete) {
+          console.error("selectedToDelete is null!");
+          toast.error("Tidak ada email yang dipilih");
+          return;
+        }
+
+        console.log("selectedToDelete:", selectedToDelete);
+        console.log("email_statuses:", selectedToDelete.email_statuses);
+
+        // Validasi email_statuses
+        if (
+          !selectedToDelete.email_statuses ||
+          selectedToDelete.email_statuses.length === 0
+        ) {
+          toast.error("Data email status tidak ditemukan");
+          return;
+        }
+
+        // Cari email status milik user yang login
+        const userEmailStatus = selectedToDelete.email_statuses.find(
+          (item) =>
+            item.user?.name === user?.name || item.user?.email === user?.email
+        );
+
+        console.log("userEmailStatus found:", userEmailStatus);
+
+        if (!userEmailStatus) {
+          toast.error("Anda tidak memiliki akses untuk menghapus email ini");
+          return;
+        }
+
+        const emailStatusId = userEmailStatus.documentId || userEmailStatus.id;
 
         const res = await fetch(
-          `${apiUrl}/api/emails/${selectedToDelete.documentId}`,
+          `${apiUrl}/api/email-statuses/${emailStatusId}`,
           {
             method: "DELETE",
             headers: {
@@ -143,12 +204,13 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
         if (!res.ok) throw new Error("Gagal menghapus email");
 
+        // Update list
         setEmailList((prev) =>
           prev.filter((item) => item.documentId !== selectedToDelete.documentId)
         );
 
         toast.success("Email berhasil dihapus", {
-          description: selectedToDelete.surat_jalan.perihal,
+          description: selectedToDelete.surat_jalan?.perihal,
           position: "top-center",
         });
       }
@@ -178,17 +240,31 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   let emailListFiltered: EmailData[];
 
   if (user?.role?.name === "Admin") {
-    emailListFiltered = emailList.filter(
-      (item) =>
-        item.recipient.name === "Admin Gudang" &&
-        item.surat_jalan.status_entry !== "Draft"
-    );
+    emailListFiltered = emailList.filter((item) => {
+      const hasAdminGudangStatus = item.email_statuses.some(
+        (status) => status.user.name === "Admin Gudang"
+      );
+
+      return (
+        hasAdminGudangStatus &&
+        ((item.recipient.name === "Admin Gudang" &&
+          item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
   } else {
-    emailListFiltered = emailList.filter(
-      (item) =>
-        item.recipient.name === "Spv" &&
-        item.surat_jalan.status_entry !== "Draft"
-    );
+    emailListFiltered = emailList.filter((item) => {
+      const hasSpvStatus = item.email_statuses.some(
+        (status) => status.user.name === "Spv"
+      );
+
+      return (
+        hasSpvStatus &&
+        ((item.recipient.name === "Spv" &&
+          item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
   }
 
   const unreadCount = emailListFiltered.filter((email) =>
@@ -201,8 +277,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;
   let currentPageEmails = emailListFiltered.slice(startIndex, endIndex);
-
-  console.log("Data CurrentEmail:", currentPageEmails);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

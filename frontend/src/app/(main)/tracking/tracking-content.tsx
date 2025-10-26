@@ -177,7 +177,22 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         }
       );
 
-      if (!response.ok && !responseTwo.ok) {
+      const responseEmail = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              isHaveStatus: true,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok && !responseTwo.ok && !responseEmail) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
@@ -261,6 +276,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
           body: JSON.stringify({
             data: {
               pesan: rejectMessage,
+              isHaveStatus: true,
             },
           }),
         }
