@@ -18,6 +18,7 @@ import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
 import PreviewSection from "@/components/preview-surat";
 import { toast } from "sonner";
 import { EmailData, FileAttachment } from "@/lib/interface";
+import { useUserLogin } from "@/lib/user";
 
 interface PreviewData {
   upload: string | null;
@@ -26,6 +27,7 @@ interface PreviewData {
 
 export default function FormCreatePage() {
   const router = useRouter();
+  const { user } = useUserLogin();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const draftId = searchParams.get("id");
@@ -1153,15 +1155,16 @@ export default function FormCreatePage() {
 
               {/* Sender and Receiver Signatures - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6">
-                {renderSignatureSection(
-                  "penerima",
-                  "Penerima",
-                  formData.perusahaanPenerima,
-                  formData.namaPenerima,
-                  "perusahaanPenerima",
-                  "namaPenerima",
-                  previewPenerima
-                )}
+                {user?.role?.name === "Vendor" &&
+                  renderSignatureSection(
+                    "penerima",
+                    "Penerima",
+                    formData.perusahaanPenerima,
+                    formData.namaPenerima,
+                    "perusahaanPenerima",
+                    "namaPenerima",
+                    previewPenerima
+                  )}
 
                 {renderSignatureSection(
                   "pengirim",

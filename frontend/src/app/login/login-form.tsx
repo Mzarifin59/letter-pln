@@ -58,9 +58,17 @@ export default function LoginContentPage() {
         setTimeout(() => {
           window.location.href = "/";
         }, 500);
+      } else if (user.role?.name === "Vendor") {
+        toast.success("Login berhasil!", {
+          description: "Selamat datang kembali, Vendor.",
+          position: "top-center",
+        });
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 500);
       } else {
-        toast.error("Akses ditolak", {
-          description: "Hanya Admin yang bisa login di halaman ini.",
+        toast.error("Kesalahan Login", {
+          description: "Email dan password salah",
           position: "top-center",
         });
         setIsLoading(false);

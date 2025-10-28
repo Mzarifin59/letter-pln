@@ -255,7 +255,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1.5 items-start">
                   <h3 className="text-[12px] font-medium text-[#495057]">
-                    Menunggu Persetujuan
+                    {user?.role?.name === "Vendor"
+                      ? "Menunggu Tanda Tangan"
+                      : "Menunggu Persetujuan"}
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
                     {
@@ -319,9 +321,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                       <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
                         Tanggal
                       </th>
-                      <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
-                        Kepada
-                      </th>
+                      {user?.role?.name !== "Vendor" && (
+                        <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                          Kepada
+                        </th>
+                      )}
                       <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
                         Perihal
                       </th>
@@ -345,7 +349,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
-                            {item.recipient.name}
+                            {item.recipient.name} 
                           </td>
                           <td className="py-4 px-4 text-sm text-[#212529]">
                             {item.surat_jalan.perihal}
@@ -408,9 +412,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 text-sm text-[#495057]">
-                              {item.recipient.name}
-                            </td>
+                            {user?.role?.name !== "Vendor" && (
+                              <td className="py-4 px-4 text-sm text-[#495057]">
+                                {item.recipient.name} halo
+                              </td>
+                            )}
                             <td className="py-4 px-4 text-sm text-[#212529]">
                               {item.surat_jalan.perihal}
                             </td>

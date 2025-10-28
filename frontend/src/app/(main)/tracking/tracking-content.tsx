@@ -94,11 +94,19 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
 
   if (user?.role?.name === "Admin") {
     currentData = dataEmail.slice(startIndex, endIndex);
-  } else {
+  } else if (user?.role?.name === "Spv") {
     currentData = dataEmail
       .filter(
         (item) =>
           item.surat_jalan.status_surat === "In Progress" &&
+          item.surat_jalan.status_entry !== "Draft"
+      )
+      .slice(startIndex, endIndex);
+  } else {
+    currentData = dataEmail
+      .filter(
+        (item) =>
+          item.surat_jalan.status_surat === "Approve" &&
           item.surat_jalan.status_entry !== "Draft"
       )
       .slice(startIndex, endIndex);
@@ -192,7 +200,27 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
         }
       );
 
-      if (!response.ok && !responseTwo.ok && !responseEmail) {
+      const createStatusEmail = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/email-statuses/${selectedItem.documentId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              emial : {
+                connect : [`${selectedItem.documentId}`]
+              },
+              user : {
+                connect : ['j1z9jwyfbntnn7zkb2lbj3gq']
+              }
+            },
+          }),
+        }
+      );
+
+      if (!response.ok && !responseTwo.ok && !responseEmail.ok && !createStatusEmail.ok) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
@@ -360,7 +388,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
                       "Dari",
                       "Kepada",
                       "Perihal",
-                      isSPV ? "Detail" : "Status",
+                      isSPV || user?.role?.name === "Vendor" ? "Detail" : "Status",
                     ].map((h) => (
                       <th
                         key={h}
@@ -390,7 +418,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
                         {item.surat_jalan.perihal}
                       </td>
                       <td className="py-4 px-6">
-                        {isSPV ? (
+                        {isSPV || user?.role?.name === "Vendor" ? (
                           <button
                             onClick={() => handleSeeDetail(item)}
                             className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"

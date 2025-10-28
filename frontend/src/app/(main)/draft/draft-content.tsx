@@ -200,13 +200,25 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   );
 
   const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
-  let emailListFiltered: EmailData[] = emailList.filter((item) => {
-    const hasAdminGudangStatus = item.email_statuses.some(
-      (status) => status.user.name === "Admin Gudang"
-    );
+  let emailListFiltered: EmailData[];
 
-    return hasAdminGudangStatus && item.recipient.name === "Spv";
-  });
+  if (user?.role?.name === "Admin") {
+    emailListFiltered = emailList.filter((item) => {
+      const hasAdminGudangStatus = item.email_statuses.some(
+        (status) => status.user.name === "Admin Gudang"
+      );
+
+      return hasAdminGudangStatus && item.recipient.name === "Spv";
+    });
+  } else {
+    emailListFiltered = emailList.filter((item) => {
+      const hasVendorStatus = item.email_statuses.some(
+        (status) => status.user.name === "Vendor"
+      );
+
+      return hasVendorStatus && item.surat_jalan.status_surat === "Surat Bongkaran";
+    });
+  }
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {

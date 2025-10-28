@@ -252,7 +252,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           item.isHaveStatus === true)
       );
     });
-  } else {
+  } else if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
         (status) => status.user.name === "Spv"
@@ -261,6 +261,19 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       return (
         hasSpvStatus &&
         ((item.recipient.name === "Spv" &&
+          item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
+  } else {
+    emailListFiltered = emailList.filter((item) => {
+      const hasVendorStatus = item.email_statuses.some(
+        (status) => status.user.name === "Vendor"
+      );
+
+      return (
+        hasVendorStatus &&
+        ((item.recipient.name === "Vendor" &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );

@@ -48,21 +48,50 @@ export default function SentContent({ data, token }: SentContentProps) {
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
-
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (isMultipleDelete) {
-        // 🧹 Multiple delete mode
-        const deletePromises = selectedEmails.map(async (docId) => {
-          const res = await fetch(`${apiUrl}/api/emails/${docId}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (!res.ok) throw new Error(`Gagal hapus email ${docId}`);
+        const deletePromises = selectedEmails.map(async (emailDocId) => {
+          const emailToDelete = emailList.find(
+            (e) => e.documentId === emailDocId
+          );
+
+          if (!emailToDelete) {
+            console.warn(`Email ${emailDocId} tidak ditemukan`);
+            return;
+          }
+
+          // Cari email_status untuk user ini
+          const userEmailStatus = emailToDelete.email_statuses?.find(
+            (item) =>
+              item.user?.name === user?.name || item.user?.email === user?.email
+          );
+
+          if (!userEmailStatus) {
+            console.warn(
+              `Email status tidak ditemukan untuk user ${user?.name}`
+            );
+            return;
+          }
+
+          const emailStatusId =
+            userEmailStatus.documentId || userEmailStatus.id;
+
+          const res = await fetch(
+            `${apiUrl}/api/email-statuses/${emailStatusId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error(`Gagal hapus email status ${emailStatusId}`);
+          }
         });
 
         await Promise.all(deletePromises);
@@ -76,15 +105,44 @@ export default function SentContent({ data, token }: SentContentProps) {
           position: "top-center",
         });
 
-        // Reset selection
         setSelectedEmails([]);
         setSelectAll(false);
       } else {
-        // 🧍‍♂️ Single delete mode
-        if (!selectedToDelete) return;
+        if (!selectedToDelete) {
+          console.error("selectedToDelete is null!");
+          toast.error("Tidak ada email yang dipilih");
+          return;
+        }
+
+        console.log("selectedToDelete:", selectedToDelete);
+        console.log("email_statuses:", selectedToDelete.email_statuses);
+
+        // Validasi email_statuses
+        if (
+          !selectedToDelete.email_statuses ||
+          selectedToDelete.email_statuses.length === 0
+        ) {
+          toast.error("Data email status tidak ditemukan");
+          return;
+        }
+
+        // Cari email status milik user yang login
+        const userEmailStatus = selectedToDelete.email_statuses.find(
+          (item) =>
+            item.user?.name === user?.name || item.user?.email === user?.email
+        );
+
+        console.log("userEmailStatus found:", userEmailStatus);
+
+        if (!userEmailStatus) {
+          toast.error("Anda tidak memiliki akses untuk menghapus email ini");
+          return;
+        }
+
+        const emailStatusId = userEmailStatus.documentId || userEmailStatus.id;
 
         const res = await fetch(
-          `${apiUrl}/api/emails/${selectedToDelete.documentId}`,
+          `${apiUrl}/api/email-statuses/${emailStatusId}`,
           {
             method: "DELETE",
             headers: {
@@ -96,12 +154,13 @@ export default function SentContent({ data, token }: SentContentProps) {
 
         if (!res.ok) throw new Error("Gagal menghapus email");
 
+        // Update list
         setEmailList((prev) =>
           prev.filter((item) => item.documentId !== selectedToDelete.documentId)
         );
 
         toast.success("Email berhasil dihapus", {
-          description: selectedToDelete.surat_jalan.perihal,
+          description: selectedToDelete.surat_jalan?.perihal,
           position: "top-center",
         });
       }
@@ -284,7 +343,7 @@ export default function SentContent({ data, token }: SentContentProps) {
           item.isHaveStatus === true)
       );
     });
-  } else {
+  } else if(user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
         (status) => status.user.name === "Spv"
@@ -295,6 +354,18 @@ export default function SentContent({ data, token }: SentContentProps) {
         ((item.recipient.name === "Spv" || item.recipient.name === "Admin Gudang" &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
+      );
+    });
+  } else {
+    emailListFiltered = emailList.filter((item) => {
+      const hasVendorStatus = item.email_statuses.some(
+        (status) => status.user.name === "Vendor"
+      );
+
+      return (
+        hasVendorStatus &&
+        ((item.recipient.name === "Vendor"  &&
+          item.surat_jalan.status_entry === "Surat Bongkaran"))
       );
     });
   }

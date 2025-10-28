@@ -50,7 +50,6 @@ export default function SidebarContent({
           case "inbox":
             return (
               isPublished &&
-              item.surat_jalan.status_surat === "Pending" &&
               userEmailStatus.is_read === false
             );
 
@@ -174,7 +173,7 @@ export default function SidebarContent({
           </div>
         </div>
 
-        {user?.role?.name === "Admin" && (
+        {user?.role?.name === "Admin" &&  (
           <Link href={`/create-letter`} onClick={handleItemClick}>
             <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
               <Plus size={18} />
@@ -182,7 +181,18 @@ export default function SidebarContent({
             </Button>
           </Link>
         )}
+
+        {user?.role?.name === "Vendor" &&  (
+          <Link href={`/create-letter`} onClick={handleItemClick}>
+            <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
+              <Plus size={18} />
+              Buat Surat Bongkaran
+            </Button>
+          </Link>
+        )}
       </div>
+
+      
 
       {/* Navigation Section */}
       <div className="flex-1 p-4 overflow-y-auto">
