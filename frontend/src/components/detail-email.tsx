@@ -105,11 +105,11 @@ export const EmailDetail = ({
 
   // Fix signature structure sesuai SignatureData interface
   const signaturePenerima: SignatureData = {
-    upload: null, // File upload (untuk form creation)
-    signature: null, // Canvas signature (untuk form creation)
+    upload: null,
+    signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.penerima.ttd_penerima.url}`,
+      upload: `${apiUrl}${email.surat_jalan.penerima.ttd_penerima?.url}`,
     },
   };
 
@@ -549,18 +549,25 @@ export const EmailDetail = ({
                 <div>
                   <div className="mb-2 text-lg">Yang Menerima,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {email.surat_jalan.penerima.perusahaan_penerima}
+                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                      "Nama Departemen"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="h-20 mb-4 flex items-center justify-center">
-                    <img
-                      width={200}
-                      height={200}
-                      src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima.url}`}
-                      alt="TTD penerima"
-                      className="max-h-full max-w-full object-contain"
-                    />
+                    {email.surat_jalan.penerima.ttd_penerima?.url ? (
+                      <img
+                        width={200}
+                        height={200}
+                        src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima?.url}`}
+                        alt="TTD penerima"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-sm">
+                        (Tanda Tangan)
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-lg font-bold">
@@ -571,19 +578,34 @@ export const EmailDetail = ({
                 <div>
                   <div className="mb-2 text-lg">Yang menyerahkan,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {email.surat_jalan.pengirim.departemen_pengirim}
+                    {email.surat_jalan.pengirim.departemen_pengirim ||
+                      "Nama Departemen"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="relative h-20 mb-4 flex items-center justify-center">
-                    <Image src={`/images/ttd.png`} alt="TTD" width={100} height={100} className="absolute z-0" />
-                    <Image
-                      width={200}
-                      height={200}
-                      src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
-                      alt="TTD pengirim"
-                      className="max-h-full max-w-full object-contain z-10"
-                    />
+                    {email.surat_jalan.pengirim.ttd_pengirim.url ? (
+                      <>
+                        <Image
+                          src={`/images/ttd.png`}
+                          alt="TTD"
+                          width={100}
+                          height={100}
+                          className="absolute z-0"
+                        />
+                        <Image
+                          width={200}
+                          height={200}
+                          src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
+                          alt="TTD pengirim"
+                          className="max-h-full max-w-full object-contain z-10"
+                        />
+                      </>
+                    ) : (
+                      <div className="text-gray-400 text-sm">
+                        (Tanda Tangan)
+                      </div>
+                    )}
                   </div>
 
                   <div className="font-bold text-lg">
@@ -696,214 +718,224 @@ export const EmailDetail = ({
           }}
         >
           <div id="hidden-preview-content">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="bg-white surat w-[210mm] max-w-[1200px] px-8 py-4"
-              >
-                {/* Company Header */}
+            {[0, 1, 2, 3].map((index) => {
+              const lembarLabels = [
+                "Pengirim Barang",
+                "Penerima Barang",
+                "Satpam",
+                formData.lokasiTujuan,
+              ];
+              return (
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
-                    marginBottom: "16px",
-                  }}
+                  key={index}
+                  className="bg-white surat w-[210mm] max-w-[1200px] px-8 py-4"
                 >
-                  <div style={{ flexShrink: 0 }}>
-                    <img
-                      src="/images/PLN-logo.png"
-                      alt="PLN Logo"
-                      width={104}
-                      height={104}
-                      style={{
-                        width: "104px",
-                        height: "104px",
-                        objectFit: "contain",
-                      }}
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "#232323",
-                        lineHeight: "1.3",
-                      }}
-                    >
-                      PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "#232323",
-                        lineHeight: "1.3",
-                      }}
-                    >
-                      UNIT PELAKSANA TRANSMISI BANDUNG
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        color: "#232323",
-                        lineHeight: "1.3",
-                      }}
-                    >
-                      Jl. Soekarno-Hatta No. 606 Bandung 40286
-                    </div>
-                  </div>
+                  {/* Company Header */}
                   <div
                     style={{
-                      flexShrink: 0,
-                      backgroundColor: "rgba(166,35,68,0.1)",
-                      padding: "8px 24px",
-                      borderRadius: "8px",
-                      border: "1px solid rgb(166,35,68)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
+                      marginBottom: "16px",
                     }}
                   >
+                    <div style={{ flexShrink: 0 }}>
+                      <img
+                        src="/images/PLN-logo.png"
+                        alt="PLN Logo"
+                        width={104}
+                        height={104}
+                        style={{
+                          width: "104px",
+                          height: "104px",
+                          objectFit: "contain",
+                        }}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "#232323",
+                          lineHeight: "1.3",
+                        }}
+                      >
+                        PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "#232323",
+                          lineHeight: "1.3",
+                        }}
+                      >
+                        UNIT PELAKSANA TRANSMISI BANDUNG
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          color: "#232323",
+                          lineHeight: "1.3",
+                        }}
+                      >
+                        Jl. Soekarno-Hatta No. 606 Bandung 40286
+                      </div>
+                    </div>
                     <div
                       style={{
-                        fontSize: "22px",
-                        fontWeight: 700,
-                        color: "rgb(166,35,68)",
+                        flexShrink: 0,
+                        backgroundColor: "rgba(166,35,68,0.1)",
+                        padding: "8px 24px",
+                        borderRadius: "8px",
+                        border: "1px solid rgb(166,35,68)",
                       }}
                     >
-                      LEMBAR {index + 1}
-                    </div>
-                    <div style={{ fontSize: "20px", color: "rgb(166,35,68)" }}>
-                      Pengirim Barang
+                      <div
+                        style={{
+                          fontSize: "22px",
+                          fontWeight: 700,
+                          color: "rgb(166,35,68)",
+                        }}
+                      >
+                        LEMBAR {index + 1}
+                      </div>
+                      <div
+                        style={{ fontSize: "20px", color: "rgb(166,35,68)" }}
+                      >
+                        {lembarLabels[index]}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <hr
-                  style={{
-                    borderTop: "4px solid #1f2937",
-                    marginBottom: "16px",
-                  }}
-                />
-
-                {/* Title */}
-                <div style={{ textAlign: "center", marginBottom: "24px" }}>
-                  <h1
+                  <hr
                     style={{
-                      fontSize: "36px",
-                      fontWeight: 800,
-                      color: "#111827",
-                      marginBottom: "8px",
+                      borderTop: "4px solid #1f2937",
+                      marginBottom: "16px",
                     }}
-                  >
-                    SURAT JALAN
-                  </h1>
-                  <div
-                    style={{
-                      color: "#2563eb",
-                      fontWeight: 600,
-                      fontSize: "24px",
-                    }}
-                  >
-                    {formData.nomorSuratJalan ||
-                      "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
-                  </div>
-                </div>
+                  />
 
-                {/* Form Information */}
-                <div style={{ marginBottom: "24px" }}>
-                  <div style={{ marginBottom: "8px", fontSize: "18px" }}>
-                    Mohon diizinkan membawa barang-barang tersebut di bawah ini
-                    :
-                  </div>
-                  <div style={{ fontSize: "18px", lineHeight: "1.4" }}>
-                    <div style={{ marginBottom: "4px" }}>
-                      No Surat Permintaan :{" "}
-                      <span style={{ fontWeight: 600 }}>
-                        {formData.nomorSuratPermintaan ||
-                          "001.REQ/GD.UPT-BDG/IX/2025"}
-                      </span>
-                    </div>
-                    <div style={{ marginBottom: "4px" }}>
-                      Untuk Keperluan :{" "}
-                      <span style={{ fontWeight: 600 }}>
-                        {formData.perihal ||
-                          "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                      </span>
-                    </div>
-                    <div style={{ marginBottom: "4px" }}>
-                      Lokasi Asal :{" "}
-                      <span style={{ fontWeight: 600 }}>
-                        {formData.lokasiAsal || "GUDANG GARENTING"}
-                      </span>
-                    </div>
-                    <div>
-                      Lokasi Tujuan :{" "}
-                      <span style={{ fontWeight: 600 }}>
-                        {formData.lokasiTujuan || "GI BANDUNG UTARA"}
-                      </span>
+                  {/* Title */}
+                  <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                    <h1
+                      style={{
+                        fontSize: "36px",
+                        fontWeight: 800,
+                        color: "#111827",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      SURAT JALAN
+                    </h1>
+                    <div
+                      style={{
+                        color: "#2563eb",
+                        fontWeight: 600,
+                        fontSize: "24px",
+                      }}
+                    >
+                      {formData.nomorSuratJalan ||
+                        "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
                     </div>
                   </div>
-                </div>
 
-                {/* Materials Table */}
-                <div style={{ marginBottom: "24px" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead style={{ backgroundColor: "#f3f4f6" }}>
-                      <tr style={{ fontSize: "18px", textAlign: "center" }}>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          NO
-                        </th>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          NAMA MATERIAL
-                        </th>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          KATALOG
-                        </th>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          SATUAN
-                        </th>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          JUMLAH
-                        </th>
-                        <th
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        >
-                          KETERANGAN (LOKASI TYPE, S/N DLL)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody style={{ fontSize: "18px" }}>
-                      {materials.map(
-                        (material, index) => (
+                  {/* Form Information */}
+                  <div style={{ marginBottom: "24px" }}>
+                    <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                      Mohon diizinkan membawa barang-barang tersebut di bawah
+                      ini :
+                    </div>
+                    <div style={{ fontSize: "18px", lineHeight: "1.4" }}>
+                      <div style={{ marginBottom: "4px" }}>
+                        No Surat Permintaan :{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {formData.nomorSuratPermintaan ||
+                            "001.REQ/GD.UPT-BDG/IX/2025"}
+                        </span>
+                      </div>
+                      <div style={{ marginBottom: "4px" }}>
+                        Untuk Keperluan :{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {formData.perihal ||
+                            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                        </span>
+                      </div>
+                      <div style={{ marginBottom: "4px" }}>
+                        Lokasi Asal :{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {formData.lokasiAsal || "GUDANG GARENTING"}
+                        </span>
+                      </div>
+                      <div>
+                        Lokasi Tujuan :{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Materials Table */}
+                  <div style={{ marginBottom: "24px" }}>
+                    <table
+                      style={{ width: "100%", borderCollapse: "collapse" }}
+                    >
+                      <thead style={{ backgroundColor: "#f3f4f6" }}>
+                        <tr style={{ fontSize: "18px", textAlign: "center" }}>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            NO
+                          </th>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            NAMA MATERIAL
+                          </th>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            KATALOG
+                          </th>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            SATUAN
+                          </th>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            JUMLAH
+                          </th>
+                          <th
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          >
+                            KETERANGAN (LOKASI TYPE, S/N DLL)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody style={{ fontSize: "18px" }}>
+                        {materials.map((material, index) => (
                           <tr key={material.id}>
                             <td
                               style={{
@@ -959,204 +991,214 @@ export const EmailDetail = ({
                               {material.keterangan || "-"}
                             </td>
                           </tr>
-                        )
-                      )}
-                      <tr
-                        style={{ backgroundColor: "#f3f4f6", fontWeight: 600 }}
+                        ))}
+                        <tr
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            fontWeight: 600,
+                          }}
+                        >
+                          <td
+                            colSpan={4}
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                              textAlign: "center",
+                            }}
+                          >
+                            TOTAL
+                          </td>
+                          <td
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                              textAlign: "center",
+                            }}
+                          >
+                            {calculateTotal()}
+                          </td>
+                          <td
+                            style={{
+                              border: "2px solid #1f2937",
+                              padding: "8px",
+                            }}
+                          ></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Notes */}
+                  <div
+                    style={{
+                      paddingBottom: "12px",
+                      paddingLeft: "12px",
+                      borderBottom: "2px solid #1f2937",
+                    }}
+                  >
+                    <div style={{ fontSize: "18px", fontWeight: 600 }}>
+                      Keterangan :
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px",
+                      paddingLeft: "12px",
+                      borderBottom: "2px solid #1f2937",
+                    }}
+                  >
+                    <div style={{ fontSize: "18px", fontWeight: 600 }}>
+                      {formData.catatanTambahan ||
+                        "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                    </div>
+                  </div>
+
+                  {/* Vehicle and Driver Info */}
+                  <div
+                    style={{
+                      paddingLeft: "12px",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "32px",
+                      marginBottom: "32px",
+                      fontSize: "18px",
+                      paddingTop: "12px",
+                      paddingBottom: "12px",
+                    }}
+                  >
+                    <div>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Kendaraan</span> :{" "}
+                        {formData.informasiKendaraan ||
+                          "COLT DIESEL / D 8584 HL"}
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Pengemudi</span> :{" "}
+                        {formData.namaPengemudi || "AYI"}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div>
+                        Bandung, {formatDateTimeEN(formData.tanggalSurat)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Signatures */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "64px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {/* Penerima */}
+                    <div>
+                      <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                        Yang Menerima,
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          marginBottom: "16px",
+                          fontSize: "18px",
+                        }}
                       >
-                        <td
-                          colSpan={4}
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                            textAlign: "center",
-                          }}
-                        >
-                          TOTAL
-                        </td>
-                        <td
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                            textAlign: "center",
-                          }}
-                        >
-                          {calculateTotal()}
-                        </td>
-                        <td
-                          style={{
-                            border: "2px solid #1f2937",
-                            padding: "8px",
-                          }}
-                        ></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                        {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+                      </div>
+                      <div
+                        style={{
+                          height: "96px",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {signaturePenerima.preview.upload ? (
+                          <img
+                            src={signaturePenerima.preview.upload}
+                            alt="Signature Penerima"
+                            style={{
+                              maxHeight: "100%",
+                              maxWidth: "100%",
+                              objectFit: "contain",
+                            }}
+                            crossOrigin="anonymous"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-sm">
+                            (Tanda Tangan)
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "18px", fontWeight: 700 }}>
+                        {formData.namaPenerima || "PAK RUDI"}
+                      </div>
+                    </div>
 
-                {/* Notes */}
-                <div
-                  style={{
-                    paddingBottom: "12px",
-                    paddingLeft: "12px",
-                    borderBottom: "2px solid #1f2937",
-                  }}
-                >
-                  <div style={{ fontSize: "18px", fontWeight: 600 }}>
-                    Keterangan :
-                  </div>
-                </div>
-                <div
-                  style={{
-                    padding: "12px",
-                    paddingLeft: "12px",
-                    borderBottom: "2px solid #1f2937",
-                  }}
-                >
-                  <div style={{ fontSize: "18px", fontWeight: 600 }}>
-                    {formData.catatanTambahan ||
-                      "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                  </div>
-                </div>
-
-                {/* Vehicle and Driver Info */}
-                <div
-                  style={{
-                    paddingLeft: "12px",
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "32px",
-                    marginBottom: "32px",
-                    fontSize: "18px",
-                    paddingTop: "12px",
-                    paddingBottom: "12px",
-                  }}
-                >
-                  <div>
-                    <div>
-                      <span style={{ fontWeight: 600 }}>Kendaraan</span> :{" "}
-                      {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
-                    </div>
-                    <div>
-                      <span style={{ fontWeight: 600 }}>Pengemudi</span> :{" "}
-                      {formData.namaPengemudi || "AYI"}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div>Bandung, {formatDateTimeEN(formData.tanggalSurat)}</div>
-                  </div>
-                </div>
-
-                {/* Signatures */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "64px",
-                    textAlign: "center",
-                  }}
-                >
-                  {/* Penerima */}
-                  <div>
-                    <div style={{ marginBottom: "8px", fontSize: "18px" }}>
-                      Yang Menerima,
-                    </div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: "16px",
-                        fontSize: "18px",
-                      }}
-                    >
-                      {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
-                    </div>
-                    <div
-                      style={{
-                        height: "96px",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {signaturePenerima.preview.upload && (
-                        <img
-                          src={signaturePenerima.preview.upload}
-                          alt="Signature Penerima"
-                          style={{
-                            maxHeight: "100%",
-                            maxWidth: "100%",
-                            objectFit: "contain",
-                          }}
-                          crossOrigin="anonymous"
-                        />
-                      )}
-                    </div>
-                    <div style={{ fontSize: "18px", fontWeight: 700 }}>
-                      {formData.namaPenerima || "PAK RUDI"}
-                    </div>
-                  </div>
-
-                  {/* Pengirim */}
-                  <div style={{ position: "relative" }}>
-                    <div style={{ marginBottom: "8px", fontSize: "18px" }}>
-                      Yang Menyerahkan,
-                    </div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: "16px",
-                        fontSize: "18px",
-                      }}
-                    >
-                      {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
-                    </div>
-                    <img
-                      src="/images/ttd.png"
-                      alt="TTD"
-                      width={140}
-                      height={140}
-                      style={{
-                        position: "absolute",
-                        zIndex: 0,
-                        left: "80px",
-                        bottom: "24px",
-                        width: "140px",
-                        height: "140px",
-                      }}
-                      crossOrigin="anonymous"
-                    />
-                    <div
-                      style={{
-                        height: "96px",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        position: "relative",
-                        zIndex: 20,
-                      }}
-                    >
-                      {signaturePengirim.preview.upload && (
-                        <img
-                          src={signaturePengirim.preview.upload}
-                          alt="Signature Pengirim"
-                          style={{
-                            maxHeight: "100%",
-                            maxWidth: "100%",
-                            objectFit: "contain",
-                          }}
-                          crossOrigin="anonymous"
-                        />
-                      )}
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: "18px" }}>
-                      {formData.namaPengirim || "ANDRI SETIAWAN"}
+                    {/* Pengirim */}
+                    <div style={{ position: "relative" }}>
+                      <div style={{ marginBottom: "8px", fontSize: "18px" }}>
+                        Yang Menyerahkan,
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          marginBottom: "16px",
+                          fontSize: "18px",
+                        }}
+                      >
+                        {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+                      </div>
+                      <img
+                        src="/images/ttd.png"
+                        alt="TTD"
+                        width={140}
+                        height={140}
+                        style={{
+                          position: "absolute",
+                          zIndex: 0,
+                          left: "80px",
+                          bottom: "24px",
+                          width: "140px",
+                          height: "140px",
+                        }}
+                        crossOrigin="anonymous"
+                      />
+                      <div
+                        style={{
+                          height: "96px",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          position: "relative",
+                          zIndex: 20,
+                        }}
+                      >
+                        {signaturePengirim.preview.upload && (
+                          <img
+                            src={signaturePengirim.preview.upload}
+                            alt="Signature Pengirim"
+                            style={{
+                              maxHeight: "100%",
+                              maxWidth: "100%",
+                              objectFit: "contain",
+                            }}
+                            crossOrigin="anonymous"
+                          />
+                        )}
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: "18px" }}>
+                        {formData.namaPengirim || "ANDRI SETIAWAN"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

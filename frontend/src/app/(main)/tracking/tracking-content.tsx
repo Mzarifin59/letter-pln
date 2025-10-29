@@ -201,7 +201,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
       );
 
       const createStatusEmail = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/email-statuses/${selectedItem.documentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/email-statuses`,
         {
           method: "POST",
           headers: {
@@ -209,7 +209,7 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
           },
           body: JSON.stringify({
             data: {
-              emial : {
+              email : {
                 connect : [`${selectedItem.documentId}`]
               },
               user : {

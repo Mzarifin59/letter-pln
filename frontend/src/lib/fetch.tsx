@@ -112,7 +112,6 @@ export async function getAllEmails() {
             lampiran: {
               fields: ["name", "url"],
             },
-            category_surat: true,
           },
         },
         sender: {

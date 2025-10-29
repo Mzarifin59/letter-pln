@@ -275,7 +275,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
         {/* Sender & Preview */}
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-center">
+          <div className="flex max-lg:justify-between lg:gap-12 items-center">
             <span className="text-sm font-medium text-gray-900 truncate">
               {email.surat_jalan.penerima.perusahaan_penerima}
             </span>

@@ -52,7 +52,6 @@ async function getEmail() {
           lampiran: {
             fields: ["name", "url"],
           },
-          category_surat: true,
         },
       },
       sender: {

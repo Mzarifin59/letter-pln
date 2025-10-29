@@ -52,7 +52,6 @@ async function searchEmails(query: string) {
           lampiran: {
             fields: ["name", "url"],
           },
-          category_surat: true,
         },
       },
       sender: {

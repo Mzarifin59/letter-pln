@@ -71,12 +71,6 @@
       "target": "api::email.email",
       "mappedBy": "surat_jalan"
     },
-    "category_surat": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::category-surat.category-surat",
-      "inversedBy": "surat_jalans"
-    },
     "catatan_tambahan": {
       "type": "text"
     },

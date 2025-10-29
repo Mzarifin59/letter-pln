@@ -13,12 +13,6 @@
   "attributes": {
     "name": {
       "type": "string"
-    },
-    "surat_jalans": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::surat-jalan.surat-jalan",
-      "mappedBy": "category_surat"
     }
   }
 }

@@ -115,7 +115,7 @@ export const EmailRowInbox = ({
 
       {/* Sender & Preview */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center max-lg:justify-between gap-12">
           <span className="truncate text-sm font-medium text-gray-900">
             {email.surat_jalan.penerima.perusahaan_penerima}
           </span>
@@ -126,7 +126,7 @@ export const EmailRowInbox = ({
               openedEmail ? "hidden" : "max-lg:hidden"
             } text-sm font-medium text-[#0056B0]`}
           >
-            {email.subject}
+            {email.surat_jalan.kategori_surat}
           </span>
 
           {!openedEmail && (
@@ -178,13 +178,57 @@ export const EmailRowInbox = ({
                     </div>
                   )}
               </div>
+              <div
+                className={`px-3 py-1 rounded-xl max-sm:hidden ${
+                  email.surat_jalan.status_surat === "In Progress"
+                    ? "bg-yellow-100"
+                    : email.surat_jalan.status_surat === "Approve"
+                    ? "bg-[#188580]/20"
+                    : "bg-red-100"
+                }`}
+              >
+                <span
+                  className={`plus-jakarta-sans text-xs font-medium ${
+                    email.surat_jalan.status_surat === "In Progress"
+                      ? "text-yellow-700"
+                      : email.surat_jalan.status_surat === "Approve"
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }`}
+                >
+                  {email.surat_jalan.status_surat}
+                </span>
+              </div>
               {/* Time */}
-              <span className="max-sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                {formatDate(email.surat_jalan.tanggal, "long")}
-              </span>
-              <span className="sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                {formatDate(email.surat_jalan.tanggal, "short")}
-              </span>
+              <div>
+                <span className="max-sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
+                  {formatDate(email.surat_jalan.tanggal, "long")}
+                </span>
+                <span className="sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
+                  {formatDate(email.surat_jalan.tanggal, "short")}
+                </span>
+                <div
+                className={`px-3 py-1 rounded-xl sm:hidden ${
+                  email.surat_jalan.status_surat === "In Progress"
+                    ? "bg-yellow-100"
+                    : email.surat_jalan.status_surat === "Approve"
+                    ? "bg-[#188580]/20"
+                    : "bg-red-100"
+                }`}
+              >
+                <span
+                  className={`plus-jakarta-sans text-xs font-medium ${
+                    email.surat_jalan.status_surat === "In Progress"
+                      ? "text-yellow-700"
+                      : email.surat_jalan.status_surat === "Approve"
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }`}
+                >
+                  {email.surat_jalan.status_surat}
+                </span>
+              </div>
+              </div>
             </>
           )}
         </div>
@@ -359,7 +403,7 @@ export const EmailRow = ({
               : "Draft"}
           </div>
         )}
-        <div className="flex justify-between items-center">
+        <div className="flex items-center max-lg:justify-between lg:gap-12">
           <span className="text-sm font-medium text-gray-900 truncate">
             {email.surat_jalan.penerima.perusahaan_penerima}
           </span>

@@ -1155,16 +1155,15 @@ export default function FormCreatePage() {
 
               {/* Sender and Receiver Signatures - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6">
-                {user?.role?.name === "Vendor" &&
-                  renderSignatureSection(
-                    "penerima",
-                    "Penerima",
-                    formData.perusahaanPenerima,
-                    formData.namaPenerima,
-                    "perusahaanPenerima",
-                    "namaPenerima",
-                    previewPenerima
-                  )}
+                {renderSignatureSection(
+                  "penerima",
+                  "Penerima",
+                  formData.perusahaanPenerima,
+                  formData.namaPenerima,
+                  "perusahaanPenerima",
+                  "namaPenerima",
+                  previewPenerima
+                )}
 
                 {renderSignatureSection(
                   "pengirim",

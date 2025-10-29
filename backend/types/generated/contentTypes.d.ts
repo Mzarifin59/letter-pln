@@ -396,10 +396,6 @@ export interface ApiCategorySuratCategorySurat
       Schema.Attribute.Private;
     name: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
-    surat_jalans: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::surat-jalan.surat-jalan'
-    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -503,10 +499,6 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
   };
   attributes: {
     catatan_tambahan: Schema.Attribute.Text;
-    category_surat: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::category-surat.category-surat'
-    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

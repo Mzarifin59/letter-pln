@@ -34,6 +34,8 @@ export default function SidebarContent({
 
   const Spv = user?.role?.name === "Spv";
 
+  console.log("Data: ", data)
+
   // Memoize filtered data untuk performa
   const getFilteredData = useMemo(() => {
     return (filterType: string) => {
