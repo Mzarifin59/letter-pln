@@ -199,32 +199,48 @@ export default function PreviewSection({
                       Mohon diizinkan membawa barang-barang tersebut di bawah
                       ini :
                     </div>
+
                     <div className="space-y-1 text-lg">
-                      <div>
-                        No Surat Permintaan :{" "}
-                        <span className="font-semibold">
-                          {formData.nomorSuratPermintaan ||
-                            "001.REQ/GD.UPT-BDG/IX/2025"}
-                        </span>
+                      <div className="flex">
+                        <div className="min-w-[180px]">No Surat Permintaan</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.nomorSuratPermintaan ||
+                              "001.REQ/GD.UPT-BDG/IX/2025"}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        Untuk Keperluan :{" "}
-                        <span className="font-semibold">
-                          {formData.perihal ||
-                            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                        </span>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Untuk Keperluan</div>
+                        <div className="flex-1">
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.perihal ||
+                              "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        Lokasi Asal :{" "}
-                        <span className="font-semibold">
-                          {formData.lokasiAsal || "GUDANG GARENTING"}
-                        </span>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Lokasi Asal</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.lokasiAsal || "GUDANG GARENTING"}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        Lokasi Tujuan :{" "}
-                        <span className="font-semibold">
-                          {formData.lokasiTujuan || "GI BANDUNG UTARA"}
-                        </span>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Lokasi Tujuan</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -334,15 +350,25 @@ export default function PreviewSection({
 
                   {/* Vehicle and Driver Info */}
                   <div className="pl-3 grid grid-cols-2 gap-8 mb-8 text-lg py-3">
-                    <div>
-                      <div>
-                        <span className="font-semibold">Kendaraan</span> :{" "}
-                        {formData.informasiKendaraan ||
-                          "COLT DIESEL / D 8584 HL"}
+                    {/* Kolom kiri */}
+                    <div className="table">
+                      <div className="table-row">
+                        <div className="table-cell pr-4 font-semibold">
+                          Kendaraan
+                        </div>
+                        <div className="table-cell">
+                          :{" "}
+                          {formData.informasiKendaraan ||
+                            "COLT DIESEL / D 8584 HL"}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-semibold">Pengemudi</span> :{" "}
-                        {formData.namaPengemudi || "AYI"}
+                      <div className="table-row">
+                        <div className="table-cell pr-4 font-semibold">
+                          Pengemudi
+                        </div>
+                        <div className="table-cell">
+                          : {formData.namaPengemudi || "AYI"}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
