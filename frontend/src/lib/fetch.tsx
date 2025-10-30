@@ -32,58 +32,58 @@ async function fetchWithError(url: string, options: FetchOptions = {}) {
   return response.json();
 }
 
-// export async function getAllSuratJalan() {
-//   try {
-//     const query = qs.stringify({
-//       sort: ["createdAt:desc"],
-//       populate: {
-//         materials: true,
-//         penerima: {
-//           fields: ["perusahaan_penerima", "nama_penerima"],
-//           populate: {
-//             ttd_penerima: {
-//               fields: ["name", "url"],
-//             },
-//           },
-//         },
-//         pengirim: {
-//           fields: ["departemen_pengirim", "nama_pengirim"],
-//           populate: {
-//             ttd_pengirim: {
-//               fields: ["name", "url"],
-//             },
-//           },
-//         },
-//         lampiran: {
-//           fields: ["name", "url"],
-//         },
-//         emails: {
-//           fields: ["subject", "from_department", "to_company", "pesan"],
-//           populate: {
-//             sender: {
-//               fields: ["name", "email"],
-//             },
-//             recipient: {
-//               fields: ["name", "email"],
-//             },
-//             attachment_files: true,
-//           },
-//         },
-//       },
-//     });
+export async function getAllSuratJalan() {
+  try {
+    const query = qs.stringify({
+      sort: ["createdAt:desc"],
+      populate: {
+        materials: true,
+        penerima: {
+          fields: ["perusahaan_penerima", "nama_penerima"],
+          populate: {
+            ttd_penerima: {
+              fields: ["name", "url"],
+            },
+          },
+        },
+        pengirim: {
+          fields: ["departemen_pengirim", "nama_pengirim"],
+          populate: {
+            ttd_pengirim: {
+              fields: ["name", "url"],
+            },
+          },
+        },
+        lampiran: {
+          fields: ["name", "url"],
+        },
+        emails: {
+          fields: ["subject", "from_department", "to_company", "pesan"],
+          populate: {
+            sender: {
+              fields: ["name", "email"],
+            },
+            recipient: {
+              fields: ["name", "email"],
+            },
+            attachment_files: true,
+          },
+        },
+      },
+    });
 
-//     const data = await fetchWithError(`${apiUrl}/api/surat-jalans?${query}`, {
-//       next: {
-//         tags: ["surat-jalan"],
-//       },
-//     });
+    const data = await fetchWithError(`${apiUrl}/api/surat-jalans?${query}`, {
+      next: {
+        tags: ["surat-jalan"],
+      },
+    });
 
-//     return data.data;
-//   } catch (error) {
-//     console.error("Error fetching Data Surat Jalan:", error);
-//     throw error;
-//   }
-// }
+    return data.data;
+  } catch (error) {
+    console.error("Error fetching Data Surat Jalan:", error);
+    throw error;
+  }
+}
 
 export async function getAllEmails() {
   try {

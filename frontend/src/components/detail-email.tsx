@@ -774,15 +774,6 @@ export const EmailDetail = ({
                       >
                         UNIT PELAKSANA TRANSMISI BANDUNG
                       </div>
-                      <div
-                        style={{
-                          fontSize: "16px",
-                          color: "#232323",
-                          lineHeight: "1.3",
-                        }}
-                      >
-                        Jl. Soekarno-Hatta No. 606 Bandung 40286
-                      </div>
                     </div>
                     <div
                       style={{

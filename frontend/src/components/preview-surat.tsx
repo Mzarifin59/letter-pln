@@ -169,9 +169,6 @@ export default function PreviewSection({
                       <div className="text-base font-semibold text-[#232323]">
                         UNIT PELAKSANA TRANSMISI BANDUNG
                       </div>
-                      <div className="text-base text-[#232323]">
-                        Jl. Soekarno-Hatta No. 606 Bandung 40286
-                      </div>
                     </div>
                     <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-6 py-2 rounded-lg border border-[rgb(166,35,68)]">
                       <div className="text-[22px] font-bold text-[rgb(166,35,68)]">
