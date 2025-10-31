@@ -24,6 +24,17 @@ import {
   MaterialForm,
   SignatureData,
 } from "@/lib/surat-jalan/surat-jalan.type";
+import { Button } from "./ui/button";
+import Link from "next/link";
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return "31 Januari 2025";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
 function getCompanyAbbreviation(fullName: string, maxLetters = 3): string {
   if (!fullName) return "";
@@ -228,6 +239,8 @@ export const EmailDetail = ({
     setIsGeneratingPDF(true);
   };
 
+  console.log("Email Id:", email.documentId)
+
   return (
     <>
       <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
@@ -377,7 +390,7 @@ export const EmailDetail = ({
         <div className="max-md:hidden mb-6 md:mb-8">
           <div className="w-full transform origin-top-left">
             {/* Fixed width document preview */}
-            <div className="bg-white shadow-lg py-4">
+            <div className="bg-white py-4">
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
@@ -428,25 +441,48 @@ export const EmailDetail = ({
                     :
                   </div>
                   <div className="space-y-1 text-lg">
-                    <div>
-                      Untuk Keperluan :{" "}
-                      <span className="font-semibold">
-                        {email.surat_jalan.perihal}
-                      </span>
+                      <div className="flex">
+                        <div className="min-w-[180px]">No Surat Permintaan</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.nomorSuratPermintaan ||
+                              "001.REQ/GD.UPT-BDG/IX/2025"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Untuk Keperluan</div>
+                        <div className="flex-1">
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.perihal ||
+                              "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Lokasi Asal</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.lokasiAsal || "GUDANG GARENTING"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex">
+                        <div className="min-w-[180px]">Lokasi Tujuan</div>
+                        <div>
+                          :{" "}
+                          <span className="font-semibold">
+                            {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      Lokasi Asal :{" "}
-                      <span className="font-semibold">
-                        {email.surat_jalan.lokasi_asal}
-                      </span>
-                    </div>
-                    <div>
-                      Lokasi Tujuan :{" "}
-                      <span className="font-semibold">
-                        {email.surat_jalan.lokasi_tujuan}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
               {/* Materials Table */}
@@ -529,20 +565,31 @@ export const EmailDetail = ({
 
               {/* Vehicle and Driver Info */}
               <div className="pl-3 grid grid-cols-2 gap-8 mb-8 text-lg py-3">
-                <div>
-                  <div>
-                    <span className="font-semibold">Kendaraan</span> :{" "}
-                    {email.surat_jalan.informasi_kendaraan}
+                    {/* Kolom kiri */}
+                    <div className="table">
+                      <div className="table-row">
+                        <div className="table-cell pr-4 font-semibold">
+                          Kendaraan
+                        </div>
+                        <div className="table-cell">
+                          :{" "}
+                          {formData.informasiKendaraan ||
+                            "COLT DIESEL / D 8584 HL"}
+                        </div>
+                      </div>
+                      <div className="table-row">
+                        <div className="table-cell pr-4 font-semibold">
+                          Pengemudi
+                        </div>
+                        <div className="table-cell">
+                          : {formData.namaPengemudi || "AYI"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-semibold">Pengemudi</span> :{" "}
-                    {email.surat_jalan.nama_pengemudi}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div>Bandung,31 Januari 2025</div>
-                </div>
-              </div>
 
               {/* Signatures */}
               <div className="grid grid-cols-2 gap-16 text-sm text-center">
@@ -704,6 +751,13 @@ export const EmailDetail = ({
               })}
             </div>
           </div>
+        )}
+        {user?.role?.name === "Admin" && email.surat_jalan.status_surat === "Reject" && (
+          <Link href={`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`}>
+            <Button variant="default" size="lg">
+              Ubah Surat
+            </Button>
+          </Link>
         )}
       </div>
 
