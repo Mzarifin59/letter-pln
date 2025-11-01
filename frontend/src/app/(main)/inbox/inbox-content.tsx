@@ -28,6 +28,7 @@ import { EmailData } from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useUserLogin } from "@/lib/user";
+import { deleteEmail } from "@/lib/emailRequest";
 
 interface InboxContentProps {
   data: EmailData[];
@@ -128,16 +129,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           const emailStatusId =
             userEmailStatus.documentId || userEmailStatus.id;
 
-          const res = await fetch(
-            `${apiUrl}/api/email-statuses/${emailStatusId}`,
-            {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
           if (!res.ok) {
             throw new Error(`Gagal hapus email status ${emailStatusId}`);
@@ -191,16 +183,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
         const emailStatusId = userEmailStatus.documentId || userEmailStatus.id;
 
-        const res = await fetch(
-          `${apiUrl}/api/email-statuses/${emailStatusId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
         if (!res.ok) throw new Error("Gagal menghapus email");
 
@@ -225,6 +208,11 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     }
   };
 
+  const handleDeleteClick = (email: EmailData) => {
+    setSelectedToDelete(email);
+    setShowDeleteDialog(true);
+  };
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -242,12 +230,12 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Admin Gudang"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasAdminGudangStatus &&
-        ((item.recipient.name === "Admin Gudang" &&
+        ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
@@ -255,12 +243,12 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
-        (status) => status.user.name === "Spv"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasSpvStatus &&
-        ((item.recipient.name === "Spv" &&
+        ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
@@ -268,7 +256,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasVendorStatus = item.email_statuses.some(
-        (status) => status.user.name === "Vendor"
+        (status) => status.user.name === user?.name && status.isDelete == false
       );
 
       return hasVendorStatus && item.isHaveStatus === true;

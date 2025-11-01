@@ -121,7 +121,7 @@ export async function getAllEmails() {
           fields: ["name", "email"],
         },
         email_statuses: {
-          fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at"],
+          fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at", "isDelete"],
           populate: {
             user: {
               fields: ["name", "email"],

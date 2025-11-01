@@ -11,6 +11,7 @@ import {
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailData } from "@/lib/interface";
+import { deleteEmail } from "@/lib/emailRequest";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 import {
@@ -78,16 +79,7 @@ export default function SentContent({ data, token }: SentContentProps) {
           const emailStatusId =
             userEmailStatus.documentId || userEmailStatus.id;
 
-          const res = await fetch(
-            `${apiUrl}/api/email-statuses/${emailStatusId}`,
-            {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
           if (!res.ok) {
             throw new Error(`Gagal hapus email status ${emailStatusId}`);
@@ -141,16 +133,7 @@ export default function SentContent({ data, token }: SentContentProps) {
 
         const emailStatusId = userEmailStatus.documentId || userEmailStatus.id;
 
-        const res = await fetch(
-          `${apiUrl}/api/email-statuses/${emailStatusId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
         if (!res.ok) throw new Error("Gagal menghapus email");
 
@@ -173,6 +156,11 @@ export default function SentContent({ data, token }: SentContentProps) {
       setSelectedToDelete(null);
       setIsMultipleDelete(false);
     }
+  };
+
+  const handleDeleteClick = (email: EmailData) => {
+    setSelectedToDelete(email);
+    setShowDeleteDialog(true); // buka modal konfirmasi
   };
 
   // Pagination
@@ -333,39 +321,42 @@ export default function SentContent({ data, token }: SentContentProps) {
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Admin Gudang"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasAdminGudangStatus &&
-        ((item.recipient.name === "Admin Gudang" || item.recipient.name === "Spv" &&
-          item.surat_jalan.status_entry !== "Draft") ||
+        (item.recipient.name === user.name ||
+          (item.recipient.name === "Spv" &&
+            item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
     });
-  } else if(user?.role?.name === "Spv") {
+    console.log(emailListFiltered)
+  } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
-        (status) => status.user.name === "Spv"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasSpvStatus &&
-        ((item.recipient.name === "Spv" || item.recipient.name === "Admin Gudang" &&
-          item.surat_jalan.status_entry !== "Draft") ||
+        (item.recipient.name === user.name ||
+          (item.recipient.name === "Admin Gudang" &&
+            item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasVendorStatus = item.email_statuses.some(
-        (status) => status.user.name === "Vendor"
+        (status) => status.user.name === user?.name && status.isDelete == false
       );
 
       return (
         hasVendorStatus &&
-        ((item.recipient.name === "Vendor"  &&
-          item.surat_jalan.status_entry === "Surat Bongkaran"))
+        item.recipient.name === user?.name &&
+        item.surat_jalan.status_entry === "Surat Bongkaran"
       );
     });
   }
@@ -515,7 +506,7 @@ export default function SentContent({ data, token }: SentContentProps) {
                           openedEmail={openedEmail}
                           markEmailAsBookmarked={markEmailAsBookmarked}
                           pageRow="Send"
-                          onDelete={handleConfirmDelete}
+                          onDelete={handleDeleteClick}
                         />
                       ))
                   ) : (
@@ -548,8 +539,8 @@ export default function SentContent({ data, token }: SentContentProps) {
           <DialogHeader>
             <DialogTitle>
               {isMultipleDelete
-                ? "Hapus Beberapa Draft Email"
-                : "Hapus Draft Email"}
+                ? "Hapus Beberapa Email"
+                : "Hapus Email"}
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600">
@@ -557,11 +548,11 @@ export default function SentContent({ data, token }: SentContentProps) {
               <>
                 Apakah Anda yakin ingin menghapus{" "}
                 <span className="font-semibold">{selectedEmails.length}</span>{" "}
-                draft email terpilih?
+                email terpilih?
               </>
             ) : (
               <>
-                Apakah Anda yakin ingin menghapus draft email ini?
+                Apakah Anda yakin ingin menghapus email ini?
                 <br />
                 <span className="font-semibold">
                   {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}

@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { deleteEmail } from "@/lib/emailRequest";
 
 interface RejectContentProps {
   data: EmailData[];
@@ -52,37 +53,37 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Admin Gudang"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasAdminGudangStatus &&
-        ((item.recipient.name === "Admin Gudang" &&
+        ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
     });
-  } else if(user?.role?.name === "Spv") {
+  } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Spv"
+        (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
         hasAdminGudangStatus &&
-        ((item.surat_jalan.status_entry !== "Draft") ||
+        (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Vendor"
+        (status) => status.user.name === user?.name && status.isDelete == false
       );
 
       return (
         hasAdminGudangStatus &&
-        ((item.surat_jalan.status_entry !== "Draft") ||
+        (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
     });
@@ -120,16 +121,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           const emailStatusId =
             userEmailStatus.documentId || userEmailStatus.id;
 
-          const res = await fetch(
-            `${apiUrl}/api/email-statuses/${emailStatusId}`,
-            {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
           if (!res.ok) {
             throw new Error(`Gagal hapus email status ${emailStatusId}`);
@@ -183,16 +175,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
         const emailStatusId = userEmailStatus.documentId || userEmailStatus.id;
 
-        const res = await fetch(
-          `${apiUrl}/api/email-statuses/${emailStatusId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await deleteEmail({ apiUrl, emailStatusId, token });
 
         if (!res.ok) throw new Error("Gagal menghapus email");
 
@@ -215,6 +198,11 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
       setSelectedToDelete(null);
       setIsMultipleDelete(false);
     }
+  };
+
+  const handleDeleteClick = (email: EmailData) => {
+    setSelectedToDelete(email);
+    setShowDeleteDialog(true); 
   };
 
   // Pagination
@@ -501,7 +489,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                         openedEmail={openedEmail}
                         markEmailAsBookmarked={markEmailAsBookmarked}
                         pageRow="Reject"
-                        onDelete={handleConfirmDelete}
+                        onDelete={handleDeleteClick}
                       />
                     ))
                 ) : (

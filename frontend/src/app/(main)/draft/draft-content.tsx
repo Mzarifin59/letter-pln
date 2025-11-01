@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { EmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
+import { deleteEmailReal } from "@/lib/emailRequest";
 
 function formatDate(dateString: string, type: "long" | "short" = "long") {
   const date = new Date(dateString);
@@ -83,14 +84,14 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
       if (isMultipleDelete) {
         // 🧹 Multiple delete mode
         const deletePromises = selectedEmails.map(async (docId) => {
-          const res = await fetch(`${apiUrl}/api/emails/${docId}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (!res.ok) throw new Error(`Gagal hapus email ${docId}`);
+          const resEmail = await (
+            await deleteEmailReal({ apiUrl, emailStatusId: docId, token })
+          ).resEmail;
+          const resEmailStatus = await (
+            await deleteEmailReal({ apiUrl, emailStatusId: docId, token })
+          ).resStatusEmail;
+          if (!resEmail.ok && !resEmailStatus.ok)
+            throw new Error(`Gagal hapus email ${docId}`);
         });
 
         await Promise.all(deletePromises);
@@ -111,18 +112,22 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
         // 🧍‍♂️ Single delete mode
         if (!selectedToDelete) return;
 
-        const res = await fetch(
-          `${apiUrl}/api/emails/${selectedToDelete.documentId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!res.ok) throw new Error("Gagal menghapus email");
+        const resEmail = await (
+          await deleteEmailReal({
+            apiUrl,
+            emailStatusId: selectedToDelete.documentId,
+            token,
+          })
+        ).resEmail;
+        const resEmailStatus = await (
+          await deleteEmailReal({
+            apiUrl,
+            emailStatusId: selectedToDelete.documentId,
+            token,
+          })
+        ).resStatusEmail;
+        if (!resEmail.ok && !resEmailStatus.ok)
+          throw new Error(`Gagal hapus email ${selectedToDelete.documentId}`);
 
         setEmailList((prev) =>
           prev.filter((item) => item.documentId !== selectedToDelete.documentId)
@@ -216,7 +221,9 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
         (status) => status.user.name === "Vendor"
       );
 
-      return hasVendorStatus && item.surat_jalan.status_surat === "Surat Bongkaran";
+      return (
+        hasVendorStatus && item.surat_jalan.status_surat === "Surat Bongkaran"
+      );
     });
   }
 
