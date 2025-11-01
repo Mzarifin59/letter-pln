@@ -36,6 +36,10 @@
     },
     "bookmarked_at": {
       "type": "datetime"
+    },
+    "isDelete": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

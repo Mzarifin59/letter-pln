@@ -271,17 +271,26 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === "Vendor"
       );
 
-      return (
-        hasVendorStatus && item.isHaveStatus === true
-      );
+      return hasVendorStatus && item.isHaveStatus === true;
     });
   }
 
-  const unreadCount = emailListFiltered.filter(
-    (email) =>
-      email.email_statuses.some((status) => status.is_read == false) &&
-      email.email_statuses.some((status) => status.user.email === user?.email)
-  ).length;
+  const unreadCount = emailListFiltered.filter((email) => {
+    if (!email.email_statuses || email.email_statuses.length === 0) {
+      return true;
+    }
+
+    const userStatus = email.email_statuses.find(
+      (status) => status.user.email === user?.email
+    );
+
+    return (
+      userStatus?.is_read === false &&
+      email.surat_jalan.status_entry !== "Draft"
+    );
+  }).length;
+
+  console.log("Belum dibaca", unreadCount);
 
   const itemPerPage = 15;
   const totalPages = Math.ceil(emailList.length / itemPerPage);

@@ -385,9 +385,9 @@ export const EmailDetail = ({
           </p>
         </div>
 
-        <hr className="max-md:hidden border-t-4 border-gray-800 mb-6" />
+        <hr className="border-t-4 border-gray-800 mb-6" />
 
-        <div className="max-md:hidden mb-6 md:mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="w-full transform origin-top-left">
             {/* Fixed width document preview */}
             <div className="bg-white py-4">
@@ -664,9 +664,9 @@ export const EmailDetail = ({
           </div>
         </div>
 
-        <hr className="max-md:hidden border-b-4 border-gray-800 mb-6" />
+        <hr className="border-b-4 border-gray-800 mb-6" />
 
-        <div className="md:hidden w-full mb-6 md:mb-8">
+        <div className="hidden w-full mb-6 md:mb-8">
           {/* Document Thumbnail Card */}
           <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group">
             {/* Thumbnail Preview */}

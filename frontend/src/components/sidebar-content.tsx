@@ -130,7 +130,6 @@ export default function SidebarContent({
         icon: ArchiveX,
         id: "reject",
         count: getFilteredData("reject").length,
-        hideForRoles: ["Spv"],
       },
     ];
 

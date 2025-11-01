@@ -178,14 +178,14 @@ export default function Sidebar({ data: initialData, token }: SidebarProps) {
       </div>
 
       {/* ✅ Tombol untuk mobile */}
-      <div className="lg:hidden fixed top-4 left-4 z-20">
+      <div className="lg:hidden fixed bottom-3 left-4 z-20">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <button
-              className="p-2 rounded-md border border-gray-300 bg-white shadow hover:bg-gray-50 transition"
+              className="p-3 rounded-md border border-[#0056B0]  bg-[#0056B0] shadow hover:bg-[#0056B0]/90 transition"
               aria-label="Buka menu sidebar"
             >
-              <Menu className="w-5 h-5 text-gray-700" />
+              <Menu className="w-6 h-6 text-white" />
             </button>
           </SheetTrigger>
 

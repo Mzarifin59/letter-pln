@@ -420,6 +420,7 @@ export interface ApiEmailStatusEmailStatus extends Struct.CollectionTypeSchema {
     email: Schema.Attribute.Relation<'manyToOne', 'api::email.email'>;
     is_bookmarked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     is_read: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isDelete: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -505,7 +506,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     emails: Schema.Attribute.Relation<'oneToMany', 'api::email.email'>;
     informasi_kendaraan: Schema.Attribute.String;
     kategori_surat: Schema.Attribute.Enumeration<
-      ['Surat Jalan', 'Surat Bongkaran']
+      ['Surat Jalan', 'Surat Bongkaran', 'Berita Acara']
     >;
     lampiran: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',

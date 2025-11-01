@@ -62,6 +62,18 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           item.isHaveStatus === true)
       );
     });
+  } else if(user?.role?.name === "Spv") {
+    emailListFiltered = emailList.filter((item) => {
+      const hasAdminGudangStatus = item.email_statuses.some(
+        (status) => status.user.name === "Spv"
+      );
+
+      return (
+        hasAdminGudangStatus &&
+        ((item.surat_jalan.status_entry !== "Draft") ||
+          item.isHaveStatus === true)
+      );
+    });
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(

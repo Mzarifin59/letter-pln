@@ -116,8 +116,8 @@ export const EmailRowInbox = ({
       {/* Sender & Preview */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center max-lg:justify-between gap-12">
-          <span className="truncate text-sm font-medium text-gray-900">
-            {email.surat_jalan.penerima.perusahaan_penerima}
+          <span className="text-sm font-medium text-gray-900">
+            {email.surat_jalan.penerima.perusahaan_penerima} hai
           </span>
 
           {/* Subject */}

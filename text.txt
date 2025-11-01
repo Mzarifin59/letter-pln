@@ -449,3 +449,32 @@
       </button>
     </div>
   </div>
+
+
+  // Sejajar 
+  <div className="grid grid-cols-[180px_24px_1fr] gap-x-2 items-start text-lg">
+  <div>No Surat Permintaan</div>
+  <div className="self-start">:</div>
+  <div className="font-semibold">
+    {formData.nomorSuratPermintaan || "001.REQ/GD.UPT-BDG/IX/2025"}
+  </div>
+
+  <div>Untuk Keperluan</div>
+  <div className="self-start">:</div>
+  <div className="font-semibold break-words whitespace-normal">
+    {formData.perihal ||
+      "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+  </div>
+
+  <div>Lokasi Asal</div>
+  <div className="self-start">:</div>
+  <div className="font-semibold">
+    {formData.lokasiAsal || "GUDANG GARENTING"}
+  </div>
+
+  <div>Lokasi Tujuan</div>
+  <div className="self-start">:</div>
+  <div className="font-semibold">
+    {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+  </div>
+</div>
