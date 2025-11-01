@@ -111,6 +111,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   });
 
   // merge draft & published -> hilangkan duplikat
+  let suratJalan = [...draftData, ...publishedData];
   let suratJalanThisMonth = [...draftDataThisMonth, ...publishedDataThisMonth];
 
   // optional: sort by tanggal terbaru
@@ -120,8 +121,22 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         new Date(b.surat_jalan.tanggal).getTime() -
         new Date(a.surat_jalan.tanggal).getTime()
     );
+
+    suratJalan.sort(
+      (a, b) =>
+        new Date(b.surat_jalan.tanggal).getTime() -
+        new Date(a.surat_jalan.tanggal).getTime()
+    );
   } else {
     suratJalanThisMonth = suratJalanThisMonth
+      .sort(
+        (a, b) =>
+          new Date(b.surat_jalan.tanggal).getTime() -
+          new Date(a.surat_jalan.tanggal).getTime()
+      )
+      .filter((item) => item.surat_jalan.status_entry !== "Draft");
+
+    suratJalan
       .sort(
         (a, b) =>
           new Date(b.surat_jalan.tanggal).getTime() -
@@ -261,7 +276,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
                     {
-                      publishedDataThisMonth.filter(
+                      publishedData.filter(
                         (item) =>
                           item.surat_jalan.status_surat === "In Progress"
                       ).length
@@ -339,7 +354,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                   </thead>
                   {user?.role?.name === "Admin" ? (
                     <tbody>
-                      {suratJalanThisMonth.map((item, index) => (
+                      {suratJalan.map((item, index) => (
                         <tr key={index} className="border-b border-gray-50">
                           <td className="py-4 px-4">
                             <div className="text-sm text-[#212529]">
@@ -349,7 +364,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
-                            {item.recipient.name} 
+                            {item.recipient.name}
                           </td>
                           <td className="py-4 px-4 text-sm text-[#212529]">
                             {item.surat_jalan.perihal}
@@ -399,7 +414,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                     </tbody>
                   ) : (
                     <tbody>
-                      {suratJalanThisMonth
+                      {suratJalan
                         .filter(
                           (item) => item.surat_jalan.status_entry !== "Draft"
                         )
@@ -482,7 +497,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
               </div>
               <div className="space-y-2">
                 {/* Activity Item 1 */}
-                {suratJalanThisMonth.slice(0, 5).map((item, index) => (
+                {suratJalan.slice(0, 5).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-3 border-b border-gray-100 pb-3"
