@@ -15,5 +15,15 @@ export default {
       path: "/emails/:documentId",
       handler: "email.deleteEmail",
     },
+    {
+      method: "PUT",
+      path: "/emails/approve/:documentId",
+      handler: "email.approveSurat",
+    },
+    {
+      method: "PUT",
+      path: "/emails/reject/:documentId",
+      handler: "email.rejectSurat",
+    },
   ],
 };

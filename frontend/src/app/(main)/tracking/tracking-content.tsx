@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserLogin } from "@/lib/user";
+import { approveEmailSurat, rejectEmailSurat } from "@/lib/emailRequest";
 
 // Types
 interface SuratJalan {
@@ -40,6 +41,7 @@ interface EmailData {
 
 interface TrackingContentProps {
   data: EmailData[];
+  token?: string;
 }
 
 function formatDateTime(isoString: string): string {
@@ -70,7 +72,10 @@ function formatDateTime(isoString: string): string {
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
-export default function TrackingContentPage({ data }: TrackingContentProps) {
+export default function TrackingContentPage({
+  data,
+  token,
+}: TrackingContentProps) {
   const dataEmail = data.sort(
     (a, b) =>
       new Date(b.surat_jalan.tanggal).getTime() -
@@ -150,77 +155,14 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/surat-jalans/${selectedItem.surat_jalan.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              status_surat: "Approve",
-            },
-          }),
-        }
-      );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await approveEmailSurat({
+        emailId: selectedItem.documentId,
+        apiUrl,
+        token,
+      });
 
-      const responseTwo = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              sender: {
-                connect: [`${user?.documentId}`],
-              },
-              recipient: {
-                connect: ["rzsqmsg3fgzi0d7wmm4njvtg"],
-              },
-            },
-          }),
-        }
-      );
-
-      const responseEmail = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              isHaveStatus: true,
-            },
-          }),
-        }
-      );
-
-      const createStatusEmail = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/email-statuses`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              email : {
-                connect : [`${selectedItem.documentId}`]
-              },
-              user : {
-                connect : ['j1z9jwyfbntnn7zkb2lbj3gq']
-              }
-            },
-          }),
-        }
-      );
-
-      if (!response.ok && !responseTwo.ok && !responseEmail.ok && !createStatusEmail.ok) {
+      if (!response.ok) {
         throw new Error("Gagal mengupdate status surat jalan");
       }
 
@@ -254,64 +196,16 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
 
     setIsSubmitting(true);
     try {
-      const suratJalanResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/surat-jalans/${selectedItem.surat_jalan.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              status_surat: "Reject",
-            },
-          }),
-        }
-      );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await rejectEmailSurat({
+        emailId: selectedItem.documentId,
+        apiUrl,
+        token,
+        pesan : rejectMessage
+      });
 
-      const responseTwo = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              sender: {
-                connect: [`${user?.documentId}`],
-              },
-              recipient: {
-                connect: ["rzsqmsg3fgzi0d7wmm4njvtg"],
-              },
-            },
-          }),
-        }
-      );
-
-      if (!suratJalanResponse.ok && !responseTwo.ok) {
-        throw new Error("Gagal mengupdate status surat jalan");
-      }
-
-      // Update email dengan pesan
-      const emailResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/emails/${selectedItem.documentId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: {
-              pesan: rejectMessage,
-              isHaveStatus: true,
-            },
-          }),
-        }
-      );
-
-      if (!emailResponse.ok) {
-        throw new Error("Gagal mengupdate pesan email");
+      if (!response.ok) {
+        throw new Error("Gagal mengupdate reject email");
       }
 
       toast.success("Surat berhasil ditolak", { position: "top-center" });
@@ -388,7 +282,9 @@ export default function TrackingContentPage({ data }: TrackingContentProps) {
                       "Dari",
                       "Kepada",
                       "Perihal",
-                      isSPV || user?.role?.name === "Vendor" ? "Detail" : "Status",
+                      isSPV || user?.role?.name === "Vendor"
+                        ? "Detail"
+                        : "Status",
                     ].map((h) => (
                       <th
                         key={h}

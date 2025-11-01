@@ -196,5 +196,129 @@ export default factories.createCoreController(
         });
       }
     },
+
+    async approveSurat(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const user = ctx.state.user;
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+          populate : {
+            surat_jalan : true,
+          }
+        });
+
+        if(email){
+          await strapi.documents("api::email.email").update({
+            documentId : documentId,
+            data: {
+              isHaveStatus : true,
+              sender : process.env.ADMIN_ID,
+              recipient: process.env.SPV_ID
+            },
+            status: "published",
+          });
+
+          await strapi.documents("api::surat-jalan.surat-jalan").update({
+            documentId : email.surat_jalan.documentId,
+            data: {
+              status_surat: "Approve"
+            },
+            status: "published",
+          });
+
+          await strapi.documents("api::email-status.email-status").create({
+            data : {
+              email : documentId,
+            },
+            status: "published",
+          });
+
+          console.log("Request Approve Berhasil ✅");
+        } else {
+          console.log("Ada kesalahan dalam request");
+        }
+
+        return ctx.send({
+          message: "Request Approve Berhasil ✅",
+        });
+      } catch (error) {
+        console.error("Error in Approve:", error);
+        return ctx.badRequest("Failed to approve surat", {
+          error: error.message,
+        });
+      }
+    },
+
+    async rejectSurat(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const { pesan } = ctx.request.body;
+        const user = ctx.state.user;
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+          populate : {
+            surat_jalan : true,
+          }
+        });
+
+        if(email){
+          await strapi.documents("api::email.email").update({
+            documentId : documentId,
+            data: {
+              isHaveStatus : true,
+              sender : process.env.ADMIN_ID,
+              recipient: process.env.SPV_ID,
+              pesan,
+            },
+            status: "published",
+          });
+
+          await strapi.documents("api::surat-jalan.surat-jalan").update({
+            documentId : email.surat_jalan.documentId,
+            data: {
+              status_surat: "Reject"
+            },
+            status: "published",
+          });
+
+          await strapi.documents("api::email-status.email-status").create({
+            data : {
+              email : documentId,
+            },
+            status: "published",
+          });
+
+          console.log("Request Approve Berhasil ✅");
+        } else {
+          console.log("Ada kesalahan dalam request");
+        }
+
+        return ctx.send({
+          message: "Request Approve Berhasil ✅",
+        });
+      } catch (error) {
+        console.error("Error in Approve:", error);
+        return ctx.badRequest("Failed to approve surat", {
+          error: error.message,
+        });
+      }
+    },
   })
 );
