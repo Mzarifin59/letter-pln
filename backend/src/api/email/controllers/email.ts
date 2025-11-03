@@ -235,13 +235,6 @@ export default factories.createCoreController(
             status: "published",
           });
 
-          await strapi.documents("api::email-status.email-status").create({
-            data : {
-              email : documentId,
-            },
-            status: "published",
-          });
-
           console.log("Request Approve Berhasil ✅");
         } else {
           console.log("Ada kesalahan dalam request");
@@ -294,13 +287,6 @@ export default factories.createCoreController(
             documentId : email.surat_jalan.documentId,
             data: {
               status_surat: "Reject"
-            },
-            status: "published",
-          });
-
-          await strapi.documents("api::email-status.email-status").create({
-            data : {
-              email : documentId,
             },
             status: "published",
           });

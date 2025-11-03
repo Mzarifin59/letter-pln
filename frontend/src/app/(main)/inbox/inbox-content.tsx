@@ -156,9 +156,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           return;
         }
 
-        console.log("selectedToDelete:", selectedToDelete);
-        console.log("email_statuses:", selectedToDelete.email_statuses);
-
         // Validasi email_statuses
         if (
           !selectedToDelete.email_statuses ||
@@ -173,8 +170,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           (item) =>
             item.user?.name === user?.name || item.user?.email === user?.email
         );
-
-        console.log("userEmailStatus found:", userEmailStatus);
 
         if (!userEmailStatus) {
           toast.error("Anda tidak memiliki akses untuk menghapus email ini");

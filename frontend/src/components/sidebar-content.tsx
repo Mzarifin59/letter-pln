@@ -32,8 +32,6 @@ export default function SidebarContent({
   const { user } = useUserLogin();
   const pathname = usePathname();
 
-  const Spv = user?.role?.name === "Spv";
-
   // Memoize filtered data untuk performa
   const getFilteredData = useMemo(() => {
     return (filterType: string) => {
@@ -48,10 +46,13 @@ export default function SidebarContent({
 
         switch (filterType) {
           case "inbox":
-            return (
-              isPublished &&
-              userEmailStatus.is_read === false
-            );
+            let condition = isPublished && userEmailStatus.is_read === false;
+            if (user?.role?.name === "Admin") {
+              condition =
+                condition && item.surat_jalan?.status_surat !== "In Progress";
+            }
+
+            return condition;
 
           case "tracking":
             return (
@@ -172,7 +173,7 @@ export default function SidebarContent({
           </div>
         </div>
 
-        {user?.role?.name === "Admin" &&  (
+        {user?.role?.name === "Admin" && (
           <Link href={`/create-letter`} onClick={handleItemClick}>
             <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
               <Plus size={18} />
@@ -181,7 +182,7 @@ export default function SidebarContent({
           </Link>
         )}
 
-        {user?.role?.name === "Vendor" &&  (
+        {user?.role?.name === "Vendor" && (
           <Link href={`/create-letter`} onClick={handleItemClick}>
             <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
               <Plus size={18} />
@@ -190,8 +191,6 @@ export default function SidebarContent({
           </Link>
         )}
       </div>
-
-      
 
       {/* Navigation Section */}
       <div className="flex-1 p-4 overflow-y-auto">

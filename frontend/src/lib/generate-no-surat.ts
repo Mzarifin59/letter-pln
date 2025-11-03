@@ -46,14 +46,11 @@ export function generateNextSuratNumber(existingData: SuratJalan[]): string {
         const num = parseInt(match[1], 10);
         if (num > maxNumber) {
           maxNumber = num;
-          console.log(`  📊 New max found: ${noSurat} -> ${num}`);
         }
         break;
       }
     }
   });
-
-  console.log('- Nomor tertinggi dari semua surat:', maxNumber);
 
   // Nomor berikutnya
   const nextNumber = maxNumber + 1;
@@ -63,8 +60,6 @@ export function generateNextSuratNumber(existingData: SuratJalan[]): string {
 
   // Generate nomor surat lengkap dengan bulan/tahun SAAT INI
   const generatedNumber = `NO : ${formattedNumber}.SJ/GD.UPT-BDG/${romanMonth}/${currentYear}`;
-  
-  console.log('✅ Nomor surat ter-generate:', generatedNumber);
 
   return generatedNumber;
 }

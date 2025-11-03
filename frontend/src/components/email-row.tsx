@@ -79,6 +79,7 @@ export const EmailRowInbox = ({
           <input
             type="checkbox"
             checked={isSelected}
+            onClick={(e) => e.stopPropagation()}
             onChange={() => onSelect(email.documentId)}
             className="rounded border-gray-300"
           />
@@ -345,9 +346,9 @@ export const EmailRow = ({
             type="checkbox"
             checked={isSelected}
             onChange={(e) => {
-              e.stopPropagation();
               onSelect(email.documentId);
             }}
+            onClick={(e) => e.stopPropagation()}
             className="rounded border-gray-300"
           />
           <button
