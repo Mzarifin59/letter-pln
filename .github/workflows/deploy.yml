@@ -12,4 +12,4 @@ jobs:
 
     steps:
       - name: Test
-        uses: echo "Testing Pipeline"
+        run: echo "Testing Pipeline"
