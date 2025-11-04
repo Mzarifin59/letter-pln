@@ -248,7 +248,7 @@ export const useSuratJalanForm = () => {
             connect: [`${user?.documentId}`],
           },
           recipient: {
-            connect: ["gwwhxmgwxn7o4cv7rr11zb32"],
+            connect: [process.env.NEXT_PUBLIC_ADMIN_SPV],
           },
         };
 
@@ -269,7 +269,7 @@ export const useSuratJalanForm = () => {
             connect: [`${resultEmail.data.documentId}`],
           },
           user: {
-            connect: [`gwwhxmgwxn7o4cv7rr11zb32`],
+            connect: [process.env.NEXT_PUBLIC_ADMIN_SPV],
           },
         };
 
