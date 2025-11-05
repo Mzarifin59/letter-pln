@@ -16,11 +16,19 @@ jobs:
     name: 🧩 Test SSH Connection
     runs-on: ubuntu-latest
     steps:
+      - name: Test
+        run: |
+          echo "SSH USER : ${{vars.SSH_USER}}"
+
       - name: Setup SSH
         run: |
-          echo "SSH_USER: ${{ SSH_USER }}"
-          echo "SSH_HOST: ${{ vars.SSH_USER }}"
-          echo "SSH_PORT: ${{ vars.SSH_PORT }}"
+          mkdir -p ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "echo ✅ SSH OK!"
 
   build-project:
     name: 🏗️ Build & Deploy Project
