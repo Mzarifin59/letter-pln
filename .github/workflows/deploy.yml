@@ -78,18 +78,18 @@ jobs:
           SSH_PORT: ${{ vars.SSH_PORT }}
           BACKEND_HOST: ${{ vars.BACKEND_HOST }}
           BACKEND_PORT: ${{ vars.BACKEND_PORT }}
-          BACKEND_APP_KEYS: ${{ secrets.BACKEND_APP_KEYS }}
-          BACKEND_API_TOKEN_SALT: ${{ secrets.BACKEND_API_TOKEN_SALT }}
-          BACKEND_ADMIN_JWT_SECRET: ${{ secrets.BACKEND_ADMIN_JWT_SECRET }}
-          BACKEND_TRANSFER_TOKEN_SALT: ${{ secrets.BACKEND_TRANSFER_TOKEN_SALT }}
-          BACKEND_ENCRYPTION_KEY: ${{ secrets.BACKEND_ENCRYPTION_KEY }}
+          BACKEND_APP_KEYS: ${{ vars.BACKEND_APP_KEYS }}
+          BACKEND_API_TOKEN_SALT: ${{ vars.BACKEND_API_TOKEN_SALT }}
+          BACKEND_ADMIN_JWT_SECRET: ${{ vars.BACKEND_ADMIN_JWT_SECRET }}
+          BACKEND_TRANSFER_TOKEN_SALT: ${{ vars.BACKEND_TRANSFER_TOKEN_SALT }}
+          BACKEND_ENCRYPTION_KEY: ${{ vars.BACKEND_ENCRYPTION_KEY }}
           BACKEND_DATABASE_CLIENT: ${{ vars.BACKEND_DATABASE_CLIENT }}
           BACKEND_DATABASE_HOST: ${{ vars.BACKEND_DATABASE_HOST }}
           BACKEND_DATABASE_PORT: ${{ vars.BACKEND_DATABASE_PORT }}
           BACKEND_DATABASE_NAME: ${{ vars.BACKEND_DATABASE_NAME }}
-          BACKEND_DATABASE_USERNAME: ${{ secrets.BACKEND_DATABASE_USERNAME }}
-          BACKEND_DATABASE_PASSWORD: ${{ secrets.BACKEND_DATABASE_PASSWORD }}
-          BACKEND_JWT_SECRET: ${{ secrets.BACKEND_JWT_SECRET }}
+          BACKEND_DATABASE_USERNAME: ${{ vars.BACKEND_DATABASE_USERNAME }}
+          BACKEND_DATABASE_PASSWORD: ${{ vars.BACKEND_DATABASE_PASSWORD }}
+          BACKEND_JWT_SECRET: ${{ vars.BACKEND_JWT_SECRET }}
           BACKEND_ADMIN_ID: ${{ vars.BACKEND_ADMIN_ID }}
           BACKEND_SPV_ID: ${{ vars.BACKEND_SPV_ID }}
         run: |
@@ -123,7 +123,7 @@ jobs:
           SSH_USER: ${{ vars.SSH_USER }}
           SSH_HOST: ${{ vars.SSH_HOST }}
           SSH_PORT: ${{ vars.SSH_PORT }}
-        run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/frontend && pnpm install && pnpm run build && pm2 start sigaspol"
+        run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/frontend && yarn && yarn build && pm2 start sigaspol"
 
   saving:
     name: 💾 Save PM2 State
