@@ -76,8 +76,23 @@ jobs:
           SSH_USER: ${{ vars.SSH_USER }}
           SSH_HOST: ${{ vars.SSH_HOST }}
           SSH_PORT: ${{ vars.SSH_PORT }}
+          BACKEND_HOST: ${{ vars.BACKEND_HOST }}
+          BACKEND_PORT: ${{ vars.BACKEND_PORT }}
+          BACKEND_APP_KEYS: ${{ secrets.BACKEND_APP_KEYS }}
+          BACKEND_API_TOKEN_SALT: ${{ secrets.BACKEND_API_TOKEN_SALT }}
+          BACKEND_ADMIN_JWT_SECRET: ${{ secrets.BACKEND_ADMIN_JWT_SECRET }}
+          BACKEND_TRANSFER_TOKEN_SALT: ${{ secrets.BACKEND_TRANSFER_TOKEN_SALT }}
+          BACKEND_ENCRYPTION_KEY: ${{ secrets.BACKEND_ENCRYPTION_KEY }}
+          BACKEND_DATABASE_CLIENT: ${{ vars.BACKEND_DATABASE_CLIENT }}
+          BACKEND_DATABASE_HOST: ${{ vars.BACKEND_DATABASE_HOST }}
+          BACKEND_DATABASE_PORT: ${{ vars.BACKEND_DATABASE_PORT }}
+          BACKEND_DATABASE_NAME: ${{ vars.BACKEND_DATABASE_NAME }}
+          BACKEND_DATABASE_USERNAME: ${{ secrets.BACKEND_DATABASE_USERNAME }}
+          BACKEND_DATABASE_PASSWORD: ${{ secrets.BACKEND_DATABASE_PASSWORD }}
+          BACKEND_JWT_SECRET: ${{ secrets.BACKEND_JWT_SECRET }}
+          BACKEND_ADMIN_ID: ${{ vars.BACKEND_ADMIN_ID }}
+          BACKEND_SPV_ID: ${{ vars.BACKEND_SPV_ID }}
         run: |
-          # Pastikan semua environment variables dari secrets tersedia di sini
           envsubst < backend/.env.temp > backend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.env $SSH_USER@$SSH_HOST:/home/sigaspol/backend/.env.temp
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST 'diff /home/sigaspol/backend/.env /home/sigaspol/backend/.env.temp || mv /home/sigaspol/backend/.env.temp /home/sigaspol/backend/.env'
@@ -94,6 +109,10 @@ jobs:
           SSH_USER: ${{ vars.SSH_USER }}
           SSH_HOST: ${{ vars.SSH_HOST }}
           SSH_PORT: ${{ vars.SSH_PORT }}
+          API_URL: ${{ vars.FRONTEND_API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ vars.FRONTEND_NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_ADMIN_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_ID }}
+          NEXT_PUBLIC_ADMIN_SPV: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_SPV }}
         run: |
           envsubst < frontend/.env.temp > frontend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.env $SSH_USER@$SSH_HOST:/home/sigaspol/frontend/.env.temp
