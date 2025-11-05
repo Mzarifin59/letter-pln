@@ -1,15 +1,88 @@
-name: Deploy to Staging
+name: Deploy App
 
 on:
   push:
     branches:
-      - main   #
-  workflow_dispatch: 
+      - main
+  workflow_dispatch:
+
+env:
+  SSH_USER: ${{ secrets.SSH_USER }}
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_PORT: ${{ secrets.SSH_PORT }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
 jobs:
-  test:
+  test-connection:
+    name: 🧩 Test SSH Connection
     runs-on: ubuntu-latest
-
     steps:
-      - name: Test
-        run: echo "Testing Pipeline"
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "echo ✅ SSH OK!"
+
+  build-project:
+    name: 🏗️ Build & Deploy Project
+    runs-on: ubuntu-latest
+    needs: test-connection
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
+          export REMOTE_SSH="ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST"
+
+      - name: Stop PM2 apps
+        run: |
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 stop sigaspol-admin || true"
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 stop sigaspol || true"
+
+      - name: Git Pull in Server
+        run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol && git pull origin main"
+
+      - name: Setup envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext-base
+
+      - name: Sync Backend Env
+        run: |
+          envsubst < backend/.env.temp > backend.env
+          scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.env $SSH_USER@$SSH_HOST:/home/sigaspol/backend/.env.temp
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST 'diff /home/sigaspol/backend/.env /home/sigaspol/backend/.env.temp || mv /home/sigaspol/backend/.env.temp /home/sigaspol/backend/.env'
+
+      - name: Build Backend
+        run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/backend && yarn && yarn build && pm2 start sigaspol-admin"
+
+      - name: Sync Frontend Env
+        run: |
+          envsubst < frontend/.env.temp > frontend.env
+          scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.env $SSH_USER@$SSH_HOST:/home/sigaspol/frontend/.env.temp
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST 'diff /home/sigaspol/frontend/.env /home/sigaspol/frontend/.env.temp || mv /home/sigaspol/frontend/.env.temp /home/sigaspol/frontend/.env'
+
+      - name: Build Frontend
+        run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/frontend && pnpm install && pnpm run build && pm2 start sigaspol"
+
+  saving:
+    name: 💾 Save PM2 State
+    runs-on: ubuntu-latest
+    needs: build-project
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Save PM2 state and cleanup
+        run: |
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 save && pm2 startup"
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "rm -f /home/sigaspol/backend/.env.temp"
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "rm -f /home/sigaspol/frontend/.env.temp"
