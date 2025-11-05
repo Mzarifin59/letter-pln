@@ -18,7 +18,9 @@ jobs:
     steps:
       - name: Setup SSH
         run: |
-          echo "${SSH_PORT}" 
+          echo "SSH_USER: ${{ SSH_USER }}"
+          echo "SSH_HOST: ${{ vars.SSH_USER }}"
+          echo "SSH_PORT: ${{ vars.SSH_PORT }}"
 
   build-project:
     name: 🏗️ Build & Deploy Project
