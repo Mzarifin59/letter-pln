@@ -109,10 +109,10 @@ jobs:
           SSH_USER: ${{ vars.SSH_USER }}
           SSH_HOST: ${{ vars.SSH_HOST }}
           SSH_PORT: ${{ vars.SSH_PORT }}
-          API_URL: ${{ vars.FRONTEND_API_URL }}
-          NEXT_PUBLIC_API_URL: ${{ vars.FRONTEND_NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_ADMIN_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_ID }}
-          NEXT_PUBLIC_ADMIN_SPV: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_SPV }}
+          FRONTEND_API_URL: ${{ vars.FRONTEND_API_URL }}
+          FRONTEND_NEXT_PUBLIC_API_URL: ${{ vars.FRONTEND_NEXT_PUBLIC_API_URL }}
+          FRONTEND_NEXT_PUBLIC_ADMIN_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_ID }}
+          FRONTEND_NEXT_PUBLIC_ADMIN_SPV: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_SPV }}
         run: |
           envsubst < frontend/.env.temp > frontend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.env $SSH_USER@$SSH_HOST:/home/sigaspol/frontend/.env.temp
