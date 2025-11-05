@@ -5,11 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-env:
-  SSH_USER: ${{ vars.SSH_USER }}
-  SSH_HOST: ${{ vars.SSH_HOST }}
-  SSH_PORT: ${{ vars.SSH_PORT }}
-  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
 jobs:
   test-connection:
@@ -18,6 +13,11 @@ jobs:
     environment: staging
     steps:
       - name: Setup SSH
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
@@ -25,6 +25,10 @@ jobs:
           ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
 
       - name: Test SSH Connection
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "echo ✅ SSH OK!"
 
   build-project:
@@ -33,41 +37,73 @@ jobs:
     needs: test-connection
     environment: staging
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup SSH
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
-          export REMOTE_SSH="ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST"
 
       - name: Stop PM2 apps
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: |
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 stop sigaspol-admin || true"
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 stop sigaspol || true"
 
       - name: Git Pull in Server
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol && git pull origin main"
 
       - name: Setup envsubst
         run: sudo apt-get update && sudo apt-get install -y gettext-base
 
       - name: Sync Backend Env
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: |
+          # Pastikan semua environment variables dari secrets tersedia di sini
           envsubst < backend/.env.temp > backend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.env $SSH_USER@$SSH_HOST:/home/sigaspol/backend/.env.temp
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST 'diff /home/sigaspol/backend/.env /home/sigaspol/backend/.env.temp || mv /home/sigaspol/backend/.env.temp /home/sigaspol/backend/.env'
 
       - name: Build Backend
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/backend && yarn && yarn build && pm2 start sigaspol-admin"
 
       - name: Sync Frontend Env
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: |
           envsubst < frontend/.env.temp > frontend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.env $SSH_USER@$SSH_HOST:/home/sigaspol/frontend/.env.temp
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST 'diff /home/sigaspol/frontend/.env /home/sigaspol/frontend/.env.temp || mv /home/sigaspol/frontend/.env.temp /home/sigaspol/frontend/.env'
 
       - name: Build Frontend
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol/frontend && pnpm install && pnpm run build && pm2 start sigaspol"
 
   saving:
@@ -77,6 +113,11 @@ jobs:
     environment: staging
     steps:
       - name: Setup SSH
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
@@ -84,6 +125,10 @@ jobs:
           ssh-keyscan -p $SSH_PORT $SSH_HOST >> ~/.ssh/known_hosts
 
       - name: Save PM2 state and cleanup
+        env:
+          SSH_USER: ${{ vars.SSH_USER }}
+          SSH_HOST: ${{ vars.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
         run: |
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "pm2 save && pm2 startup"
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "rm -f /home/sigaspol/backend/.env.temp"
