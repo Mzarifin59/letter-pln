@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Setup SSH
         run: |
-          echo "${SSH_PRIVATE_KEY}" >
+          echo "${SSH_PORT}" >
 
   build-project:
     name: 🏗️ Build & Deploy Project
