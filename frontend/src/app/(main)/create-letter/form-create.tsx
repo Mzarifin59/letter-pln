@@ -65,7 +65,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       const draftDataStr = sessionStorage.getItem("draftData");
 
       if (draftDataStr) {
-        const suratJalan = dataSurat.filter(item => item.documentId === draftId)[0];
+        const suratJalan = dataSurat.filter(
+          (item) => item.documentId === draftId
+        )[0];
 
         // Populate form data
         setFormData({
@@ -467,32 +469,46 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       compress: true,
     });
 
+    let isFirstPage = true;
+
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i] as HTMLElement;
 
-      // 🔹 Auto scale sebelum render
       scaleToFit(page);
 
+      // Render canvas dengan scale tinggi untuk kualitas bagus
       const canvas = await html2canvas(page, {
         scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
+        windowHeight: page.scrollHeight,
+        height: page.scrollHeight,
         logging: false,
         imageTimeout: 0,
       });
 
-      // Reset transform agar tidak merusak tampilan asli
-      page.style.transform = "";
-
-      const imgData = canvas.toDataURL("image/png", 0.85);
+      const imgData = canvas.toDataURL("image/png");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      // Add new page jika bukan halaman pertama
+      if (!isFirstPage) {
+        pdf.addPage();
+      }
+      isFirstPage = false;
+
+      // Jika tinggi gambar melebihi A4, scale to fit
+      if (imgHeight > pageHeight) {
+        const scale = pageHeight / imgHeight;
+        const scaledHeight = imgHeight * scale;
+        const scaledWidth = imgWidth * scale;
+        pdf.addImage(imgData, "PNG", 0, 0, scaledWidth, scaledHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      }
     }
 
     pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);

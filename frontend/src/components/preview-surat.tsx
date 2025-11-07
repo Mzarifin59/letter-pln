@@ -37,16 +37,13 @@ export default function PreviewSection({
 }: PreviewSectionProps) {
   useEffect(() => {
     if (autoDownload) {
-      // Tunggu render selesai dengan timeout lebih panjang untuk ensure DOM ready
       const timer = setTimeout(() => {
         onDownloadPDF();
-      }, 1000); // 1 detik untuk memastikan semua gambar/signature ter-load
-
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [autoDownload, onDownloadPDF]);
 
-  // Get signature preview (prioritas: drawn signature > uploaded file)
   const getPenerimaSignature = () => {
     return (
       signaturePenerima.preview.signature ||
@@ -63,7 +60,6 @@ export default function PreviewSection({
     );
   };
 
-  // Format date to Indonesian format
   const formatDate = (dateString: string) => {
     if (!dateString) return "31 Januari 2025";
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -73,14 +69,12 @@ export default function PreviewSection({
     });
   };
 
-  // Check if materials have data
   const hasMaterialData = () => {
     return materials.some(
       (m) => m.namaMaterial || m.katalog || m.satuan || m.jumlah || m.keterangan
     );
   };
 
-  // Default dummy materials for preview
   const dummyMaterials = [
     {
       no: 1,
@@ -108,10 +102,222 @@ export default function PreviewSection({
     },
   ];
 
+  const MATERIALS_PER_PAGE = 15;
+  const activeMaterials = hasMaterialData() ? materials : dummyMaterials.map((m, idx) => ({
+    id: `dummy-${idx}`,
+    namaMaterial: m.nama,
+    katalog: m.katalog,
+    satuan: m.satuan,
+    jumlah: m.jumlah,
+    keterangan: m.keterangan,
+  }));
+
+  const splitMaterialsIntoPages = () => {
+    const pages = [];
+    for (let i = 0; i < activeMaterials.length; i += MATERIALS_PER_PAGE) {
+      pages.push(activeMaterials.slice(i, i + MATERIALS_PER_PAGE));
+    }
+    return pages;
+  };
+
+  const materialPages = splitMaterialsIntoPages();
+
+  // Render header component
+  const renderHeader = (lembarIndex: number, lembarLabels: string[]) => (
+    <>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-shrink-0">
+          <Image
+            src="/images/PLN-logo.png"
+            alt="PLN Logo"
+            width={90}
+            height={90}
+            className="w-[90px] h-[90px] object-contain"
+          />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold text-[#232323] leading-tight">
+            PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+          </div>
+          <div className="text-sm font-semibold text-[#232323] leading-tight">
+            UNIT PELAKSANA TRANSMISI BANDUNG
+          </div>
+        </div>
+        <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
+          <div className="text-lg font-bold text-[rgb(166,35,68)] leading-tight">
+            LEMBAR {lembarIndex + 1}
+          </div>
+          <div className="text-base text-[rgb(166,35,68)] leading-tight">
+            {lembarLabels[lembarIndex]}
+          </div>
+        </div>
+      </div>
+      <hr className="border-t-2 border-gray-800 mb-3" />
+    </>
+  );
+
+  // Render title and form info
+  const renderTitleAndInfo = () => (
+    <>
+      <div className="text-center mb-4">
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-1">
+          SURAT JALAN
+        </h1>
+        <div className="text-blue-600 font-semibold text-xl">
+          {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="mb-1.5 text-base">
+          Mohon diizinkan membawa barang-barang tersebut di bawah ini :
+        </div>
+
+        <div className="space-y-0.5 text-base">
+          <div className="flex">
+            <div className="min-w-[170px]">No Surat Permintaan</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.nomorSuratPermintaan || "001.REQ/GD.UPT-BDG/IX/2025"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[170px]">Untuk Keperluan</div>
+            <div className="flex-1">
+              :{" "}
+              <span className="font-semibold">
+                {formData.perihal ||
+                  "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[170px]">Lokasi Asal</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.lokasiAsal || "GUDANG GARENTING"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[170px]">Lokasi Tujuan</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // Render footer with signatures
+  const renderFooter = () => (
+    <>
+      <div className="pb-2 pl-2 border-b-2 border-gray-800">
+        <div className="text-base font-semibold">Keterangan :</div>
+      </div>
+      <div className="py-2 pl-2 border-b-2 border-gray-800">
+        <div className="text-base font-semibold">
+          {formData.catatanTambahan ||
+            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+        </div>
+      </div>
+
+      <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2">
+        <div className="table">
+          <div className="table-row">
+            <div className="table-cell pr-4 font-semibold">Kendaraan</div>
+            <div className="table-cell">
+              : {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+            </div>
+          </div>
+          <div className="table-row">
+            <div className="table-cell pr-4 font-semibold">Pengemudi</div>
+            <div className="table-cell">
+              : {formData.namaPengemudi || "AYI"}
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-12 text-center">
+        <div>
+          <div className="mb-1.5 text-base">Yang Menerima,</div>
+          <div className="font-bold mb-3 text-base">
+            {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+          </div>
+
+          <div className="h-20 mb-3 flex items-center justify-center">
+            {getPenerimaSignature() ? (
+              <img
+                src={getPenerimaSignature()!}
+                alt="Signature Penerima"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="text-base font-bold">
+            {formData.namaPenerima || "PAK RUDI"}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
+          <div className="font-bold mb-3 text-base">
+            {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+          </div>
+          <Image
+            src={`/images/ttd.png`}
+            alt="TTD"
+            width={120}
+            height={120}
+            className="absolute z-0 left-16 bottom-4"
+          />
+          <div className="h-20 mb-3 flex items-center justify-center">
+            {getPengirimSignature() ? (
+              <img
+                src={getPengirimSignature()!}
+                alt="Signature Pengirim"
+                className="max-h-full max-w-full object-contain z-20"
+              />
+            ) : (
+              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="font-bold text-base">
+            {formData.namaPengirim || "ANDRI SETIAWAN"}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const lembarLabels = [
+    "Pengirim Barang",
+    "Penerima Barang",
+    "Satpam",
+    formData.lokasiTujuan,
+  ];
+
   return (
     <div className="bg-white flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full h-[90vh] overflow-hidden flex flex-col">
-        {/* Preview Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-800">Preview Surat</h2>
           <div className="flex gap-3">
@@ -136,309 +342,102 @@ export default function PreviewSection({
           </div>
         </div>
 
-        {/* Preview Content - Scrollable */}
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
           <div id="preview-content">
-            {[0, 1, 2, 3].map((index) => {
-              const lembarLabels = [
-                "Pengirim Barang",
-                "Penerima Barang",
-                "Satpam",
-                formData.lokasiTujuan,
-              ];
-              return (
-                <div
-                  key={index}
-                  className="surat w-[210mm] bg-white shadow-lg px-8 py-4 max-w-[1200px] mx-auto my-8"
-                >
-                  {/* Company Header */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex-shrink-0">
-                      <Image
-                        src="/images/PLN-logo.png"
-                        alt="PLN Logo"
-                        width={104}
-                        height={104}
-                        className="w-[104px] h-[104px] object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-base font-semibold text-[#232323]">
-                        PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-                      </div>
-                      <div className="text-base font-semibold text-[#232323]">
-                        UNIT PELAKSANA TRANSMISI BANDUNG
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-6 py-2 rounded-lg border border-[rgb(166,35,68)]">
-                      <div className="text-[22px] font-bold text-[rgb(166,35,68)]">
-                        LEMBAR {index + 1}
-                      </div>
-                      <div className="text-xl text-[rgb(166,35,68)]">
-                        {lembarLabels[index]}
-                      </div>
-                    </div>
-                  </div>
+            {[0, 1, 2, 3].map((lembarIndex) => (
+              <div key={lembarIndex}>
+                {materialPages.map((pageMaterials, pageIndex) => {
+                  const isFirstPage = pageIndex === 0;
+                  const isLastPage = pageIndex === materialPages.length - 1;
+                  const startIndex = pageIndex * MATERIALS_PER_PAGE;
 
-                  <hr className="border-t-4 border-gray-800 mb-4" />
+                  return (
+                    <div
+                      key={`${lembarIndex}-${pageIndex}`}
+                      className="surat w-[210mm] min-h-[297mm] max-h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col"
+                      data-lembar={lembarIndex}
+                      data-page={pageIndex}
+                      style={{
+                        padding: "15mm 15mm 15mm 15mm",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {renderHeader(lembarIndex, lembarLabels)}
 
-                  {/* Title */}
-                  <div className="text-center mb-6">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                      SURAT JALAN
-                    </h1>
-                    <div className="text-blue-600 font-semibold text-2xl">
-                      {formData.nomorSuratJalan ||
-                        "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
-                    </div>
-                  </div>
+                      {isFirstPage && renderTitleAndInfo()}
 
-                  {/* Form Information */}
-                  <div className="mb-6">
-                    <div className="mb-2 text-lg">
-                      Mohon diizinkan membawa barang-barang tersebut di bawah
-                      ini :
-                    </div>
-
-                    <div className="space-y-1 text-lg">
-                      <div className="flex">
-                        <div className="min-w-[180px]">No Surat Permintaan</div>
-                        <div>
-                          :{" "}
-                          <span className="font-semibold">
-                            {formData.nomorSuratPermintaan ||
-                              "001.REQ/GD.UPT-BDG/IX/2025"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex">
-                        <div className="min-w-[180px]">Untuk Keperluan</div>
-                        <div className="flex-1">
-                          :{" "}
-                          <span className="font-semibold">
-                            {formData.perihal ||
-                              "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex">
-                        <div className="min-w-[180px]">Lokasi Asal</div>
-                        <div>
-                          :{" "}
-                          <span className="font-semibold">
-                            {formData.lokasiAsal || "GUDANG GARENTING"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex">
-                        <div className="min-w-[180px]">Lokasi Tujuan</div>
-                        <div>
-                          :{" "}
-                          <span className="font-semibold">
-                            {formData.lokasiTujuan || "GI BANDUNG UTARA"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Materials Table */}
-                  <div className="mb-6 overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                      <thead className="bg-gray-100">
-                        <tr className="text-lg text-center">
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            NO
-                          </th>
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            NAMA MATERIAL
-                          </th>
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            KATALOG
-                          </th>
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            SATUAN
-                          </th>
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            JUMLAH
-                          </th>
-                          <th className="border-2 border-gray-800 px-2 py-2">
-                            KETERANGAN (LOKASI TYPE, S/N DLL)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-lg">
-                        {hasMaterialData()
-                          ? materials.map((material, index) => (
-                              <tr key={material.id}>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {index + 1}
+                      {/* Materials Table */}
+                      <div className="mb-4">
+                        <table className="w-full border-collapse" style={{ fontSize: "13px" }}>
+                          <thead className="bg-gray-100">
+                            <tr className="text-center">
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "5%" }}>NO</th>
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "30%" }}>NAMA MATERIAL</th>
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "12%" }}>KATALOG</th>
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>SATUAN</th>
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>JUMLAH</th>
+                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "33%" }}>KETERANGAN (LOKASI TYPE, S/N DLL)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageMaterials.map((material, idx) => (
+                              <tr key={material.id || idx}>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                  {startIndex + idx + 1}
                                 </td>
-                                <td className="border-2 border-gray-800 px-2 py-2">
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5">
                                   {material.namaMaterial || "-"}
                                 </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
                                   {material.katalog || "-"}
                                 </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
                                   {material.satuan || "-"}
                                 </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
                                   {material.jumlah || "0"}
                                 </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
                                   {material.keterangan || "-"}
                                 </td>
                               </tr>
-                            ))
-                          : dummyMaterials.map((material) => (
-                              <tr key={material.no}>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {material.no}
-                                </td>
-                                <td className="border-2 border-gray-800 px-2 py-2">
-                                  {material.nama}
-                                </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {material.katalog}
-                                </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {material.satuan}
-                                </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {material.jumlah}
-                                </td>
-                                <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                                  {material.keterangan}
-                                </td>
-                              </tr>
                             ))}
-                        <tr className="bg-gray-100 font-semibold">
-                          <td
-                            colSpan={4}
-                            className="border-2 border-gray-800 px-2 py-2 text-center"
-                          >
-                            TOTAL
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-center">
-                            {hasMaterialData()
-                              ? calculateTotal()
-                              : dummyMaterials.reduce(
-                                  (sum, m) => sum + m.jumlah,
-                                  0
-                                )}
-                          </td>
-                          <td className="border-2 border-gray-800 px-2 py-2"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
 
-                  {/* Notes */}
-                  <div className="pb-3 pl-3 border-b-2 border-gray-800">
-                    <div className="text-lg font-semibold">Keterangan :</div>
-                  </div>
-                  <div className="py-3 pl-3 border-b-2 border-gray-800">
-                    <div className="text-lg font-semibold">
-                      {formData.catatanTambahan ||
-                        "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
-                    </div>
-                  </div>
+                            {/* Total row hanya di halaman terakhir */}
+                            {isLastPage && (
+                              <tr className="bg-gray-100 font-semibold">
+                                <td
+                                  colSpan={4}
+                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                >
+                                  TOTAL
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                  {hasMaterialData()
+                                    ? calculateTotal()
+                                    : dummyMaterials.reduce((sum, m) => sum + m.jumlah, 0)}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
 
-                  {/* Vehicle and Driver Info */}
-                  <div className="pl-3 grid grid-cols-2 gap-8 mb-8 text-lg py-3">
-                    {/* Kolom kiri */}
-                    <div className="table">
-                      <div className="table-row">
-                        <div className="table-cell pr-4 font-semibold">
-                          Kendaraan
+                      {/* Footer hanya di halaman terakhir */}
+                      {isLastPage && renderFooter()}
+
+                      {/* Indikator halaman jika multi-page */}
+                      {/* {!isLastPage && (
+                        <div className="text-center text-gray-500 text-xs mt-auto pt-3">
+                          Halaman {pageIndex + 1} dari {materialPages.length} - Lanjutan di halaman berikutnya
                         </div>
-                        <div className="table-cell">
-                          :{" "}
-                          {formData.informasiKendaraan ||
-                            "COLT DIESEL / D 8584 HL"}
-                        </div>
-                      </div>
-                      <div className="table-row">
-                        <div className="table-cell pr-4 font-semibold">
-                          Pengemudi
-                        </div>
-                        <div className="table-cell">
-                          : {formData.namaPengemudi || "AYI"}
-                        </div>
-                      </div>
+                      )} */}
                     </div>
-                    <div className="text-right">
-                      <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
-                    </div>
-                  </div>
-
-                  {/* Signatures */}
-                  <div className="grid grid-cols-2 gap-16 text-center">
-                    {/* Penerima */}
-                    <div>
-                      <div className="mb-2 text-lg">Yang Menerima,</div>
-                      <div className="font-bold mb-4 text-lg">
-                        {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
-                      </div>
-
-                      <div className="h-24 mb-4 flex items-center justify-center">
-                        {getPenerimaSignature() ? (
-                          <img
-                            src={getPenerimaSignature()!}
-                            alt="Signature Penerima"
-                            className="max-h-full max-w-full object-contain"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-sm">
-                            (Tanda Tangan)
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="text-lg font-bold">
-                        {formData.namaPenerima || "PAK RUDI"}
-                      </div>
-                    </div>
-
-                    {/* Pengirim */}
-                    <div className="relative">
-                      <div className="mb-2 text-lg">Yang Menyerahkan,</div>
-                      <div className="font-bold mb-4 text-lg">
-                        {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
-                      </div>
-                      <Image
-                        src={`/images/ttd.png`}
-                        alt="TTD"
-                        width={140}
-                        height={140}
-                        className="absolute z-0 left-20 bottom-6"
-                      />
-                      <div className="h-24 mb-4 flex items-center justify-center">
-                        {getPengirimSignature() ? (
-                          <img
-                            src={getPengirimSignature()!}
-                            alt="Signature Pengirim"
-                            className="max-h-full max-w-full object-contain z-20"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-sm">
-                            (Tanda Tangan)
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="font-bold text-lg">
-                        {formData.namaPengirim || "ANDRI SETIAWAN"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
