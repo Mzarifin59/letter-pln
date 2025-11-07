@@ -464,6 +464,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       orientation: "portrait",
       unit: "mm",
       format: "a4",
+      compress: true,
     });
 
     for (let i = 0; i < pages.length; i++) {
@@ -473,15 +474,17 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       scaleToFit(page);
 
       const canvas = await html2canvas(page, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 0,
       });
 
       // Reset transform agar tidak merusak tampilan asli
       page.style.transform = "";
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png", 0.85);
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
