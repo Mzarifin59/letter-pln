@@ -66,6 +66,11 @@ jobs:
           SSH_USER: ${{ vars.SSH_USER }}
           SSH_HOST: ${{ vars.SSH_HOST }}
           SSH_PORT: ${{ vars.SSH_PORT }}
+        run: |
+          cd /home/sigaspol &&
+          git restore backend/.env.temp frontend/.env.temp 2>/dev/null || true &&
+          git fetch --all &&
+          git reset --hard origin/main
         run: ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "cd /home/sigaspol && git pull origin main"
 
       - name: Setup envsubst
