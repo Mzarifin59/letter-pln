@@ -28,6 +28,13 @@ export interface Pengirim {
   ttd_pengirim: FileAttachment;
 }
 
+export interface Mengetahui {
+  id: number;
+  departemen_mengetahui: string;
+  nama_mengetahui: string;
+  ttd_mengetahui: FileAttachment;
+}
+
 export interface Sender {
   id: number;
   documentId: string;
@@ -101,7 +108,36 @@ export interface SuratJalan {
   emails: EmailItem[];
 }
 
-export interface EmailData {
+export interface BeritaBongkaran  {
+  id: number;
+  documentId: string;
+  cop_surat : FileAttachment;
+  no_berita_acara: string;
+  no_perjanjian_kontrak: string;
+  tanggal_kontrak: string;
+  perihal: string;
+  lokasi_asal: string;
+  lokasi_tujuan: string;
+  status_surat: string;
+  status_entry: string;
+  kategori_surat: string;
+  createdAt: string;
+  updatedAt: string;
+  informasi_kendaraan: string;
+  nama_pengemudi: string;
+  materials: Material[];
+  penerima: Penerima;
+  pengirim: Pengirim;
+  mengetahui: Mengetahui;
+  lampiran: FileAttachment[];
+  emails: EmailItem[];
+}
+
+// Role types
+export type UserRole = "Admin" | "Vendor" | "Other";
+
+// Conditional Email Data Interface
+export interface EmailData<T extends UserRole = "Admin"> {
   id: number;
   documentId: string;
   subject: string;
@@ -111,8 +147,33 @@ export interface EmailData {
   isHaveStatus: boolean;
   createdAt: string;
   updatedAt: string;
-  surat_jalan: SuratJalan;
+  surat_jalan: T extends "Vendor" ? BeritaBongkaran : SuratJalan;
   sender: Sender;
   recipient: Recipient;
   email_statuses: EmailStatus[];
+}
+
+// Type aliases untuk kemudahan penggunaan
+export type EmailDataAdmin = EmailData<"Admin">;
+export type EmailDataVendor = EmailData<"Vendor">;
+export type EmailDataOther = EmailData<"Other">;
+
+// Union type untuk fleksibilitas
+export type DynamicEmailData = EmailDataAdmin | EmailDataVendor | EmailDataOther;
+
+// Type guard functions untuk runtime checking
+export function isVendorEmailData(data: DynamicEmailData): data is EmailDataVendor {
+  return "cop_surat" in data.surat_jalan && "no_berita_acara" in data.surat_jalan;
+}
+
+export function isAdminEmailData(data: DynamicEmailData): data is EmailDataAdmin {
+  return "no_surat_jalan" in data.surat_jalan && "no_surat_permintaan" in data.surat_jalan;
+}
+
+// Helper function untuk type-safe access
+export function getEmailDataByRole<T extends UserRole>(
+  data: EmailData<any>,
+  role: T
+): EmailData<T> {
+  return data as EmailData<T>;
 }

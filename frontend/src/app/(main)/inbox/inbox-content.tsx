@@ -24,21 +24,21 @@ import {
 
 import { EmailDetail } from "@/components/detail-email";
 import { EmailRowInbox } from "@/components/email-row";
-import { EmailData } from "@/lib/interface";
+import { DynamicEmailData, isVendorEmailData } from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useUserLogin } from "@/lib/user";
 import { deleteEmail } from "@/lib/emailRequest";
 
 interface InboxContentProps {
-  data: EmailData[];
+  data: DynamicEmailData[];
   token?: string;
 }
 
 interface GroupedEmails {
-  today: EmailData[];
-  yesterday: EmailData[];
-  older: EmailData[];
+  today: DynamicEmailData[];
+  yesterday: DynamicEmailData[];
+  older: DynamicEmailData[];
 }
 
 interface SectionHeaderProps {
@@ -46,13 +46,21 @@ interface SectionHeaderProps {
   count: number;
   isExpanded: boolean;
   onToggle: () => void;
-  sectionEmails: EmailData[];
+  sectionEmails: DynamicEmailData[];
   selectedEmails: string[];
   onSelectSection: (emailIds: string[]) => void;
 }
 
+// Helper function untuk mendapatkan tanggal dari surat
+  const getTanggalSurat = (item: DynamicEmailData) => {
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.tanggal_kontrak;
+    }
+    return item.surat_jalan.tanggal;
+  };
+
 // Fungsi helper untuk mengelompokkan email berdasarkan tanggal
-const groupEmailsByDate = (emails: EmailData[]): GroupedEmails => {
+const groupEmailsByDate = (emails: DynamicEmailData[]): GroupedEmails => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
@@ -60,15 +68,15 @@ const groupEmailsByDate = (emails: EmailData[]): GroupedEmails => {
 
   return {
     today: emails.filter((email) => {
-      const emailDate = new Date(email.surat_jalan.tanggal);
+      const emailDate = new Date(getTanggalSurat(email));
       return emailDate >= today;
     }),
     yesterday: emails.filter((email) => {
-      const emailDate = new Date(email.surat_jalan.tanggal);
+      const emailDate = new Date(getTanggalSurat(email));
       return emailDate >= yesterday && emailDate < today;
     }),
     older: emails.filter((email) => {
-      const emailDate = new Date(email.surat_jalan.tanggal);
+      const emailDate = new Date(getTanggalSurat(email));
       return emailDate < yesterday;
     }),
   };
@@ -76,13 +84,13 @@ const groupEmailsByDate = (emails: EmailData[]): GroupedEmails => {
 
 export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
+  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
@@ -203,7 +211,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     }
   };
 
-  const handleDeleteClick = (email: EmailData) => {
+  const handleDeleteClick = (email: DynamicEmailData) => {
     setSelectedToDelete(email);
     setShowDeleteDialog(true);
   };
@@ -214,13 +222,13 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const sortedInitialData = useMemo(() => {
     return [...data].sort(
       (a, b) =>
-        new Date(b.surat_jalan.tanggal).getTime() -
-        new Date(a.surat_jalan.tanggal).getTime()
+        new Date(getTanggalSurat(b)).getTime() -
+        new Date(getTanggalSurat(a)).getTime()
     );
   }, [data]);
 
-  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
-  let emailListFiltered: EmailData[];
+  const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedInitialData);
+  let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
@@ -254,7 +262,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === user?.name && status.isDelete == false
       );
 
-      return hasVendorStatus && item.isHaveStatus === true;
+      return hasVendorStatus && item.isHaveStatus === true && item.surat_jalan.kategori_surat === "Berita Acara" && "Surat Bongkaran";
     });
   }
 
@@ -437,7 +445,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     }
   };
 
-  const handleEmailClick = async (email: EmailData): Promise<void> => {
+  const handleEmailClick = async (email: DynamicEmailData): Promise<void> => {
     setOpenedEmail(email);
 
     const emailStatus = email.email_statuses.find(
@@ -471,7 +479,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       end.setHours(23, 59, 59, 999);
 
       const filtered = sortedInitialData.filter((email) => {
-        const emailDate = new Date(email.surat_jalan.tanggal);
+        const emailDate = new Date(getTanggalSurat(email));
         return emailDate >= start && emailDate <= end;
       });
 

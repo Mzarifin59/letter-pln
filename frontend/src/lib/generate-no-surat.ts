@@ -1,4 +1,4 @@
-import { SuratJalan } from "@/lib/interface";
+import { BeritaBongkaran, SuratJalan } from "@/lib/interface";
 
 // Konversi angka bulan (1-12) ke angka romawi
 export function toRomanMonth(month: number): string {
@@ -79,6 +79,73 @@ export function parseSuratNumber(nomorSurat: string): {
   year: number;
 } | null {
   const match = nomorSurat.match(/NO\s*:\s*(\d+)\.SJ\/GD\.UPT-BDG\/([IVX]+)\/(\d{4})/i);
+  
+  if (!match) return null;
+
+  return {
+    sequence: parseInt(match[1], 10),
+    month: match[2],
+    year: parseInt(match[3], 10),
+  };
+}
+
+export function generateNextBeritaAcara(existingData: BeritaBongkaran[]): string {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; 
+  const currentYear = now.getFullYear();
+  const romanMonth = toRomanMonth(currentMonth);
+
+  let maxNumber = 0;
+  
+  existingData.forEach((surat) => {
+    const noSurat = surat.no_berita_acara || "";
+    
+    const patterns = [
+      /NO\s*:\s*(\d+)\./i,
+      /NO:\s*(\d+)\./i,
+      /^(\d+)\./,
+      /(\d+)\.BA/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = noSurat.match(pattern);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) {
+          maxNumber = num;
+        }
+        break;
+      }
+    }
+  });
+
+  // Nomor berikutnya
+  const nextNumber = maxNumber + 1;
+  
+  // Format dengan leading zeros (3 digit)
+  const formattedNumber = String(nextNumber).padStart(3, "0");
+
+  // Generate nomor surat lengkap dengan bulan/tahun SAAT INI
+  const generatedNumber = `NO : ${formattedNumber}.BA/GAE/${romanMonth}/${currentYear}`;
+
+  return generatedNumber;
+}
+
+
+// Validasi format nomor surat jalan
+export function validateBeritaAcaraNumber(nomorSurat: string): boolean {
+  const pattern = /^NO\s*:\s*\d{3}\.BA\/GAE\/[IVX]+\/\d{4}$/i;
+  return pattern.test(nomorSurat);
+}
+
+
+// Parse informasi dari nomor surat jalan
+export function parseBeritaAcaraNumber(nomorSurat: string): {
+  sequence: number;
+  month: string;
+  year: number;
+} | null {
+  const match = nomorSurat.match(/NO\s*:\s*(\d+)\.BA\/GAE\/([IVX]+)\/(\d{4})/i);
   
   if (!match) return null;
 

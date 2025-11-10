@@ -10,7 +10,12 @@ import {
 } from "lucide-react";
 
 import { EmailDetail } from "@/components/detail-email";
-import { EmailData } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  isVendorEmailData,
+  EmailDataAdmin,
+  EmailDataVendor,
+} from "@/lib/interface";
 import { deleteEmail } from "@/lib/emailRequest";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
@@ -30,20 +35,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 interface SentContentProps {
-  data: EmailData[];
+  data: DynamicEmailData[];
   token: string | undefined;
 }
 
 export default function SentContent({ data, token }: SentContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const { user } = useUserLogin();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
-    null
-  );
+  const [selectedToDelete, setSelectedToDelete] =
+    useState<DynamicEmailData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
 
@@ -158,7 +162,7 @@ export default function SentContent({ data, token }: SentContentProps) {
     }
   };
 
-  const handleDeleteClick = (email: EmailData) => {
+  const handleDeleteClick = (email: DynamicEmailData) => {
     setSelectedToDelete(email);
     setShowDeleteDialog(true); // buka modal konfirmasi
   };
@@ -295,7 +299,7 @@ export default function SentContent({ data, token }: SentContentProps) {
     }
   };
 
-  const handleEmailClick = async (email: EmailData): Promise<void> => {
+  const handleEmailClick = async (email: DynamicEmailData): Promise<void> => {
     setOpenedEmail(email);
 
     const emailStatus = email.email_statuses.find(
@@ -315,8 +319,9 @@ export default function SentContent({ data, token }: SentContentProps) {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
-  let emailListFiltered: EmailData[];
+  const [emailList, setEmailList] =
+    useState<DynamicEmailData[]>(sortedInitialData);
+  let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
@@ -332,7 +337,7 @@ export default function SentContent({ data, token }: SentContentProps) {
           item.isHaveStatus === true)
       );
     });
-    console.log(emailListFiltered)
+    console.log(emailListFiltered);
   } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
@@ -355,8 +360,8 @@ export default function SentContent({ data, token }: SentContentProps) {
 
       return (
         hasVendorStatus &&
-        item.recipient.name === user?.name &&
-        item.surat_jalan.status_entry === "Surat Bongkaran"
+        (item.surat_jalan.kategori_surat === "Surat Bongkaran" ||
+          item.surat_jalan.kategori_surat === "Berita Acara")
       );
     });
   }
@@ -538,9 +543,7 @@ export default function SentContent({ data, token }: SentContentProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {isMultipleDelete
-                ? "Hapus Beberapa Email"
-                : "Hapus Email"}
+              {isMultipleDelete ? "Hapus Beberapa Email" : "Hapus Email"}
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600">

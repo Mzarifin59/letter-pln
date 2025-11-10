@@ -7,6 +7,12 @@ import { EmailData } from "@/lib/interface";
 
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   LayoutGrid,
   Inbox,
@@ -183,12 +189,27 @@ export default function SidebarContent({
         )}
 
         {user?.role?.name === "Vendor" && (
-          <Link href={`/create-letter`} onClick={handleItemClick}>
-            <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
-              <Plus size={18} />
-              Buat Surat Bongkaran
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
+                <Plus size={18} />
+                Buat Surat
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent className="w-full">
+              <DropdownMenuItem asChild>
+                <Link href="/create-letter-bongkaran">
+                  Berita Acara Material Bongkaran
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/create-letter/berita-acara-pemeriksaan-tim-mutu">
+                  Berita Acara Pemeriksaan Tim Mutu
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

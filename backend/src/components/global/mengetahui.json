@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_global_mengetahuis",
+  "info": {
+    "displayName": "mengetahui"
+  },
+  "options": {},
+  "attributes": {
+    "departemen_mengetahui": {
+      "type": "string"
+    },
+    "nama_mengetahui": {
+      "type": "string"
+    },
+    "ttd_mengetahui": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  },
+  "config": {}
+}

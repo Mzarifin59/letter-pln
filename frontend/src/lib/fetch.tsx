@@ -54,6 +54,14 @@ export async function getAllSuratJalan() {
             },
           },
         },
+        mengetahui: {
+          fields: ["departemen_mengetahui", "nama_mengetahui"],
+          populate: {
+            ttd_mengetahui: {
+              fields: ["name", "url"],
+            },
+          },
+        },
         lampiran: {
           fields: ["name", "url"],
         },

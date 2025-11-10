@@ -11,15 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
-import { SignatureType } from "@/lib/surat-jalan/surat-jalan.type";
-import { INITIAL_MATERIAL } from "@/lib/surat-jalan/form.constants";
-import { FileUtils } from "@/lib/surat-jalan/file.utils";
-import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
-import PreviewSection from "@/components/preview-surat";
+import { SignatureType } from "@/lib/surat-bongkaran/berita-bongkaran.type";
+import { INITIAL_MATERIAL } from "@/lib/surat-bongkaran/form.constants";
+import { FileUtils } from "@/lib/surat-bongkaran/file.utils";
+import { useBeritaBongkaranForm } from "@/lib/surat-bongkaran/useBeritaBongkaranForm";
+import PreviewSection from "@/components/preview-berita-acara";
 import { toast } from "sonner";
-import { FileAttachment, SuratJalan } from "@/lib/interface";
+import { FileAttachment, BeritaBongkaran } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
-import { generateNextSuratNumber } from "@/lib/generate-no-surat";
+import { generateNextBeritaAcara } from "@/lib/generate-no-surat";
 
 interface PreviewData {
   upload: string | null;
@@ -27,7 +27,7 @@ interface PreviewData {
 }
 
 interface FormCreateProps {
-  dataSurat: SuratJalan[];
+  dataSurat: BeritaBongkaran[];
 }
 
 export default function FormCreatePage({ dataSurat }: FormCreateProps) {
@@ -40,51 +40,52 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   const {
     formData,
     materials,
-    signaturePenerima,
     signaturePengirim,
     lampiran,
 
     setFormData,
     setMaterials,
-    setSignaturePenerima,
     setSignaturePengirim,
     setLampiran,
     handleSubmit: submitForm,
-  } = useSuratJalanForm();
+  } = useBeritaBongkaranForm();
 
   const [showPreview, setShowPreview] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const signatureRefPenerima = useRef<SignatureCanvas>(null);
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
   // Load draft data when in edit mode
   const loadDraftData = useCallback(async () => {
     try {
       if (dataSurat) {
-        const suratJalan = dataSurat.filter(
-          (item) => item.documentId === draftId
+        const beritaBongkaran = dataSurat.filter(
+          (item) => item.documentId === draftId 
         )[0];
 
         // Populate form data
         setFormData({
-          nomorSuratJalan: suratJalan.no_surat_jalan || "",
-          nomorSuratPermintaan: suratJalan.no_surat_permintaan || "",
-          tanggalSurat: suratJalan.tanggal
-            ? new Date(suratJalan.tanggal).toISOString().split("T")[0]
+          nomorBeritaAcara: beritaBongkaran.no_berita_acara || "",
+          nomorPerjanjianKontrak: beritaBongkaran.no_perjanjian_kontrak || "",
+          tanggalKontrak: beritaBongkaran.tanggal_kontrak
+            ? new Date(beritaBongkaran.tanggal_kontrak)
+                .toISOString()
+                .split("T")[0]
             : "",
-          perihal: suratJalan.perihal || "",
-          lokasiAsal: suratJalan.lokasi_asal || "",
-          lokasiTujuan: suratJalan.lokasi_tujuan || "",
-          catatanTambahan: suratJalan.catatan_tambahan || "",
-          pesan: suratJalan.pesan || "",
-          informasiKendaraan: suratJalan.informasi_kendaraan || "",
-          namaPengemudi: suratJalan.nama_pengemudi || "",
-          perusahaanPenerima: suratJalan.penerima.perusahaan_penerima || "",
-          namaPenerima: suratJalan.penerima.nama_penerima || "",
-          departemenPengirim: suratJalan.pengirim.departemen_pengirim || "",
-          namaPengirim: suratJalan.pengirim.nama_pengirim || "",
+          perihal: beritaBongkaran.perihal || "",
+          lokasiAsal: beritaBongkaran.lokasi_asal || "",
+          lokasiTujuan: beritaBongkaran.lokasi_tujuan || "",
+          informasiKendaraan: beritaBongkaran.informasi_kendaraan || "",
+          namaPengemudi: beritaBongkaran.nama_pengemudi || "",
+          perusahaanPenerima: beritaBongkaran.penerima.perusahaan_penerima,
+          namaPenerima: beritaBongkaran.penerima.nama_penerima,
+          departemenPengirim:
+            beritaBongkaran.pengirim.departemen_pengirim || "",
+          namaPengirim: beritaBongkaran.pengirim.nama_pengirim || "",
+          departemenMengetahui:
+            beritaBongkaran.mengetahui.departemen_mengetahui,
+          namaMengetahui: beritaBongkaran.mengetahui.nama_mengetahui,
         });
 
         const getFileUrl = (
@@ -95,17 +96,10 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           return `http://localhost:1337${fileAttachment.url}`;
         };
 
-        if (suratJalan.penerima.ttd_penerima) {
-          const signatureUrl = getFileUrl(suratJalan.penerima.ttd_penerima);
-          setSignaturePenerima((prev) => ({
-            ...prev,
-            signature: signatureUrl,
-            preview: { ...prev.preview, upload: signatureUrl, signature: null },
-          }));
-        }
-
-        if (suratJalan.pengirim.ttd_pengirim) {
-          const signatureUrl = getFileUrl(suratJalan.pengirim.ttd_pengirim);
+        if (beritaBongkaran.pengirim.ttd_pengirim) {
+          const signatureUrl = getFileUrl(
+            beritaBongkaran.pengirim.ttd_pengirim
+          );
           setSignaturePengirim((prev) => ({
             ...prev,
             signature: signatureUrl,
@@ -113,29 +107,33 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           }));
         }
 
-        if (suratJalan.materials && suratJalan.materials.length > 0) {
-          const loadedMaterials = suratJalan.materials.map((mat, index) => ({
-            id: index + 1,
-            namaMaterial: mat.nama || "",
-            katalog: mat.katalog || "",
-            satuan: mat.satuan || "",
-            jumlah: mat.jumlah?.toString() || "0",
-            keterangan: mat.keterangan || "",
-          }));
+        if (beritaBongkaran.materials && beritaBongkaran.materials.length > 0) {
+          const loadedMaterials = beritaBongkaran.materials.map(
+            (mat, index) => ({
+              id: index + 1,
+              namaMaterial: mat.nama || "",
+              katalog: mat.katalog || "",
+              satuan: mat.satuan || "",
+              jumlah: mat.jumlah?.toString() || "0",
+              keterangan: mat.keterangan || "",
+            })
+          );
           setMaterials(loadedMaterials);
         }
 
-        if (suratJalan.lampiran && suratJalan.lampiran.length > 0) {
+        if (beritaBongkaran.lampiran && beritaBongkaran.lampiran.length > 0) {
           try {
             const loadedLampiran = await Promise.all(
-              suratJalan.lampiran.map(async (attachment: FileAttachment) => {
-                const fileUrl = getFileUrl(attachment);
-                const response = await fetch(fileUrl);
-                const blob = await response.blob();
-                return new File([blob], attachment.name || "lampiran", {
-                  type: blob.type,
-                });
-              })
+              beritaBongkaran.lampiran.map(
+                async (attachment: FileAttachment) => {
+                  const fileUrl = getFileUrl(attachment);
+                  const response = await fetch(fileUrl);
+                  const blob = await response.blob();
+                  return new File([blob], attachment.name || "lampiran", {
+                    type: blob.type,
+                  });
+                }
+              )
             );
             setLampiran(loadedLampiran);
           } catch (error) {
@@ -160,14 +158,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    router,
-    setFormData,
-    setLampiran,
-    setMaterials,
-    setSignaturePenerima,
-    setSignaturePengirim,
-  ]);
+  }, [router, setFormData, setLampiran, setMaterials, setSignaturePengirim]);
 
   const hasLoadedRef = useRef(false);
   useEffect(() => {
@@ -181,11 +172,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   }, [mode, draftId, loadDraftData]);
 
   // Preview data untuk backward compatibility dengan render functions
-  const previewPenerima: PreviewData = {
-    upload: signaturePenerima.preview.upload,
-    signature: signaturePenerima.preview.signature,
-  };
-
   const previewPengirim: PreviewData = {
     upload: signaturePengirim.preview.upload,
     signature: signaturePengirim.preview.signature,
@@ -236,8 +222,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     }
 
     const preview = await FileUtils.toBase64(file);
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+    const setter = setSignaturePengirim;
 
     setter((prev) => ({
       ...prev,
@@ -247,10 +232,8 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const saveSignature = (type: SignatureType) => {
-    const ref =
-      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+    const ref = signatureRefPengirim;
+    const setter = setSignaturePengirim;
 
     if (ref.current && !ref.current.isEmpty()) {
       const dataURL = ref.current.toDataURL();
@@ -265,10 +248,8 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const clearSignature = (type: SignatureType) => {
-    const ref =
-      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+    const ref = signatureRefPengirim;
+    const setter = setSignaturePengirim;
 
     if (ref.current) {
       ref.current.clear();
@@ -281,8 +262,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const removeUploadedSignature = (type: SignatureType) => {
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
+    const setter = setSignaturePengirim;
     setter((prev) => ({
       ...prev,
       upload: null,
@@ -313,28 +293,23 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       await submitForm(false);
 
       setFormData({
-        nomorSuratJalan: "",
-        nomorSuratPermintaan: "",
-        tanggalSurat: "",
+        nomorBeritaAcara: "",
+        nomorPerjanjianKontrak: "",
+        tanggalKontrak: "",
         perihal: "",
         lokasiAsal: "",
         lokasiTujuan: "",
-        catatanTambahan: "",
-        pesan: "",
         informasiKendaraan: "",
         namaPengemudi: "",
         perusahaanPenerima: "",
         namaPenerima: "",
         departemenPengirim: "",
         namaPengirim: "",
+        departemenMengetahui: "",
+        namaMengetahui: "",
       });
 
       setLampiran([]);
-      setSignaturePenerima({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
       setSignaturePengirim({
         upload: null,
         signature: null,
@@ -383,28 +358,23 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       await submitForm(true);
 
       setFormData({
-        nomorSuratJalan: "",
-        nomorSuratPermintaan: "",
-        tanggalSurat: "",
+        nomorBeritaAcara: "",
+        nomorPerjanjianKontrak: "",
+        tanggalKontrak: "",
         perihal: "",
         lokasiAsal: "",
         lokasiTujuan: "",
-        catatanTambahan: "",
-        pesan: "",
         informasiKendaraan: "",
         namaPengemudi: "",
         perusahaanPenerima: "",
         namaPenerima: "",
         departemenPengirim: "",
         namaPengirim: "",
+        departemenMengetahui: "",
+        namaMengetahui: "",
       });
 
       setLampiran([]);
-      setSignaturePenerima({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
       setSignaturePengirim({
         upload: null,
         signature: null,
@@ -509,16 +479,16 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       }
     }
 
-    pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
+    pdf.save(`${formData.nomorBeritaAcara || "surat-jalan"}.pdf`);
   };
 
   // Generate no surat
   useEffect(() => {
     if (mode !== "edit" && !draftId && dataSurat && dataSurat.length >= 0) {
-      const autoGeneratedNumber = generateNextSuratNumber(dataSurat);
+      const autoGeneratedNumber = generateNextBeritaAcara(dataSurat);
       setFormData((prev) => ({
         ...prev,
-        nomorSuratJalan: autoGeneratedNumber,
+        nomorBeritaAcara: autoGeneratedNumber,
       }));
     }
   }, [mode, draftId, dataSurat, setFormData]);
@@ -528,28 +498,28 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            No Surat Jalan
+            No Berita Acara
             <span className="text-xs text-gray-500 ml-2">(Auto-generated)</span>
           </label>
           <Input
             type="text"
-            name="nomorSuratJalan"
-            value={formData.nomorSuratJalan}
+            name="nomorBeritaAcara"
+            value={formData.nomorBeritaAcara}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
-            placeholder="NO : 001.SJ/GD.UPT-BDG/IX/2025"
-            readOnly={!isEditMode} 
+            placeholder="NO : 001.BA/GAE/IX/2025"
+            readOnly={!isEditMode}
           />
         </div>
 
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            No Surat Permintaan
+            No Perjanjian Kontrak
           </label>
           <Input
             type="text"
-            name="nomorSuratPermintaan"
-            value={formData.nomorSuratPermintaan}
+            name="nomorPerjanjianKontrak"
+            value={formData.nomorPerjanjianKontrak}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
             placeholder="001.REQ/GD.UPT-BDG/IX/2025"
@@ -558,14 +528,15 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
         <div className="sm:col-span-2 xl:col-span-1">
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Tanggal Surat
+            Tanggal Kontrak
           </label>
           <div className="relative">
             <input
               type="date"
               name="tanggalSurat"
               value={
-                formData.tanggalSurat || new Date().toISOString().split("T")[0]
+                formData.tanggalKontrak ||
+                new Date().toISOString().split("T")[0]
               }
               onChange={handleInputChange}
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -791,13 +762,15 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     namaValue: string,
     perusahaanName: string,
     namaNama: string,
-    preview: PreviewData
+    preview?: PreviewData,
+    showSignature: boolean = true
   ) => (
     <div className="border border-gray-200 rounded-xl p-4 sm:p-6">
       <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-4">
         {title}
       </h3>
       <div className="space-y-4 sm:space-y-6">
+        {/* Input Perusahaan */}
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
             Perusahaan {title}
@@ -814,6 +787,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           />
         </div>
 
+        {/* Input Nama */}
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
             Nama {title}
@@ -828,116 +802,111 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           />
         </div>
 
-        <div className="mb-6">
-          <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Tanda Tangan {title}
-          </label>
-          <Tabs defaultValue="upload" className="w-full">
-            <TabsList className="grid grid-cols-2 w-full mb-3 h-auto">
-              <TabsTrigger
-                value="upload"
-                className="text-xs sm:text-sm py-2 px-2 sm:px-4"
-              >
-                Upload File
-              </TabsTrigger>
-              <TabsTrigger
-                value="draw"
-                className="text-xs sm:text-sm py-2 px-2 sm:px-4"
-              >
-                Gambar
-              </TabsTrigger>
-            </TabsList>
+        {showSignature && (
+          <div className="mb-6">
+            <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+              Tanda Tangan {title}
+            </label>
+            <Tabs defaultValue="upload" className="w-full">
+              <TabsList className="grid grid-cols-2 w-full mb-3 h-auto">
+                <TabsTrigger
+                  value="upload"
+                  className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+                >
+                  Upload File
+                </TabsTrigger>
+                <TabsTrigger
+                  value="draw"
+                  className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+                >
+                  Gambar
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="upload" className="space-y-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e, type)}
-                className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
-              />
-              <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-                {preview.upload ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={preview.upload}
-                      alt="Preview Tanda Tangan"
-                      className="w-full h-full object-contain"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeUploadedSignature(type)}
-                      className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400 px-4">
-                    <div className="mb-2 text-lg sm:text-xl">📁</div>
-                    <div className="text-xs sm:text-sm">Preview Upload</div>
-                    <div className="text-xs mt-1">
-                      Format: JPG, PNG, GIF (Max 5MB)
-                    </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="draw" className="space-y-3">
-              <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
-                <SignatureCanvas
-                  ref={
-                    type === "penerima"
-                      ? signatureRefPenerima
-                      : signatureRefPengirim
-                  }
-                  penColor="black"
-                  canvasProps={{
-                    className: "w-full h-full",
-                    style: { touchAction: "none" },
-                  }}
-                  backgroundColor="transparent"
-                  onEnd={() => saveSignature(type)}
+              {/* Tab Upload */}
+              <TabsContent value="upload" className="space-y-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, type)}
+                  className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
                 />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => clearSignature(type)}
-                  className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
-                >
-                  <span className="mr-1 sm:mr-2">🗑️</span>
-                  <span className="hidden sm:inline">Hapus</span>
-                  <span className="sm:hidden">Clear</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => saveSignature(type)}
-                  className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
-                >
-                  <span className="mr-1 sm:mr-2">💾</span>
-                  <span className="hidden sm:inline">Simpan</span>
-                  <span className="sm:hidden">Save</span>
-                </Button>
-              </div>
-              <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                {preview.signature ? (
-                  <img
-                    src={preview.signature}
-                    alt="Signature Preview"
-                    className="max-h-full max-w-full object-contain"
+                <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                  {preview?.upload ? (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={preview.upload}
+                        alt="Preview Tanda Tangan"
+                        className="w-full h-full object-contain"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeUploadedSignature(type)}
+                        className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
+                      >
+                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-400 px-4">
+                      <div className="mb-2 text-lg sm:text-xl">📁</div>
+                      <div className="text-xs sm:text-sm">Preview Upload</div>
+                      <div className="text-xs mt-1">
+                        Format: JPG, PNG, GIF (Max 5MB)
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Tab Draw */}
+              <TabsContent value="draw" className="space-y-3">
+                <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
+                  <SignatureCanvas
+                    ref={signatureRefPengirim}
+                    penColor="black"
+                    canvasProps={{
+                      className: "w-full h-full",
+                      style: { touchAction: "none" },
+                    }}
+                    backgroundColor="transparent"
+                    onEnd={() => saveSignature(type)}
                   />
-                ) : (
-                  <div className="text-gray-400 text-xs sm:text-sm text-center px-2">
-                    <span className="block mb-1">✍️</span>
-                    Preview Signature
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => clearSignature(type)}
+                    className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                  >
+                    🗑️ Hapus
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => saveSignature(type)}
+                    className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                  >
+                    💾 Simpan
+                  </Button>
+                </div>
+                <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  {preview?.signature ? (
+                    <img
+                      src={preview.signature}
+                      alt="Signature Preview"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-gray-400 text-xs sm:text-sm text-center px-2">
+                      ✍️ Preview Signature
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1059,24 +1028,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     </div>
   );
 
-  if (showPreview) {
-    return (
-      <div className="lg:ml-72">
-        <PreviewSection
-          formData={formData}
-          materials={materials}
-          signaturePenerima={signaturePenerima}
-          signaturePengirim={signaturePengirim}
-          onClose={() => setShowPreview(false)}
-          onSubmit={handleSubmit}
-          onDraft={handleDraft}
-          onDownloadPDF={handleDownloadPDF}
-          calculateTotal={calculateTotal}
-        />
-      </div>
-    );
-  }
-
   if (!showPreview) {
     return (
       <>
@@ -1086,7 +1037,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             <div className="flex flex-col xl:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4">
               <div className="flex items-center gap-3">
                 <h1 className="plus-jakarta-sans text-2xl sm:text-[28px] lg:text-[32px] font-semibold text-[#353739]">
-                  Buat Surat Jalan
+                  Buat Berita Acara Serah Terima Material Bongkaran
                 </h1>
               </div>
 
@@ -1126,34 +1077,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
               {/* Materials Table - Add horizontal scroll on mobile */}
               {renderMaterialsTable()}
-
-              {/* Additional Notes */}
-              <div>
-                <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-                  Catatan Tambahan
-                </label>
-                <Textarea
-                  name="catatanTambahan"
-                  value={formData.catatanTambahan}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  placeholder="PENGIRIMAN MATERIAL PASIR, KORAL, DLL UNTUK IN-SITU BETON BAT PB 04"
-                />
-              </div>
-              <div>
-                <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-                  Pesan
-                </label>
-                <Textarea
-                  name="pesan"
-                  value={formData.pesan}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  placeholder="Halo Selamat Siang, Ini saya mengirimkan surat..."
-                />
-              </div>
 
               {/* Driver Information - Responsive Grid */}
               <div>
@@ -1196,7 +1119,8 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   formData.namaPenerima,
                   "perusahaanPenerima",
                   "namaPenerima",
-                  previewPenerima
+                  undefined,
+                  false
                 )}
 
                 {renderSignatureSection(
@@ -1207,6 +1131,17 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   "departemenPengirim",
                   "namaPengirim",
                   previewPengirim
+                )}
+
+                {renderSignatureSection(
+                  "mengetahui",
+                  "Mengetahui",
+                  formData.departemenMengetahui,
+                  formData.namaMengetahui,
+                  "departemenMengetahui",
+                  "namaMengetahui",
+                  undefined,
+                  false
                 )}
               </div>
             </div>

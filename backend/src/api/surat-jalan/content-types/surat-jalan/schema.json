@@ -12,13 +12,43 @@
   "pluginOptions": {},
   "attributes": {
     "no_surat_jalan": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
     },
     "no_surat_permintaan": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
     },
     "tanggal": {
-      "type": "datetime"
+      "type": "datetime",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
     },
     "perihal": {
       "type": "text"
@@ -63,7 +93,17 @@
       ]
     },
     "pesan": {
-      "type": "text"
+      "type": "text",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
     },
     "emails": {
       "type": "relation",
@@ -72,7 +112,17 @@
       "mappedBy": "surat_jalan"
     },
     "catatan_tambahan": {
-      "type": "text"
+      "type": "text",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
     },
     "informasi_kendaraan": {
       "type": "string"
@@ -94,6 +144,80 @@
         "Surat Bongkaran",
         "Berita Acara"
       ]
+    },
+    "no_berita_acara": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
+    },
+    "no_perjanjian_kontrak": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
+    },
+    "tanggal_kontrak": {
+      "type": "datetime",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      }
+    },
+    "cop_surat": {
+      "type": "media",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      },
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "mengetahui": {
+      "type": "component",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara"
+          ]
+        }
+      },
+      "component": "global.mengetahui",
+      "repeatable": false
     }
   }
 }

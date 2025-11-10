@@ -11,36 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserLogin } from "@/lib/user";
+import {
+  DynamicEmailData,
+  isVendorEmailData,
+  EmailDataVendor,
+  EmailDataAdmin,
+} from "@/lib/interface";
 import { approveEmailSurat, rejectEmailSurat } from "@/lib/emailRequest";
 
-// Types
-interface SuratJalan {
-  no_surat_jalan: string;
-  tanggal: string;
-  perihal: string;
-  status_surat: string;
-  status_entry: string;
-  documentId: string;
-}
-
-interface Sender {
-  name: string;
-}
-
-interface Recipient {
-  name: string;
-}
-
-interface EmailData {
-  id: string;
-  documentId: string;
-  sender: Sender;
-  recipient: Recipient;
-  surat_jalan: SuratJalan;
-}
-
 interface TrackingContentProps {
-  data: EmailData[];
+  data: DynamicEmailData[];
   token?: string;
 }
 
@@ -76,19 +56,48 @@ export default function TrackingContentPage({
   data,
   token,
 }: TrackingContentProps) {
+  const { user } = useUserLogin();
+
+  // Helper function untuk mendapatkan tanggal dari surat
+  const getTanggalSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  };
+
+  // Helper function untuk mendapatkan nomor surat
+  const getNoSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.no_berita_acara ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
+  };
+
   const dataEmail = data.sort(
     (a, b) =>
-      new Date(b.surat_jalan.tanggal).getTime() -
-      new Date(a.surat_jalan.tanggal).getTime()
+      new Date(getTanggalSurat(b)).getTime() -
+      new Date(getTanggalSurat(a)).getTime()
   );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<EmailData | null>(null);
+  const [selectedItem, setSelectedItem] = useState<DynamicEmailData | null>(
+    null
+  );
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectMessage, setRejectMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useUserLogin();
 
   const itemPerPage = 15;
   const totalPages = Math.ceil(data.length / itemPerPage);
@@ -112,7 +121,9 @@ export default function TrackingContentPage({
       .filter(
         (item) =>
           item.surat_jalan.status_surat === "Approve" &&
-          item.surat_jalan.status_entry !== "Draft"
+          item.surat_jalan.status_entry !== "Draft" &&
+          (item.surat_jalan.kategori_surat === "Berita Acara" ||
+            item.surat_jalan.kategori_surat === "Surat Bongkaran")
       )
       .slice(startIndex, endIndex);
   }
@@ -136,7 +147,7 @@ export default function TrackingContentPage({
     }
   };
 
-  const handleSeeDetail = (item: EmailData) => {
+  const handleSeeDetail = (item: DynamicEmailData) => {
     setSelectedItem(item);
     setIsDialogOpen(true);
     setShowRejectForm(false);
@@ -201,7 +212,7 @@ export default function TrackingContentPage({
         emailId: selectedItem.documentId,
         apiUrl,
         token,
-        pesan : rejectMessage
+        pesan: rejectMessage,
       });
 
       if (!response.ok) {
@@ -282,9 +293,7 @@ export default function TrackingContentPage({
                       "Dari",
                       "Kepada",
                       "Perihal",
-                      isSPV || user?.role?.name === "Vendor"
-                        ? "Detail"
-                        : "Status",
+                      isSPV ? "Detail" : "Status",
                     ].map((h) => (
                       <th
                         key={h}
@@ -302,7 +311,7 @@ export default function TrackingContentPage({
                         {index + 1}
                       </td>
                       <td className="py-4 px-6 text-sm text-[#545454]">
-                        {formatDateTime(item.surat_jalan.tanggal)}
+                        {formatDateTime(getTanggalSurat(item))}
                       </td>
                       <td className="py-4 px-6 text-sm text-[#545454]">
                         {item.sender.name}
@@ -314,7 +323,7 @@ export default function TrackingContentPage({
                         {item.surat_jalan.perihal}
                       </td>
                       <td className="py-4 px-6">
-                        {isSPV || user?.role?.name === "Vendor" ? (
+                        {isSPV ? (
                           <button
                             onClick={() => handleSeeDetail(item)}
                             className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"
@@ -390,7 +399,7 @@ export default function TrackingContentPage({
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mb-1">
-                    {formatDateTime(row.surat_jalan.tanggal)}
+                    {formatDateTime(getTanggalSurat(row))}
                   </p>
                   <p className="text-sm text-[#545454]">
                     <span className="font-medium">Dari:</span> {row.sender.name}
@@ -428,7 +437,7 @@ export default function TrackingContentPage({
                 No. Surat Jalan
               </label>
               <p className="text-base font-semibold text-[#353739] bg-gray-50 p-3 rounded-lg">
-                {selectedItem?.surat_jalan.no_surat_jalan}
+                {/* {getNoSurat(selectedItem!)} */}
               </p>
             </div>
 
@@ -438,8 +447,7 @@ export default function TrackingContentPage({
                 Tanggal
               </label>
               <p className="text-base text-[#545454]">
-                {selectedItem &&
-                  formatDateTime(selectedItem.surat_jalan.tanggal)}
+                {selectedItem && formatDateTime(getTanggalSurat(selectedItem))}
               </p>
             </div>
 

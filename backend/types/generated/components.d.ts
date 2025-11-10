@@ -14,6 +14,20 @@ export interface GlobalMaterial extends Struct.ComponentSchema {
   };
 }
 
+export interface GlobalMengetahui extends Struct.ComponentSchema {
+  collectionName: 'components_global_mengetahuis';
+  info: {
+    displayName: 'mengetahui';
+  };
+  attributes: {
+    departemen_mengetahui: Schema.Attribute.String;
+    nama_mengetahui: Schema.Attribute.String;
+    ttd_mengetahui: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios'
+    >;
+  };
+}
+
 export interface GlobalPenerima extends Struct.ComponentSchema {
   collectionName: 'components_global_penerimas';
   info: {
@@ -46,6 +60,7 @@ declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
       'global.material': GlobalMaterial;
+      'global.mengetahui': GlobalMengetahui;
       'global.penerima': GlobalPenerima;
       'global.pengirim': GlobalPengirim;
     }

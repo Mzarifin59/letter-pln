@@ -500,6 +500,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
   };
   attributes: {
     catatan_tambahan: Schema.Attribute.Text;
+    cop_surat: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -521,7 +522,10 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     lokasi_asal: Schema.Attribute.String;
     lokasi_tujuan: Schema.Attribute.String;
     materials: Schema.Attribute.Component<'global.material', true>;
+    mengetahui: Schema.Attribute.Component<'global.mengetahui', false>;
     nama_pengemudi: Schema.Attribute.String;
+    no_berita_acara: Schema.Attribute.String;
+    no_perjanjian_kontrak: Schema.Attribute.String;
     no_surat_jalan: Schema.Attribute.String;
     no_surat_permintaan: Schema.Attribute.String;
     penerima: Schema.Attribute.Component<'global.penerima', false>;
@@ -534,6 +538,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
       ['In Progress', 'Approve', 'Reject']
     >;
     tanggal: Schema.Attribute.DateTime;
+    tanggal_kontrak: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

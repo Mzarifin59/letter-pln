@@ -2,7 +2,7 @@
 
 import { StickyNote, Check, Send, ArchiveX } from "lucide-react";
 
-import { EmailData } from "@/lib/interface";
+import { DynamicEmailData, EmailDataAdmin, EmailDataVendor, isVendorEmailData, UserRole } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { JSX } from "react";
 
@@ -81,68 +81,110 @@ const statusIcons: Record<string, { icon: JSX.Element }> = {
 };
 
 interface HomeContentProps {
-  allData: EmailData[];
+  allData: DynamicEmailData[];
 }
 
 export default function DashboardContentPage({ allData }: HomeContentProps) {
   const { user } = useUserLogin();
+  const userRole = (user?.role?.name || "Other") as UserRole;
 
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Helper function untuk mendapatkan tanggal dari surat
+  const getTanggalSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  };
+
+  // Helper function untuk mendapatkan nomor surat
+  const getNoSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.no_berita_acara ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
+  };
+
+  // Filter data
   const draftData = allData.filter(
     (item) => item.surat_jalan.status_entry === "Draft"
   );
+
   const publishedData = allData.filter(
     (item) => item.surat_jalan.status_entry === "Published"
   );
 
-  const now = new Date();
-  const currentMonth = now.getMonth(); // 0 = Januari
-  const currentYear = now.getFullYear();
-
-  // filter semua data hanya data bulan ini
-  const draftDataThisMonth = draftData.filter((sj) => {
-    const tgl = new Date(sj.surat_jalan.tanggal);
+  const draftDataThisMonth = draftData.filter((item) => {
+    const tgl = new Date(getTanggalSurat(item));
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
 
-  // filter data published hanya data bulan ini
-  const publishedDataThisMonth = publishedData.filter((sj) => {
-    const tgl = new Date(sj.surat_jalan.tanggal);
+  const publishedDataThisMonth = publishedData.filter((item) => {
+    const tgl = new Date(getTanggalSurat(item));
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
 
-  // merge draft & published -> hilangkan duplikat
-  let suratJalan = [...draftData, ...publishedData];
-  let suratJalanThisMonth = [...draftDataThisMonth, ...publishedDataThisMonth];
+  let suratData = [...draftData, ...publishedData];
+  let suratDataThisMonth = [...draftDataThisMonth, ...publishedDataThisMonth];
 
-  // optional: sort by tanggal terbaru
-  if (user?.role?.name === "Admin") {
-    suratJalanThisMonth.sort(
-      (a, b) =>
-        new Date(b.surat_jalan.tanggal).getTime() -
-        new Date(a.surat_jalan.tanggal).getTime()
+  // Sort and filter berdasarkan role
+  const sortByDate = (a: DynamicEmailData, b: DynamicEmailData) => {
+    return (
+      new Date(getTanggalSurat(b)).getTime() -
+      new Date(getTanggalSurat(a)).getTime()
     );
+  };
 
-    suratJalan.sort(
-      (a, b) =>
-        new Date(b.surat_jalan.tanggal).getTime() -
-        new Date(a.surat_jalan.tanggal).getTime()
-    );
+  if (userRole === "Admin") {
+    suratDataThisMonth.sort(sortByDate);
+    suratData.sort(sortByDate);
+  } else if (userRole === "Vendor") {
+    suratDataThisMonth = suratDataThisMonth
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran"
+      );
+
+    suratData = suratData
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran"
+      );
   } else {
-    suratJalanThisMonth = suratJalanThisMonth
-      .sort(
-        (a, b) =>
-          new Date(b.surat_jalan.tanggal).getTime() -
-          new Date(a.surat_jalan.tanggal).getTime()
-      )
-      .filter((item) => item.surat_jalan.status_entry !== "Draft");
+    suratDataThisMonth = suratDataThisMonth
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.status_entry !== "Draft" &&
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran"
+      );
 
-    suratJalan
-      .sort(
-        (a, b) =>
-          new Date(b.surat_jalan.tanggal).getTime() -
-          new Date(a.surat_jalan.tanggal).getTime()
-      )
-      .filter((item) => item.surat_jalan.status_entry !== "Draft");
+    suratData = suratData
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.status_entry !== "Draft" &&
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran"
+      );
   }
 
   return (
@@ -159,7 +201,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                     Surat Dibuat
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
-                    {suratJalanThisMonth.length}
+                    {suratDataThisMonth.length}
                   </p>
                   <p className="text-[#9D9D9D] text-[10px] font-medium">
                     Bulan ini
@@ -218,7 +260,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
                     {user?.role?.name === "Admin"
                       ? publishedDataThisMonth.length
-                      : suratJalanThisMonth.filter(
+                      : suratDataThisMonth.filter(
                           (item) => item.surat_jalan.status_surat === "Approve"
                         ).length}
                   </p>
@@ -276,7 +318,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                   </h3>
                   <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
                     {
-                      publishedData.filter(
+                      suratData.filter(
                         (item) =>
                           item.surat_jalan.status_surat === "In Progress"
                       ).length
@@ -354,13 +396,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                   </thead>
                   {user?.role?.name === "Admin" ? (
                     <tbody>
-                      {suratJalan.map((item, index) => (
+                      {suratData.map((item, index) => (
                         <tr key={index} className="border-b border-gray-50">
                           <td className="py-4 px-4">
                             <div className="text-sm text-[#212529]">
-                              <div>
-                                {formatDateTime(item.surat_jalan.tanggal)}
-                              </div>
+                              <div>{formatDateTime(getTanggalSurat(item))}</div>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
@@ -370,7 +410,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                             {item.surat_jalan.perihal}
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
-                            {item.surat_jalan.no_surat_jalan}
+                            {getNoSurat(item)}
                           </td>
                           <td className="py-4 px-4">
                             {item.surat_jalan.status_entry !== "Draft" ? (
@@ -414,7 +454,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                     </tbody>
                   ) : (
                     <tbody>
-                      {suratJalan
+                      {suratData
                         .filter(
                           (item) => item.surat_jalan.status_entry !== "Draft"
                         )
@@ -423,7 +463,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                             <td className="py-4 px-4">
                               <div className="text-sm text-[#212529]">
                                 <div>
-                                  {formatDateTime(item.surat_jalan.tanggal)}
+                                  <div>
+                                    {formatDateTime(getTanggalSurat(item))}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -436,7 +478,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               {item.surat_jalan.perihal}
                             </td>
                             <td className="py-4 px-4 text-sm text-[#495057]">
-                              {item.surat_jalan.no_surat_jalan}
+                              {getNoSurat(item)}
                             </td>
                             <td className="py-4 px-4">
                               {item.surat_jalan.status_entry !== "Draft" ? (
@@ -497,7 +539,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
               </div>
               <div className="space-y-2">
                 {/* Activity Item 1 */}
-                {suratJalan.slice(0, 5).map((item, index) => (
+                {suratData.slice(0, 5).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-3 border-b border-gray-100 pb-3"

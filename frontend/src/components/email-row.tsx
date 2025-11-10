@@ -1,19 +1,24 @@
 "use client";
 
 import { JSX } from "react";
-import { EmailData } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  isVendorEmailData,
+  EmailDataAdmin,
+  EmailDataVendor,
+} from "@/lib/interface";
 import { Star, Trash2 } from "lucide-react";
 import { useUserLogin } from "@/lib/user";
 
 interface EmailRow {
   isSelected: boolean;
   onSelect: (emailId: string) => void;
-  onClick?: (email: EmailData) => void;
-  email: EmailData;
-  openedEmail: EmailData | null;
+  onClick?: (email: DynamicEmailData) => void;
+  email: DynamicEmailData;
+  openedEmail: DynamicEmailData | null;
   markEmailAsBookmarked?: (id: string) => void;
   pageRow?: "Reject" | "Send" | "Draft";
-  onDelete?: (email: EmailData) => void;
+  onDelete?: (email: DynamicEmailData) => void;
 }
 
 function formatDate(dateString: string, type: "long" | "short" = "long") {
@@ -61,6 +66,32 @@ export const EmailRowInbox = ({
 }: EmailRow): JSX.Element => {
   const isOpened = openedEmail?.id === email.id;
   const { user } = useUserLogin();
+
+  // Helper function untuk mendapatkan tanggal dari surat
+  const getTanggalSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  };
+
+  // Helper function untuk mendapatkan nomor surat
+  const getNoSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.no_berita_acara ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
+  };
 
   return (
     <div
@@ -203,32 +234,32 @@ export const EmailRowInbox = ({
               {/* Time */}
               <div>
                 <span className="max-sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                  {formatDate(email.surat_jalan.tanggal, "long")}
+                  {formatDate(getTanggalSurat(email), "long")}
                 </span>
                 <span className="sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                  {formatDate(email.surat_jalan.tanggal, "short")}
+                  {formatDate(getTanggalSurat(email), "short")}
                 </span>
                 <div
-                className={`px-3 py-1 rounded-xl sm:hidden ${
-                  email.surat_jalan.status_surat === "In Progress"
-                    ? "bg-yellow-100"
-                    : email.surat_jalan.status_surat === "Approve"
-                    ? "bg-[#188580]/20"
-                    : "bg-red-100"
-                }`}
-              >
-                <span
-                  className={`plus-jakarta-sans text-xs font-medium ${
+                  className={`px-3 py-1 rounded-xl sm:hidden ${
                     email.surat_jalan.status_surat === "In Progress"
-                      ? "text-yellow-700"
+                      ? "bg-yellow-100"
                       : email.surat_jalan.status_surat === "Approve"
-                      ? "text-green-700"
-                      : "text-red-700"
+                      ? "bg-[#188580]/20"
+                      : "bg-red-100"
                   }`}
                 >
-                  {email.surat_jalan.status_surat}
-                </span>
-              </div>
+                  <span
+                    className={`plus-jakarta-sans text-xs font-medium ${
+                      email.surat_jalan.status_surat === "In Progress"
+                        ? "text-yellow-700"
+                        : email.surat_jalan.status_surat === "Approve"
+                        ? "text-green-700"
+                        : "text-red-700"
+                    }`}
+                  >
+                    {email.surat_jalan.status_surat}
+                  </span>
+                </div>
               </div>
             </>
           )}
@@ -327,6 +358,32 @@ export const EmailRow = ({
 }: EmailRow) => {
   const isOpened = openedEmail?.documentId === email.documentId;
   const { user } = useUserLogin();
+
+  // Helper function untuk mendapatkan tanggal dari surat
+  const getTanggalSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.tanggal_kontrak ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  };
+
+  // Helper function untuk mendapatkan nomor surat
+  const getNoSurat = (item: DynamicEmailData) => {
+    if (user?.role?.name === "Vendor") {
+      return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
+    }
+
+    if (isVendorEmailData(item)) {
+      return item.surat_jalan.no_berita_acara ?? null;
+    }
+
+    return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
+  };
 
   return (
     <div

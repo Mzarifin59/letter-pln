@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { EmailData } from "@/lib/interface";
+import { DynamicEmailData, isVendorEmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { deleteEmailReal } from "@/lib/emailRequest";
 
@@ -51,15 +51,15 @@ function formatDate(dateString: string, type: "long" | "short" = "long") {
 }
 
 interface DraftContentProps {
-  data: EmailData[];
+  data: DynamicEmailData[];
   token: string | undefined;
 }
 
 interface EmailRowProps {
   isSelected: boolean;
   onSelect: (emailId: string) => void;
-  onRowClick: (email: EmailData) => void;
-  email: EmailData;
+  onRowClick: (email: DynamicEmailData) => void;
+  email: DynamicEmailData;
 }
 
 export default function DraftPageContent({ data, token }: DraftContentProps) {
@@ -69,7 +69,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   const router = useRouter();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
+  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
@@ -195,17 +195,22 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
     }
   };
 
-  const handleRowClick = (email: EmailData): void => {
+  const handleRowClick = (email: DynamicEmailData): void => {
     sessionStorage.setItem("draftData", JSON.stringify(email));
-    router.push(`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`);
+    if(user?.role?.name === "Admin"){
+      router.push(`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`);
+    } else {
+      router.push(`/create-letter-bongkaran?mode=edit&id=${email.surat_jalan.documentId}`);
+    }
+    
   };
 
   const sortedInitialData = [...data].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const [emailList, setEmailList] = useState<EmailData[]>(sortedInitialData);
-  let emailListFiltered: EmailData[];
+  const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedInitialData);
+  let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
@@ -218,11 +223,11 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasVendorStatus = item.email_statuses.some(
-        (status) => status.user.name === "Vendor"
+        (status) => status.user.name === "Vendor" 
       );
 
       return (
-        hasVendorStatus && item.surat_jalan.status_surat === "Surat Bongkaran"
+        hasVendorStatus && item.surat_jalan.kategori_surat === "Berita Acara"
       );
     });
   }
@@ -437,7 +442,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
               {emailListFiltered.length > 0 ? (
                 emailListFiltered
                   .slice(startIndex, endIndex)
-                  .map((email: EmailData) => (
+                  .map((email: DynamicEmailData) => (
                     <EmailRow
                       key={email.id}
                       email={email}

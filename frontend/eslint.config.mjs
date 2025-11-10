@@ -19,6 +19,7 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "src/lib/surat-jalan/strapi.service.ts",
+      "src/lib/surat-bongkaran/strapi.service.ts"
     ],
     rules: {
       "avoidEscape": true,

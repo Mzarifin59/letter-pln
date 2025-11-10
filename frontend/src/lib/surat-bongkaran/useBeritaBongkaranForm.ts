@@ -1,17 +1,17 @@
 import { useState } from "react";
 import qs from "qs";
-import { FileUtils } from "@/lib/surat-jalan/file.utils";
-import { StrapiAPIService } from "@/lib/surat-jalan/strapi.service";
+import { FileUtils } from "@/lib/surat-bongkaran/file.utils";
+import { StrapiAPIService } from "@/lib/surat-bongkaran/strapi.service";
 import {
   FormData,
   MaterialForm,
   SignatureData,
-} from "@/lib/surat-jalan/surat-jalan.type";
+} from "@/lib/surat-bongkaran/berita-bongkaran.type";
 import {
   INITIAL_FORM_DATA,
   INITIAL_MATERIAL,
-} from "@/lib/surat-jalan/form.constants";
-import { SuratJalan } from "../interface";
+} from "@/lib/surat-bongkaran/form.constants";
+import { BeritaBongkaran} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 
 export async function getAllSuratJalan() {
@@ -68,7 +68,7 @@ export async function getAllSuratJalan() {
   return data;
 }
 
-export const useSuratJalanForm = () => {
+export const useBeritaBongkaranForm = () => {
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [materials, setMaterials] = useState<MaterialForm[]>([
     { id: 1, ...INITIAL_MATERIAL },
@@ -79,6 +79,11 @@ export const useSuratJalanForm = () => {
     preview: { upload: null, signature: null },
   });
   const [signaturePengirim, setSignaturePengirim] = useState<SignatureData>({
+    upload: null,
+    signature: null,
+    preview: { upload: null, signature: null },
+  });
+  const [signatureMengetahui, setSignatureMengetahui] = useState<SignatureData>({
     upload: null,
     signature: null,
     preview: { upload: null, signature: null },
@@ -102,23 +107,6 @@ export const useSuratJalanForm = () => {
         lampiranIds.push(...validLampiran);
       }
 
-      // Upload TTD Penerima
-      let ttdPenerimaId = null;
-      if (signaturePenerima.upload) {
-        const uploaded = await StrapiAPIService.uploadFile(
-          signaturePenerima.upload,
-          `${formData.namaPenerima}_ttd.png` // Tambahkan custom filename
-        );
-        ttdPenerimaId = uploaded.id;
-      } else if (signaturePenerima.signature) {
-        const file = await FileUtils.dataURLToFile(
-          signaturePenerima.signature,
-          `${formData.namaPenerima}_ttd.png` // Custom filename
-        );
-        const uploaded = await StrapiAPIService.uploadFile(file);
-        ttdPenerimaId = uploaded.id;
-      }
-
       // Upload TTD Pengirim
       let ttdPengirimId = null;
       if (signaturePengirim.upload) {
@@ -135,22 +123,21 @@ export const useSuratJalanForm = () => {
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPengirimId = uploaded.id;
       }
+      
 
       // Struktur data sesuai schema Strapi
       return {
-        no_surat_jalan: formData.nomorSuratJalan,
-        no_surat_permintaan: formData.nomorSuratPermintaan,
-        tanggal: formData.tanggalSurat,
+        no_berita_acara: formData.nomorBeritaAcara,
+        no_perjanjian_kontrak: formData.nomorPerjanjianKontrak,
+        tanggal_kontrak: formData.tanggalKontrak,
         perihal: formData.perihal,
         lokasi_asal: formData.lokasiAsal,
         lokasi_tujuan: formData.lokasiTujuan,
-        catatan_tambahan: formData.catatanTambahan,
-        pesan: formData.pesan,
         informasi_kendaraan: formData.informasiKendaraan,
         nama_pengemudi: formData.namaPengemudi,
         status_surat: "In Progress",
         status_entry: isDraft ? "Draft" : "Published",
-        kategori_surat : "Surat Jalan",
+        kategori_surat : "Berita Acara",
         materials: materials.map((m) => ({
           nama: m.namaMaterial,
           katalog: m.katalog,
@@ -161,12 +148,15 @@ export const useSuratJalanForm = () => {
         penerima: {
           perusahaan_penerima: formData.perusahaanPenerima,
           nama_penerima: formData.namaPenerima,
-          ttd_penerima: ttdPenerimaId,
         },
         pengirim: {
           departemen_pengirim: formData.departemenPengirim,
           nama_pengirim: formData.namaPengirim,
           ttd_pengirim: ttdPengirimId,
+        },
+        mengetahui: {
+          departemen_mengetahui: formData.departemenMengetahui,
+          nama_mengetahui: formData.namaMengetahui,
         },
         lampiran: lampiranIds,
       };
@@ -183,9 +173,9 @@ export const useSuratJalanForm = () => {
     try {
       setIsSubmitting(true);
 
-      const dataSuratJalan: SuratJalan[] = await getAllSuratJalan();
+      const dataBeritaBongkaran: BeritaBongkaran[] = await getAllSuratJalan();
 
-      if (!isDraft && !formData.nomorSuratJalan) {
+      if (!isDraft && !formData.nomorBeritaAcara) {
         throw new Error("Mohon lengkapi data yang diperlukan");
       }
 
@@ -193,8 +183,8 @@ export const useSuratJalanForm = () => {
 
       // Automate get date now
       const now = new Date().toISOString();
-      if (formData.tanggalSurat) {
-        const localDate = new Date(formData.tanggalSurat);
+      if (formData.tanggalKontrak) {
+        const localDate = new Date(formData.tanggalKontrak);
         const fullDateTime = new Date(
           localDate.getFullYear(),
           localDate.getMonth(),
@@ -204,33 +194,33 @@ export const useSuratJalanForm = () => {
           new Date().getSeconds()
         ).toISOString();
 
-        submissionData.tanggal = fullDateTime;
+        submissionData.tanggal_kontrak = fullDateTime;
       } else {
-        submissionData.tanggal = now;
+        submissionData.tanggal_kontrak = now;
       }
 
-      const existingSurat = dataSuratJalan.find(
-        (item) => item.no_surat_jalan === submissionData.no_surat_jalan
+      const existingSurat = dataBeritaBongkaran.find(
+        (item) => item.no_berita_acara === submissionData.no_berita_acara
       );
 
       let result;
 
       if (existingSurat) {
-        result = await StrapiAPIService.updateSuratJalan(
+        result = await StrapiAPIService.updateBeritaAcara(
           existingSurat.documentId,
           submissionData
         );
       } else {
-        result = await StrapiAPIService.createSuratJalan(submissionData);
+        result = await StrapiAPIService.createBeritaAcara(submissionData);
       }
 
       // Create Email
       let resultEmail;
       let resultStatusEmail;
-      let resultStatusEmailSpv;
+      // let resultStatusEmailSpv;
 
       if (existingSurat) {
-        result = await StrapiAPIService.updateSuratJalan(
+        result = await StrapiAPIService.updateBeritaAcara(
           existingSurat.documentId,
           submissionData
         );
@@ -240,16 +230,15 @@ export const useSuratJalanForm = () => {
           subject: submissionData.perihal,
           from_department: submissionData.pengirim.departemen_pengirim,
           to_company: submissionData.penerima.perusahaan_penerima,
-          pesan: submissionData.pesan,
           surat_jalan: {
             connect: [`${result.data.documentId}`],
           },
           sender: {
             connect: [`${user?.documentId}`],
           },
-          recipient: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
-          },
+          // recipient: {
+          //   connect: [``],
+          // },
         };
 
         resultEmail = await StrapiAPIService.createEmail(dataEmail);
@@ -264,29 +253,29 @@ export const useSuratJalanForm = () => {
           },
         };
 
-        const dataStatusEmailForSpv = {
-          email: {
-            connect: [`${resultEmail.data.documentId}`],
-          },
-          user: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
-          },
-        };
+        // const dataStatusEmailForSpv = {
+        //   email: {
+        //     connect: [`${resultEmail.data.documentId}`],
+        //   },
+        //   user: {
+        //     connect: [process.env.NEXT_PUBLIC_SPV_ID],
+        //   },
+        // };
 
         resultStatusEmail = await StrapiAPIService.createStatusEmail(
           dataStatusEmail
         );
 
-        resultStatusEmailSpv = await StrapiAPIService.createStatusEmail(
-          dataStatusEmailForSpv
-        );
+        // resultStatusEmailSpv = await StrapiAPIService.createStatusEmail(
+        //   dataStatusEmailForSpv
+        // );
       }
 
       return {
         result,
         resultEmail,
         resultStatusEmail,
-        resultStatusEmailSpv,
+        // resultStatusEmailSpv,
       };
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -302,6 +291,7 @@ export const useSuratJalanForm = () => {
     materials,
     signaturePenerima,
     signaturePengirim,
+    signatureMengetahui,
     lampiran,
     isSubmitting,
 
@@ -310,6 +300,7 @@ export const useSuratJalanForm = () => {
     setMaterials,
     setSignaturePenerima,
     setSignaturePengirim,
+    setSignatureMengetahui,
     setLampiran,
 
     // Methods

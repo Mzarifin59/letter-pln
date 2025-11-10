@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { EmailDetail } from "@/components/detail-email";
-import { EmailData } from "@/lib/interface";
+import { DynamicEmailData } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 import {
@@ -30,25 +30,25 @@ import { Button } from "@/components/ui/button";
 import { deleteEmail } from "@/lib/emailRequest";
 
 interface RejectContentProps {
-  data: EmailData[];
+  data: DynamicEmailData[];
   token: string | undefined;
 }
 
 export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  const [emailList, setEmailList] = useState<EmailData[]>(data);
+  const [emailList, setEmailList] = useState<DynamicEmailData[]>(data);
   const { user } = useUserLogin();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<EmailData | null>(
+  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
 
-  let emailListFiltered: EmailData[];
+  let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
@@ -82,7 +82,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
       );
 
       return (
-        hasAdminGudangStatus &&
+        hasAdminGudangStatus && item.surat_jalan.kategori_surat === "Berita Acara" && "Surat Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
@@ -200,7 +200,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     }
   };
 
-  const handleDeleteClick = (email: EmailData) => {
+  const handleDeleteClick = (email: DynamicEmailData) => {
     setSelectedToDelete(email);
     setShowDeleteDialog(true); 
   };
@@ -337,7 +337,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     }
   };
 
-  const handleEmailClick = async (email: EmailData): Promise<void> => {
+  const handleEmailClick = async (email: DynamicEmailData): Promise<void> => {
     setOpenedEmail(email);
 
     const emailStatus = email.email_statuses.find(
