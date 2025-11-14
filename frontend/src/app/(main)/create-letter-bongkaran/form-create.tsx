@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { FileAttachment, BeritaBongkaran } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { generateNextBeritaAcara } from "@/lib/generate-no-surat";
+import PreviewSectionBeritaBongkaran from "@/components/preview-berita-acara";
 
 interface PreviewData {
   upload: string | null;
@@ -47,12 +48,14 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     setMaterials,
     setSignaturePengirim,
     setLampiran,
+    setExistingCopSuratId,
     handleSubmit: submitForm,
   } = useBeritaBongkaranForm();
 
   const [showPreview, setShowPreview] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [copSuratPreview, setCopSuratPreview] = useState<string | null>(null);
 
   const signatureRefPengirim = useRef<SignatureCanvas>(null);
 
@@ -61,11 +64,27 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     try {
       if (dataSurat) {
         const beritaBongkaran = dataSurat.filter(
-          (item) => item.documentId === draftId 
+          (item) => item.documentId === draftId
         )[0];
 
+        const getFileUrl = (
+          fileAttachment: FileAttachment | null | undefined
+        ): string => {
+          if (!fileAttachment?.url) return "";
+          if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
+          return `${process.env.NEXT_PUBLIC_API_URL}${fileAttachment.url}`;
+        };
+
+        if (beritaBongkaran.cop_surat) {
+          const copSuratUrl = getFileUrl(beritaBongkaran.cop_surat);
+          setCopSuratPreview(copSuratUrl);
+
+          setExistingCopSuratId(beritaBongkaran.cop_surat.id);
+        }
+
         // Populate form data
-        setFormData({
+        setFormData((prev) => ({
+          ...prev,
           nomorBeritaAcara: beritaBongkaran.no_berita_acara || "",
           nomorPerjanjianKontrak: beritaBongkaran.no_perjanjian_kontrak || "",
           tanggalKontrak: beritaBongkaran.tanggal_kontrak
@@ -86,16 +105,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           departemenMengetahui:
             beritaBongkaran.mengetahui.departemen_mengetahui,
           namaMengetahui: beritaBongkaran.mengetahui.nama_mengetahui,
-        });
+        }));
 
-        const getFileUrl = (
-          fileAttachment: FileAttachment | null | undefined
-        ): string => {
-          if (!fileAttachment?.url) return "";
-          if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
-          return `http://localhost:1337${fileAttachment.url}`;
-        };
-
+        // Load signature pengirim
         if (beritaBongkaran.pengirim.ttd_pengirim) {
           const signatureUrl = getFileUrl(
             beritaBongkaran.pengirim.ttd_pengirim
@@ -107,6 +119,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           }));
         }
 
+        // Load materials
         if (beritaBongkaran.materials && beritaBongkaran.materials.length > 0) {
           const loadedMaterials = beritaBongkaran.materials.map(
             (mat, index) => ({
@@ -121,6 +134,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           setMaterials(loadedMaterials);
         }
 
+        // Load lampiran
         if (beritaBongkaran.lampiran && beritaBongkaran.lampiran.length > 0) {
           try {
             const loadedLampiran = await Promise.all(
@@ -158,7 +172,14 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [router, setFormData, setLampiran, setMaterials, setSignaturePengirim]);
+  }, [
+    router,
+    setFormData,
+    setLampiran,
+    setMaterials,
+    setSignaturePengirim,
+    setExistingCopSuratId,
+  ]);
 
   const hasLoadedRef = useRef(false);
   useEffect(() => {
@@ -181,8 +202,26 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+
+    if (type === "file") {
+      const input = e.target as HTMLInputElement;
+      const file = input.files?.[0];
+
+      if (file && name === "copSurat") {
+        // Set file baru
+        setFormData((prev) => ({ ...prev, copSurat: file }));
+
+        // Update preview
+        const previewUrl = URL.createObjectURL(file);
+        setCopSuratPreview(previewUrl);
+
+        // Clear existing ID karena akan upload file baru
+        setExistingCopSuratId(null);
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // MATERIAL HANDLERS
@@ -293,6 +332,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       await submitForm(false);
 
       setFormData({
+        copSurat: null,
         nomorBeritaAcara: "",
         nomorPerjanjianKontrak: "",
         tanggalKontrak: "",
@@ -358,6 +398,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       await submitForm(true);
 
       setFormData({
+        copSurat: null,
         nomorBeritaAcara: "",
         nomorPerjanjianKontrak: "",
         tanggalKontrak: "",
@@ -495,11 +536,59 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
   const renderBasicInformation = () => (
     <div>
+      <div className="pb-5">
+        <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+          Cop Surat
+        </label>
+
+        {copSuratPreview && (
+          <div className="mb-3">
+            <div className="relative inline-block">
+              <img
+                src={copSuratPreview}
+                alt="Preview Cop Surat"
+                className="w-40 h-40 object-contain rounded-lg border-2 border-gray-300 bg-white p-2"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setCopSuratPreview(null);
+                  setFormData((prev) => ({ ...prev, copSurat: null }));
+                  setExistingCopSuratId(null); 
+                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 shadow-md transition-colors"
+                title="Hapus gambar"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Klik tombol × untuk menghapus dan upload gambar baru
+            </p>
+          </div>
+        )}
+
+        {!copSuratPreview && (
+          <Input
+            type="file"
+            name="copSurat"
+            accept="image/*"
+            onChange={handleInputChange}
+            required
+            className="w-full px-3 py-2 h-full text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#0056B0] file:text-white hover:file:bg-[#004494] cursor-pointer"
+          />
+        )}
+
+        {copSuratPreview && (
+          <div className="text-sm text-gray-600 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2">
+            ✓ Cop surat sudah diupload. Hapus gambar di atas untuk menggantinya.
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
             No Berita Acara
-            <span className="text-xs text-gray-500 ml-2">(Auto-generated)</span>
           </label>
           <Input
             type="text"
@@ -508,7 +597,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
             placeholder="NO : 001.BA/GAE/IX/2025"
-            readOnly={!isEditMode}
+            required
           />
         </div>
 
@@ -521,6 +610,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             name="nomorPerjanjianKontrak"
             value={formData.nomorPerjanjianKontrak}
             onChange={handleInputChange}
+            required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
             placeholder="001.REQ/GD.UPT-BDG/IX/2025"
           />
@@ -539,6 +629,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                 new Date().toISOString().split("T")[0]
               }
               onChange={handleInputChange}
+              required
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -553,6 +644,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={formData.perihal}
             onChange={handleInputChange}
             placeholder="PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"
+            required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
           />
@@ -567,6 +659,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             name="lokasiAsal"
             value={formData.lokasiAsal}
             onChange={handleInputChange}
+            required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="STORAGE POU EK HATI 00"
           />
@@ -581,6 +674,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             name="lokasiTujuan"
             value={formData.lokasiTujuan}
             onChange={handleInputChange}
+            required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="TK PERMATA 17 UTARA"
           />
@@ -1028,6 +1122,23 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     </div>
   );
 
+  if (showPreview) {
+    return (
+      <div className="lg:ml-72">
+        <PreviewSectionBeritaBongkaran
+          formData={formData}
+          materials={materials}
+          signaturePengirim={signaturePengirim}
+          onClose={() => setShowPreview(false)}
+          onSubmit={handleSubmit}
+          onDraft={handleDraft}
+          onDownloadPDF={handleDownloadPDF}
+          calculateTotal={calculateTotal}
+        />
+      </div>
+    );
+  }
+
   if (!showPreview) {
     return (
       <>
@@ -1090,6 +1201,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                       name="informasiKendaraan"
                       value={formData.informasiKendaraan}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="COLT DIESEL / D 8584 HL"
                     />
@@ -1103,6 +1215,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                       name="namaPengemudi"
                       value={formData.namaPengemudi}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="AYI"
                     />

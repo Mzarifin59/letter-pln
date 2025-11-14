@@ -1,5 +1,6 @@
 // API Response Types
 export interface FormData {
+  copSurat: File | string | null;
   nomorBeritaAcara: string;
   nomorPerjanjianKontrak: string;
   tanggalKontrak: string;

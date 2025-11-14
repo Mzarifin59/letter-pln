@@ -170,21 +170,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   } else {
     suratDataThisMonth = suratDataThisMonth
       .sort(sortByDate)
-      .filter(
-        (item) =>
-          item.surat_jalan.status_entry !== "Draft" &&
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran"
-      );
+      .filter((item) => item.surat_jalan.status_entry !== "Draft");
 
-    suratData = suratData
+    suratData
       .sort(sortByDate)
-      .filter(
-        (item) =>
-          item.surat_jalan.status_entry !== "Draft" &&
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran"
-      );
+      .filter((item) => item.surat_jalan.status_entry !== "Draft");
   }
 
   return (
@@ -394,7 +384,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                       </th>
                     </tr>
                   </thead>
-                  {user?.role?.name === "Admin" ? (
+                  {user?.role?.name === "Admin" || user?.role?.name === "Vendor" ? (
                     <tbody>
                       {suratData.map((item, index) => (
                         <tr key={index} className="border-b border-gray-50">

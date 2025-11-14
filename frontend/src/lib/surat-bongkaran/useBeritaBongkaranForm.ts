@@ -11,7 +11,7 @@ import {
   INITIAL_FORM_DATA,
   INITIAL_MATERIAL,
 } from "@/lib/surat-bongkaran/form.constants";
-import { BeritaBongkaran} from "@/lib/interface";
+import { BeritaBongkaran } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 
 export async function getAllSuratJalan() {
@@ -31,6 +31,14 @@ export async function getAllSuratJalan() {
         fields: ["departemen_pengirim", "nama_pengirim"],
         populate: {
           ttd_pengirim: {
+            fields: ["name", "url"],
+          },
+        },
+      },
+      mengetahui: {
+        fields: ["departemen_mengetahui", "nama_mengetahui"],
+        populate: {
+          ttd_mengetahui: {
             fields: ["name", "url"],
           },
         },
@@ -83,20 +91,40 @@ export const useBeritaBongkaranForm = () => {
     signature: null,
     preview: { upload: null, signature: null },
   });
-  const [signatureMengetahui, setSignatureMengetahui] = useState<SignatureData>({
-    upload: null,
-    signature: null,
-    preview: { upload: null, signature: null },
-  });
+  const [signatureMengetahui, setSignatureMengetahui] = useState<SignatureData>(
+    {
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    }
+  );
   const [lampiran, setLampiran] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingCopSuratId, setExistingCopSuratId] = useState<number | null>(
+    null
+  );
+
   const { user } = useUserLogin();
 
-  /**
-   * Prepare data untuk submission ke Strapi
-   */
   const prepareSubmissionData = async (isDraft = false) => {
     try {
+      let copSuratId = existingCopSuratId;
+      if (formData.copSurat && formData.copSurat instanceof File) {
+        const fileExtension = formData.copSurat.name.split(".").pop() || "png";
+        const safeNoBerita = (formData.nomorBeritaAcara || "document")
+          .replace(/[\s:\/\\]/g, "_") 
+          .replace(/[^\w\-_.]/g, "") 
+          .replace(/_{2,}/g, "_"); 
+
+        const safeFilename = `cop_surat_${safeNoBerita}.${fileExtension}`;
+
+        const uploadedCopSurat = await StrapiAPIService.uploadFile(
+          formData.copSurat,
+          safeFilename
+        );
+        copSuratId = uploadedCopSurat.id;
+      }
+
       // Upload lampiran files
       const lampiranIds: number[] = [];
       if (lampiran.length > 0) {
@@ -112,21 +140,21 @@ export const useBeritaBongkaranForm = () => {
       if (signaturePengirim.upload) {
         const uploaded = await StrapiAPIService.uploadFile(
           signaturePengirim.upload,
-          `${formData.namaPengirim}_ttd.png` 
+          `${formData.namaPengirim}_ttd.png`
         );
         ttdPengirimId = uploaded.id;
       } else if (signaturePengirim.signature) {
         const file = await FileUtils.dataURLToFile(
           signaturePengirim.signature,
-          `${formData.namaPengirim}_ttd.png` 
+          `${formData.namaPengirim}_ttd.png`
         );
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPengirimId = uploaded.id;
       }
-      
 
       // Struktur data sesuai schema Strapi
       return {
+        cop_surat: copSuratId, // ✅ Akan berisi existing ID atau ID baru
         no_berita_acara: formData.nomorBeritaAcara,
         no_perjanjian_kontrak: formData.nomorPerjanjianKontrak,
         tanggal_kontrak: formData.tanggalKontrak,
@@ -137,7 +165,7 @@ export const useBeritaBongkaranForm = () => {
         nama_pengemudi: formData.namaPengemudi,
         status_surat: "In Progress",
         status_entry: isDraft ? "Draft" : "Published",
-        kategori_surat : "Berita Acara",
+        kategori_surat: "Berita Acara",
         materials: materials.map((m) => ({
           nama: m.namaMaterial,
           katalog: m.katalog,
@@ -217,7 +245,7 @@ export const useBeritaBongkaranForm = () => {
       // Create Email
       let resultEmail;
       let resultStatusEmail;
-      // let resultStatusEmailSpv;
+      let resultStatusEmailGI;
 
       if (existingSurat) {
         result = await StrapiAPIService.updateBeritaAcara(
@@ -236,9 +264,9 @@ export const useBeritaBongkaranForm = () => {
           sender: {
             connect: [`${user?.documentId}`],
           },
-          // recipient: {
-          //   connect: [``],
-          // },
+          recipient: {
+            connect: [`${process.env.NEXT_PUBLIC_GI_ID}`],
+          },
         };
 
         resultEmail = await StrapiAPIService.createEmail(dataEmail);
@@ -253,29 +281,29 @@ export const useBeritaBongkaranForm = () => {
           },
         };
 
-        // const dataStatusEmailForSpv = {
-        //   email: {
-        //     connect: [`${resultEmail.data.documentId}`],
-        //   },
-        //   user: {
-        //     connect: [process.env.NEXT_PUBLIC_SPV_ID],
-        //   },
-        // };
+        const dataStatusEmailForGI = {
+          email: {
+            connect: [`${resultEmail.data.documentId}`],
+          },
+          user: {
+            connect: [process.env.NEXT_PUBLIC_GI_ID],
+          },
+        };
 
         resultStatusEmail = await StrapiAPIService.createStatusEmail(
           dataStatusEmail
         );
 
-        // resultStatusEmailSpv = await StrapiAPIService.createStatusEmail(
-        //   dataStatusEmailForSpv
-        // );
+        resultStatusEmailGI = await StrapiAPIService.createStatusEmail(
+          dataStatusEmailForGI
+        );
       }
 
       return {
         result,
         resultEmail,
         resultStatusEmail,
-        // resultStatusEmailSpv,
+        resultStatusEmailGI,
       };
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -294,6 +322,7 @@ export const useBeritaBongkaranForm = () => {
     signatureMengetahui,
     lampiran,
     isSubmitting,
+    existingCopSuratId,
 
     // Setters
     setFormData,
@@ -302,6 +331,7 @@ export const useBeritaBongkaranForm = () => {
     setSignaturePengirim,
     setSignatureMengetahui,
     setLampiran,
+    setExistingCopSuratId,
 
     // Methods
     handleSubmit,

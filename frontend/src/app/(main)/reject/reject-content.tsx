@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 
-import { EmailDetail } from "@/components/detail-email";
-import { DynamicEmailData } from "@/lib/interface";
+import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
+import { DynamicEmailData, EmailDataVendor } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 import {
@@ -42,9 +42,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const { user } = useUserLogin();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
-    null
-  );
+  const [selectedToDelete, setSelectedToDelete] =
+    useState<DynamicEmailData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
 
@@ -65,12 +64,26 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     });
   } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
-      const hasAdminGudangStatus = item.email_statuses.some(
+      const hasSpvStatus = item.email_statuses.some(
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
       return (
-        hasAdminGudangStatus &&
+        hasSpvStatus &&
+        (item.surat_jalan.status_entry !== "Draft" ||
+          item.isHaveStatus === true)
+      );
+    });
+  } else if (user?.role?.name === "Vendor") {
+    emailListFiltered = emailList.filter((item) => {
+      const hasVendorStatus = item.email_statuses.some(
+        (status) => status.user.name === user?.name && status.isDelete == false
+      );
+
+      return (
+        hasVendorStatus &&
+        item.surat_jalan.kategori_surat === "Berita Acara" &&
+        "Surat Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
@@ -82,7 +95,9 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
       );
 
       return (
-        hasAdminGudangStatus && item.surat_jalan.kategori_surat === "Berita Acara" && "Surat Bongkaran" &&
+        hasAdminGudangStatus &&
+        item.surat_jalan.kategori_surat === "Berita Acara" &&
+        "Surat Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
@@ -202,7 +217,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
   const handleDeleteClick = (email: DynamicEmailData) => {
     setSelectedToDelete(email);
-    setShowDeleteDialog(true); 
+    setShowDeleteDialog(true);
   };
 
   // Pagination
@@ -507,14 +522,19 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           </div>
 
           {/* Email Detail Panel */}
-          {openedEmail && (
-            <div className="overflow-hidden">
-              <EmailDetail
-                email={openedEmail}
-                handleCloseDetail={handleCloseDetail}
-                isCanceled={true}
-              />
-            </div>
+          {openedEmail && user?.role?.name === "Admin" && (
+            <EmailDetail
+              email={openedEmail}
+              handleCloseDetail={handleCloseDetail}
+              isSend={true}
+            />
+          )}
+          {openedEmail && user?.role?.name === "Vendor" && (
+            <EmailDetailBeritaBongkaran
+              email={openedEmail as EmailDataVendor}
+              handleCloseDetail={handleCloseDetail}
+              isSend={true}
+            />
           )}
         </div>
       </div>

@@ -62,6 +62,9 @@ export async function getAllSuratJalan() {
             },
           },
         },
+        cop_surat: {
+          fields: ["name", "url"],
+        },
         lampiran: {
           fields: ["name", "url"],
         },
@@ -117,7 +120,18 @@ export async function getAllEmails() {
                 },
               },
             },
+            mengetahui: {
+              fields: ["departemen_mengetahui", "nama_mengetahui"],
+              populate: {
+                ttd_mengetahui: {
+                  fields: ["name", "url"],
+                },
+              },
+            },
             lampiran: {
+              fields: ["name", "url"],
+            },
+            cop_surat: {
               fields: ["name", "url"],
             },
           },
@@ -129,7 +143,13 @@ export async function getAllEmails() {
           fields: ["name", "email"],
         },
         email_statuses: {
-          fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at", "isDelete"],
+          fields: [
+            "is_read",
+            "is_bookmarked",
+            "read_at",
+            "bookmarked_at",
+            "isDelete",
+          ],
           populate: {
             user: {
               fields: ["name", "email"],

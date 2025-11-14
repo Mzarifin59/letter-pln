@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DynamicEmailData, isVendorEmailData } from "@/lib/interface";
+import { DynamicEmailData} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { deleteEmailReal } from "@/lib/emailRequest";
 

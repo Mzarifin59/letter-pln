@@ -1,6 +1,7 @@
 import { FormData, MaterialForm } from "@/lib/surat-bongkaran/berita-bongkaran.type";
 
 export const INITIAL_FORM_DATA: FormData = {
+  copSurat: null,
   nomorBeritaAcara: '',
   nomorPerjanjianKontrak: '',
   tanggalKontrak: '',

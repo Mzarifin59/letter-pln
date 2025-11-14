@@ -17,7 +17,12 @@ import {
   EmailDataVendor,
   EmailDataAdmin,
 } from "@/lib/interface";
-import { approveEmailSurat, rejectEmailSurat } from "@/lib/emailRequest";
+import {
+  approveBeritaBongkaran,
+  approveEmailSurat,
+  rejectBeritaBongkaran,
+  rejectEmailSurat,
+} from "@/lib/emailRequest";
 
 interface TrackingContentProps {
   data: DynamicEmailData[];
@@ -116,6 +121,14 @@ export default function TrackingContentPage({
           item.surat_jalan.status_entry !== "Draft"
       )
       .slice(startIndex, endIndex);
+  } else if (user?.role?.name === "Vendor") {
+    currentData = dataEmail
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara" ||
+          item.surat_jalan.kategori_surat === "Surat Bongkaran"
+      )
+      .slice(startIndex, endIndex);
   } else {
     currentData = dataEmail
       .filter(
@@ -167,17 +180,32 @@ export default function TrackingContentPage({
     setIsSubmitting(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await approveEmailSurat({
-        emailId: selectedItem.documentId,
-        apiUrl,
-        token,
-      });
 
-      if (!response.ok) {
-        throw new Error("Gagal mengupdate status surat jalan");
+      if (user?.role?.name === "Spv") {
+        const response = await approveEmailSurat({
+          emailId: selectedItem.documentId,
+          apiUrl,
+          token,
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal mengupdate status surat jalan");
+        }
+
+        toast.success("Surat berhasil disetujui", { position: "top-center" });
+      } else {
+        const response = await approveBeritaBongkaran({
+          emailId: selectedItem.documentId,
+          apiUrl,
+          token,
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal mengupdate status berita bongkaran");
+        }
+
+        toast.success("Berita berhasil disetujui", { position: "top-center" });
       }
-
-      toast.success("Surat berhasil disetujui", { position: "top-center" });
 
       handleCloseDialog();
 
@@ -208,18 +236,34 @@ export default function TrackingContentPage({
     setIsSubmitting(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await rejectEmailSurat({
-        emailId: selectedItem.documentId,
-        apiUrl,
-        token,
-        pesan: rejectMessage,
-      });
 
-      if (!response.ok) {
-        throw new Error("Gagal mengupdate reject email");
+      if (user?.role?.name === "Spv") {
+        const response = await rejectEmailSurat({
+          emailId: selectedItem.documentId,
+          apiUrl,
+          token,
+          pesan: rejectMessage,
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal mengupdate reject email");
+        }
+
+        toast.success("Surat berhasil ditolak", { position: "top-center" });
+      } else {
+        const response = await rejectBeritaBongkaran({
+          emailId: selectedItem.documentId,
+          apiUrl,
+          token,
+          pesan: rejectMessage,
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal mengupdate reject berita bongkaran");
+        }
+
+        toast.success("Berita berhasil ditolak", { position: "top-center" });
       }
-
-      toast.success("Surat berhasil ditolak", { position: "top-center" });
 
       handleCloseDialog();
 

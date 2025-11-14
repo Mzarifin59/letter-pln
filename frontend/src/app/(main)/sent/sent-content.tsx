@@ -9,7 +9,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { EmailDetail } from "@/components/detail-email";
+import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
 import {
   DynamicEmailData,
   isVendorEmailData,
@@ -530,9 +530,17 @@ export default function SentContent({ data, token }: SentContentProps) {
           </div>
 
           {/* Email Detail Panel */}
-          {openedEmail && (
+          {openedEmail && user?.role?.name === "Admin" && (
             <EmailDetail
               email={openedEmail}
+              handleCloseDetail={handleCloseDetail}
+              isSend={true}
+            />
+          )}
+
+          {openedEmail && user?.role?.name === "Vendor" && (
+            <EmailDetailBeritaBongkaran
+              email={openedEmail as EmailDataVendor}
               handleCloseDetail={handleCloseDetail}
               isSend={true}
             />

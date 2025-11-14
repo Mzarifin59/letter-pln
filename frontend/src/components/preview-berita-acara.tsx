@@ -13,8 +13,9 @@ import { useEffect } from "react";
 interface PreviewSectionProps {
   formData: FormData;
   materials: MaterialForm[];
-  signaturePenerima: SignatureData;
+  signaturePenerima?: SignatureData;
   signaturePengirim: SignatureData;
+  signatureMengetahui?: SignatureData;
   onClose: () => void;
   onSubmit: () => void;
   onDraft: () => void;
@@ -23,11 +24,22 @@ interface PreviewSectionProps {
   autoDownload?: boolean;
 }
 
-export default function PreviewSection({
+const formatDateWithDay = (dateString: string) => {
+  if (!dateString) return "Senin, 31 Januari 2025";
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    weekday: "long", // tampilkan nama hari
+    day: "2-digit",  // tampilkan 01, 02, dst.
+    month: "long",   // nama bulan lengkap
+    year: "numeric", // tahun lengkap
+  });
+};
+
+export default function PreviewSectionBeritaBongkaran({
   formData,
   materials,
   signaturePenerima,
   signaturePengirim,
+  signatureMengetahui,
   onClose,
   onSubmit,
   onDraft,
@@ -46,8 +58,8 @@ export default function PreviewSection({
 
   const getPenerimaSignature = () => {
     return (
-      signaturePenerima.preview.signature ||
-      signaturePenerima.preview.upload ||
+      signaturePenerima?.preview.signature ||
+      signaturePenerima?.preview.upload ||
       null
     );
   };
@@ -56,6 +68,14 @@ export default function PreviewSection({
     return (
       signaturePengirim.preview.signature ||
       signaturePengirim.preview.upload ||
+      null
+    );
+  };
+
+  const getMengetahuiSignature = () => {
+    return (
+      signatureMengetahui?.preview.signature ||
+      signatureMengetahui?.preview.upload ||
       null
     );
   };
@@ -103,14 +123,16 @@ export default function PreviewSection({
   ];
 
   const MATERIALS_PER_PAGE = 15;
-  const activeMaterials = hasMaterialData() ? materials : dummyMaterials.map((m, idx) => ({
-    id: `dummy-${idx}`,
-    namaMaterial: m.nama,
-    katalog: m.katalog,
-    satuan: m.satuan,
-    jumlah: m.jumlah,
-    keterangan: m.keterangan,
-  }));
+  const activeMaterials = hasMaterialData()
+    ? materials
+    : dummyMaterials.map((m, idx) => ({
+        id: `dummy-${idx}`,
+        namaMaterial: m.nama,
+        katalog: m.katalog,
+        satuan: m.satuan,
+        jumlah: m.jumlah,
+        keterangan: m.keterangan,
+      }));
 
   const splitMaterialsIntoPages = () => {
     const pages = [];
@@ -120,6 +142,22 @@ export default function PreviewSection({
     return pages;
   };
 
+  const getCopSuratUrl = (): string | null => {
+    if (!formData.copSurat) return null;
+
+    if (typeof formData.copSurat === "string") {
+      return formData.copSurat;
+    }
+
+    if (formData.copSurat instanceof File) {
+      return URL.createObjectURL(formData.copSurat);
+    }
+
+    return null;
+  };
+
+  const copSuratUrl = getCopSuratUrl();
+
   const materialPages = splitMaterialsIntoPages();
 
   // Render header component
@@ -127,21 +165,17 @@ export default function PreviewSection({
     <>
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-shrink-0">
-          <Image
-            src="/images/PLN-logo.png"
-            alt="PLN Logo"
-            width={90}
-            height={90}
-            className="w-[90px] h-[90px] object-contain"
-          />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
-            PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-          </div>
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
-            UNIT PELAKSANA TRANSMISI BANDUNG
-          </div>
+          {copSuratUrl && (
+            <div className="cop-surat-container mb-4">
+              <Image
+                src={copSuratUrl}
+                alt="Cop Surat"
+                width={500}
+                height={300}
+                className="w-[500px] h-full object-cover"
+              />
+            </div>
+          )}
         </div>
         <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
           <div className="text-lg font-bold text-[rgb(166,35,68)] leading-tight">
@@ -175,7 +209,8 @@ export default function PreviewSection({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formatDate(formData.tanggalKontrak) || "Senin, 01 September 2025"}
+                {formatDateWithDay(formData.tanggalKontrak) ||
+                  "Senin, 01 September 2025"}
               </span>
             </div>
           </div>
@@ -229,7 +264,9 @@ export default function PreviewSection({
     <>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
-          {"Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih"}
+          {
+            "Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih"
+          }
         </div>
       </div>
 
@@ -306,6 +343,28 @@ export default function PreviewSection({
           </div>
         </div>
       </div>
+      <div className="text-center">
+          <div className="mb-1.5 text-base">Yang Menerima,</div>
+          <div className="font-bold mb-3 text-base">
+            {formData.departemenMengetahui || "GI BANDUNG UTARA"}
+          </div>
+
+          <div className="h-20 mb-3 flex items-center justify-center">
+            {getMengetahuiSignature() ? (
+              <img
+                src={getMengetahuiSignature()!}
+                alt="Signature Mengetahui"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="text-base font-bold">
+            {formData.namaMengetahui || "PAK RUDI"}
+          </div>
+        </div>
     </>
   );
 
@@ -369,15 +428,48 @@ export default function PreviewSection({
 
                       {/* Materials Table */}
                       <div className="mb-4">
-                        <table className="w-full border-collapse" style={{ fontSize: "13px" }}>
+                        <table
+                          className="w-full border-collapse"
+                          style={{ fontSize: "13px" }}
+                        >
                           <thead className="bg-gray-100">
                             <tr className="text-center">
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "5%" }}>NO</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "30%" }}>NAMA MATERIAL</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "12%" }}>KATALOG</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>SATUAN</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>JUMLAH</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "33%" }}>KETERANGAN (LOKASI TYPE, S/N DLL)</th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "5%" }}
+                              >
+                                NO
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "30%" }}
+                              >
+                                NAMA MATERIAL
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "12%" }}
+                              >
+                                KATALOG
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "10%" }}
+                              >
+                                SATUAN
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "10%" }}
+                              >
+                                JUMLAH
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1.5"
+                                style={{ width: "33%" }}
+                              >
+                                KETERANGAN (LOKASI TYPE, S/N DLL)
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -416,7 +508,10 @@ export default function PreviewSection({
                                 <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
                                   {hasMaterialData()
                                     ? calculateTotal()
-                                    : dummyMaterials.reduce((sum, m) => sum + m.jumlah, 0)}
+                                    : dummyMaterials.reduce(
+                                        (sum, m) => sum + m.jumlah,
+                                        0
+                                      )}
                                 </td>
                                 <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
                               </tr>

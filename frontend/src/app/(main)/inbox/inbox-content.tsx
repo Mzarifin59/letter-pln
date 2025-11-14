@@ -22,9 +22,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { EmailDetail } from "@/components/detail-email";
+import {
+  EmailDetail,
+  EmailDetailBeritaBongkaran,
+} from "@/components/detail-email";
 import { EmailRowInbox } from "@/components/email-row";
-import { DynamicEmailData, isVendorEmailData } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  EmailDataVendor,
+  isVendorEmailData,
+} from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useUserLogin } from "@/lib/user";
@@ -52,12 +59,12 @@ interface SectionHeaderProps {
 }
 
 // Helper function untuk mendapatkan tanggal dari surat
-  const getTanggalSurat = (item: DynamicEmailData) => {
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.tanggal_kontrak;
-    }
-    return item.surat_jalan.tanggal;
-  };
+const getTanggalSurat = (item: DynamicEmailData) => {
+  if (isVendorEmailData(item)) {
+    return item.surat_jalan.tanggal_kontrak;
+  }
+  return item.surat_jalan.tanggal;
+};
 
 // Fungsi helper untuk mengelompokkan email berdasarkan tanggal
 const groupEmailsByDate = (emails: DynamicEmailData[]): GroupedEmails => {
@@ -90,9 +97,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const [toDate, setToDate] = useState<string>("");
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
-    null
-  );
+  const [selectedToDelete, setSelectedToDelete] =
+    useState<DynamicEmailData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
   const [isFiltered, setIsFiltered] = useState(false);
@@ -227,7 +233,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     );
   }, [data]);
 
-  const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedInitialData);
+  const [emailList, setEmailList] =
+    useState<DynamicEmailData[]>(sortedInitialData);
   let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
@@ -262,7 +269,12 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === user?.name && status.isDelete == false
       );
 
-      return hasVendorStatus && item.isHaveStatus === true && item.surat_jalan.kategori_surat === "Berita Acara" && "Surat Bongkaran";
+      return (
+        hasVendorStatus &&
+        item.isHaveStatus === true &&
+        item.surat_jalan.kategori_surat === "Berita Acara" &&
+        "Surat Bongkaran"
+      );
     });
   }
 
@@ -845,12 +857,19 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
               </div>
             </div>
           </div>
-
           {/* Email Detail Panel */}
-          {openedEmail && (
+          {openedEmail && user?.role?.name === "Admin" && (
             <EmailDetail
               email={openedEmail}
               handleCloseDetail={handleCloseDetail}
+              isSend={true}
+            />
+          )}
+          {openedEmail && user?.role?.name === "Vendor" && (
+            <EmailDetailBeritaBongkaran
+              email={openedEmail as EmailDataVendor}
+              handleCloseDetail={handleCloseDetail}
+              isSend={true}
             />
           )}
         </div>

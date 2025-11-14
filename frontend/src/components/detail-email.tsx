@@ -15,15 +15,26 @@ import {
   ExternalLink,
   FileText,
 } from "lucide-react";
-import { DynamicEmailData, isVendorEmailData } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  EmailDataVendor,
+  FileAttachment,
+  isVendorEmailData,
+} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import {
-  FormData,
-  MaterialForm,
-  SignatureData,
+  FormData as SuratJalanFormData,
+  MaterialForm as SuratJalanMaterialForm,
+  SignatureData as SuratJalanSignatureData,
 } from "@/lib/surat-jalan/surat-jalan.type";
+import {
+  FormData as BongkaranFormData,
+  MaterialForm as BongkaranMaterialForm,
+  SignatureData as BongkaranSignatureData,
+} from "@/lib/surat-bongkaran/berita-bongkaran.type";
+
 import { Button } from "./ui/button";
 import Link from "next/link";
 
@@ -35,6 +46,17 @@ const formatDate = (dateString: string) => {
     year: "numeric",
   });
 };
+
+const formatDateWithDay = (dateString: string) => {
+  if (!dateString) return "Senin, 31 Januari 2025";
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    weekday: "long", // tampilkan nama hari
+    day: "2-digit",  // tampilkan 01, 02, dst.
+    month: "long",   // nama bulan lengkap
+    year: "numeric", // tahun lengkap
+  });
+};
+
 
 // Helper function untuk mendapatkan tanggal dari surat
 const getTanggalSurat = (item: DynamicEmailData) => {
@@ -102,7 +124,7 @@ export const EmailDetail = ({
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // Convert email data to PreviewSection format
-  const formData: FormData = {
+  const formData: SuratJalanFormData = {
     nomorSuratJalan: getNoSurat(email),
     nomorSuratPermintaan: getNoSurat(email), // Sesuaikan jika ada field terpisah
     perihal: email.surat_jalan.perihal,
@@ -119,7 +141,7 @@ export const EmailDetail = ({
     pesan: email.pesan || "", // Tambahkan field pesan yang kurang
   };
 
-  const materials: MaterialForm[] = email.surat_jalan.materials.map(
+  const materials: SuratJalanMaterialForm[] = email.surat_jalan.materials.map(
     (m, index) => ({
       id: index, // Ubah dari string ke number
       namaMaterial: m.nama,
@@ -131,7 +153,7 @@ export const EmailDetail = ({
   );
 
   // Fix signature structure sesuai SignatureData interface
-  const signaturePenerima: SignatureData = {
+  const signaturePenerima: SuratJalanSignatureData = {
     upload: null,
     signature: null,
     preview: {
@@ -140,7 +162,7 @@ export const EmailDetail = ({
     },
   };
 
-  const signaturePengirim: SignatureData = {
+  const signaturePengirim: SuratJalanSignatureData = {
     upload: null,
     signature: null,
     preview: {
@@ -1126,7 +1148,7 @@ export const EmailDetailBeritaBongkaran = ({
   isCanceled,
   handleCloseDetail,
 }: {
-  email: DynamicEmailData;
+  email: EmailDataVendor;
   isSend?: boolean;
   isCanceled?: boolean;
   handleCloseDetail: MouseEventHandler;
@@ -1135,27 +1157,39 @@ export const EmailDetailBeritaBongkaran = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+  // Helper function untuk get file URL
+  const getFileUrl = (
+    fileAttachment: FileAttachment | null | undefined
+  ): string => {
+    if (!fileAttachment?.url) return "";
+    if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
+    return `${apiUrl}${fileAttachment.url}`;
+  };
+
   // Convert email data to PreviewSection format
-  const formData: FormData = {
-    nomorSuratJalan: getNoSurat(email),
-    nomorSuratPermintaan: getNoSurat(email), // Sesuaikan jika ada field terpisah
+  const formData: BongkaranFormData = {
+    copSurat: getFileUrl(email.surat_jalan.cop_surat),
+    nomorBeritaAcara: email.surat_jalan.no_berita_acara,
+    nomorPerjanjianKontrak: email.surat_jalan.no_perjanjian_kontrak,
+    tanggalKontrak: email.surat_jalan.tanggal_kontrak
+      ? new Date(email.surat_jalan.tanggal_kontrak).toISOString().split("T")[0]
+      : "",
     perihal: email.surat_jalan.perihal,
     lokasiAsal: email.surat_jalan.lokasi_asal,
     lokasiTujuan: email.surat_jalan.lokasi_tujuan,
     informasiKendaraan: email.surat_jalan.informasi_kendaraan,
     namaPengemudi: email.surat_jalan.nama_pengemudi,
-    tanggalSurat: getTanggalSurat(email),
     perusahaanPenerima: email.surat_jalan.penerima.perusahaan_penerima,
     namaPenerima: email.surat_jalan.penerima.nama_penerima,
     departemenPengirim: email.surat_jalan.pengirim.departemen_pengirim,
     namaPengirim: email.surat_jalan.pengirim.nama_pengirim,
-    catatanTambahan: email.surat_jalan.perihal,
-    pesan: email.pesan || "", // Tambahkan field pesan yang kurang
+    departemenMengetahui: email.surat_jalan.mengetahui.departemen_mengetahui,
+    namaMengetahui: email.surat_jalan.mengetahui.nama_mengetahui,
   };
 
-  const materials: MaterialForm[] = email.surat_jalan.materials.map(
+  const materials: BongkaranMaterialForm[] = email.surat_jalan.materials.map(
     (m, index) => ({
-      id: index, // Ubah dari string ke number
+      id: index,
       namaMaterial: m.nama,
       katalog: m.katalog,
       satuan: m.satuan,
@@ -1164,8 +1198,7 @@ export const EmailDetailBeritaBongkaran = ({
     })
   );
 
-  // Fix signature structure sesuai SignatureData interface
-  const signaturePenerima: SignatureData = {
+  const signaturePenerima: BongkaranSignatureData = {
     upload: null,
     signature: null,
     preview: {
@@ -1174,7 +1207,7 @@ export const EmailDetailBeritaBongkaran = ({
     },
   };
 
-  const signaturePengirim: SignatureData = {
+  const signaturePengirim: BongkaranSignatureData = {
     upload: null,
     signature: null,
     preview: {
@@ -1182,6 +1215,31 @@ export const EmailDetailBeritaBongkaran = ({
       upload: `${apiUrl}${email.surat_jalan.pengirim.ttd_pengirim.url}`,
     },
   };
+
+  const signatureMengetahui: BongkaranSignatureData = {
+    upload: null,
+    signature: null,
+    preview: {
+      signature: null,
+      upload: `${apiUrl}${email.surat_jalan.mengetahui?.ttd_mengetahui?.url}`,
+    },
+  };
+
+  const getCopSuratUrl = (): string | null => {
+    if (!formData.copSurat) return null;
+
+    if (typeof formData.copSurat === "string") {
+      return formData.copSurat;
+    }
+
+    if (formData.copSurat instanceof File) {
+      return URL.createObjectURL(formData.copSurat);
+    }
+
+    return null;
+  };
+
+  const copSuratUrl = getCopSuratUrl();
 
   const calculateTotal = () => {
     return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
@@ -1274,7 +1332,7 @@ export const EmailDetailBeritaBongkaran = ({
           pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
         }
 
-        pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
+        pdf.save(`${formData.nomorBeritaAcara || "Berita Acara"}.pdf`);
       } catch (error) {
         console.error("Error generating PDF:", error);
         alert("Gagal generate PDF. Silakan coba lagi.");
@@ -1285,7 +1343,7 @@ export const EmailDetailBeritaBongkaran = ({
     };
 
     generatePDF();
-  }, [isGeneratingPDF, formData.nomorSuratJalan]);
+  }, [isGeneratingPDF, formData.nomorBeritaAcara]);
 
   const handlePrintClick = () => {
     setIsGeneratingPDF(true);
@@ -1309,21 +1367,17 @@ export const EmailDetailBeritaBongkaran = ({
     <>
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-shrink-0">
-          <Image
-            src="/images/PLN-logo.png"
-            alt="PLN Logo"
-            width={90}
-            height={90}
-            className="w-[90px] h-[90px] object-contain"
-          />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
-            PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-          </div>
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
-            UNIT PELAKSANA TRANSMISI BANDUNG
-          </div>
+          {copSuratUrl && (
+            <div className="cop-surat-container mb-4">
+              <Image
+                src={copSuratUrl}
+                alt="Cop Surat"
+                width={500}
+                height={300}
+                className="w-[500px] h-full object-cover"
+              />
+            </div>
+          )}
         </div>
         <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
           <div className="text-lg font-bold text-[rgb(166,35,68)] leading-tight">
@@ -1342,31 +1396,27 @@ export const EmailDetailBeritaBongkaran = ({
     <>
       <div className="text-center mb-4">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-1">
-          SURAT JALAN
+          Berita Acara Serah Terima Material Bongkaran
         </h1>
         <div className="text-blue-600 font-semibold text-xl">
-          {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
+          {formData.nomorBeritaAcara || "NO : 001.BA/GAE/XI/2025"}
         </div>
       </div>
 
       <div className="mb-4">
-        <div className="mb-1.5 text-base">
-          Mohon diizinkan membawa barang-barang tersebut di bawah ini :
-        </div>
-
         <div className="space-y-0.5 text-base">
           <div className="flex">
-            <div className="min-w-[170px]">No Surat Permintaan</div>
+            <div className="min-w-[170px]">Pada Hari ini</div>
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.nomorSuratPermintaan || "001.REQ/GD.UPT-BDG/IX/2025"}
+                {formatDateWithDay(formData.tanggalKontrak) || "Senin, 01 September 2025"}
               </span>
             </div>
           </div>
 
           <div className="flex">
-            <div className="min-w-[170px]">Untuk Keperluan</div>
+            <div className="min-w-[170px]">Perihal</div>
             <div className="flex-1">
               :{" "}
               <span className="font-semibold">
@@ -1395,6 +1445,16 @@ export const EmailDetailBeritaBongkaran = ({
               </span>
             </div>
           </div>
+          <div className="flex">
+            <div className="min-w-[170px]">No Kontrak</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.nomorPerjanjianKontrak ||
+                  "001.PJ/DAN.01.03/UPTBDG/2023"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </>
@@ -1403,13 +1463,9 @@ export const EmailDetailBeritaBongkaran = ({
   // Render footer with signatures
   const renderFooter = () => (
     <>
-      <div className="pb-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">Keterangan :</div>
-      </div>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
-          {formData.catatanTambahan ||
-            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+          Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih
         </div>
       </div>
 
@@ -1429,7 +1485,7 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+          <div>Bandung, {formatDate(formData.tanggalKontrak)}</div>
         </div>
       </div>
 
@@ -1483,6 +1539,30 @@ export const EmailDetailBeritaBongkaran = ({
 
           <div className="font-bold text-base">
             {formData.namaPengirim || "ANDRI SETIAWAN"}
+          </div>
+        </div>
+      </div>
+      <div className="pl-2 flex items-center justify-center mb-6 text-base py-2">
+        <div>
+          <div className="mb-1.5 text-base">Yang Mengetahui,</div>
+          <div className="font-bold mb-3 text-base">
+            {formData.departemenMengetahui || "GI BANDUNG UTARA"}
+          </div>
+
+          <div className="h-20 mb-3 flex items-center justify-center">
+            {signatureMengetahui.preview.upload ? (
+              <img
+                src={signatureMengetahui.preview.upload}
+                alt="Signature Mengetahui"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="text-base font-bold">
+            {formData.namaMengetahui || "PAK RUDI"}
           </div>
         </div>
       </div>
@@ -1622,10 +1702,10 @@ export const EmailDetailBeritaBongkaran = ({
         <div className="inter mb-6 md:mb-8 space-y-3 md:space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm font-semibold text-[#191919]">
-              {getNoSurat(email)}
+              {formData.nomorBeritaAcara}
             </span>
             <span className="text-[10px] sm:text-xs md:text-sm font-medium text-[#7F7F7F]">
-              {formatDateTimeEN(getTanggalSurat(email))}
+              {formatDateWithDay(formData.tanggalKontrak)}
             </span>
           </div>
           <p className="text-[#181818] text-xs sm:text-sm md:text-base">
@@ -1642,21 +1722,17 @@ export const EmailDetailBeritaBongkaran = ({
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
-                  <Image
-                    src={`/images/PLN-logo.png`}
-                    alt="PLN Logo"
-                    width={104}
-                    height={104}
-                    className="w-[104px] h-[104px] object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
-                    PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
-                  </div>
-                  <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
-                    UNIT PELAKSANA TRANSMISI BANDUNG
-                  </div>
+                  {copSuratUrl && (
+                    <div className="cop-surat-container mb-4">
+                      <Image
+                        src={copSuratUrl}
+                        alt="Cop Surat"
+                        width={600}
+                        height={300}
+                        className="w-[600px] h-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
                   <div className="plus-jakarta-sans text-[22px] font-bold text-[#A62344]">
@@ -1668,39 +1744,35 @@ export const EmailDetailBeritaBongkaran = ({
                 </div>
               </div>
 
-              <hr className="border-t-2 border-gray-800 mb-3" />
+              <hr className="border-t-2 border-gray-800 mb-4" />
 
               {/* Title */}
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                  SURAT JALAN
+                  Berita Acara Serah Terima Material Bongkaran
                 </h1>
                 <div className="text-blue-600 font-semibold text-2xl">
-                  {getTanggalSurat(email)}
+                  {formData.nomorBeritaAcara}
                 </div>
               </div>
 
               {/* Form Information */}
               <div className="grid grid-cols-1 gap-8 mb-6 text-sm">
                 <div>
-                  <div className="mb-2 text-lg">
-                    Mohon diizinkan membawa barang-barang tersebut di bawah ini
-                    :
-                  </div>
                   <div className="space-y-1 text-lg">
                     <div className="flex">
-                      <div className="min-w-[180px]">No Surat Permintaan</div>
+                      <div className="min-w-[180px]">Pada hari ini</div>
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.nomorSuratPermintaan ||
-                            "001.REQ/GD.UPT-BDG/IX/2025"}
+                          {formatDateWithDay(formData.tanggalKontrak) ||
+                            "Senin, 01 September 2025"}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex">
-                      <div className="min-w-[180px]">Untuk Keperluan</div>
+                      <div className="min-w-[180px]">Perihal</div>
                       <div className="flex-1">
                         :{" "}
                         <span className="font-semibold">
@@ -1726,6 +1798,16 @@ export const EmailDetailBeritaBongkaran = ({
                         :{" "}
                         <span className="font-semibold">
                           {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex">
+                      <div className="min-w-[180px]">No Kontrak</div>
+                      <div>
+                        :{" "}
+                        <span className="font-semibold">
+                          {formData.nomorPerjanjianKontrak ||
+                            "GI BANDUNG UTARA"}
                         </span>
                       </div>
                     </div>
@@ -1801,12 +1883,9 @@ export const EmailDetailBeritaBongkaran = ({
                 </table>
               </div>
 
-              <div className="pb-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
-                <div className="text-lg font-semibold">Keterangan :</div>
-              </div>
               <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
                 <div className="mt-1 text-lg font-semibold">
-                  {email.surat_jalan.perihal}
+                  Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih
                 </div>
               </div>
 
@@ -1833,7 +1912,7 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+                  <div>Bandung, {formatDate(formData.tanggalKontrak)}</div>
                 </div>
               </div>
 
@@ -1906,53 +1985,50 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
                 </div>
               </div>
+              <div className="flex justify-center items-center pt-10 text-center">
+                <div>
+                  <div className="mb-2 text-lg">Yang Mengetahui,</div>
+                  <div className="font-bold mb-4 text-lg">
+                    {email.surat_jalan.mengetahui?.departemen_mengetahui ||
+                      "Nama Departemen"}
+                  </div>
+
+                  {/* Signature Preview */}
+                  <div className="relative h-20 mb-4 flex items-center justify-center">
+                    {email.surat_jalan.mengetahui?.ttd_mengetahui?.url ? (
+                      <>
+                        <Image
+                          src={`/images/ttd.png`}
+                          alt="TTD"
+                          width={100}
+                          height={100}
+                          className="absolute z-0"
+                        />
+                        <Image
+                          width={200}
+                          height={200}
+                          src={`http://localhost:1337${email.surat_jalan.mengetahui?.ttd_mengetahui.url}`}
+                          alt="TTD pengirim"
+                          className="max-h-full max-w-full object-contain z-10"
+                        />
+                      </>
+                    ) : (
+                      <div className="text-gray-400 text-sm">
+                        (Tanda Tangan)
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="font-bold text-lg text-center">
+                    {email.surat_jalan.mengetahui?.nama_mengetahui}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <hr className="border-b-4 border-gray-800 mb-6" />
-
-        <div className="hidden w-full mb-6 md:mb-8">
-          {/* Document Thumbnail Card */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group">
-            {/* Thumbnail Preview */}
-            <div className="relative bg-gray-50 h-32 sm:h-40 md:h-48 flex items-center justify-center overflow-hidden">
-              {/* Overlay with hover effect */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white rounded-full p-2 shadow-lg">
-                  <Eye className="w-4 h-4 text-gray-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Document Info */}
-            <div className="p-3 sm:p-4 bg-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-red-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                      Surat Jalan - 001.SJ/GD.UPT-BDG/IX/2025
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">
-                      Pemakaian Material Kabel Kontrol
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                  <button className="p-1 sm:p-1.5 hover:bg-gray-100 rounded transition-colors">
-                    <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                  <button className="p-1 sm:p-1.5 hover:bg-gray-100 rounded transition-colors">
-                    <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Attachments */}
         {email.surat_jalan.lampiran.length > 0 && (

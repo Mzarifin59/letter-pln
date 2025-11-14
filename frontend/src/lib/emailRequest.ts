@@ -59,7 +59,7 @@ export const deleteEmailReal = async ({
   };
 };
 
-// Request for approve email
+// Request for approve email surat jalan
 export const approveEmailSurat = async ({
   apiUrl = "http://localhost:1337",
   emailId,
@@ -70,6 +70,27 @@ export const approveEmailSurat = async ({
   token?: string;
 }) => {
   const resEmail = await fetch(`${apiUrl}/api/emails/approve/${emailId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return resEmail;
+};
+
+// Request for approve email Berita Bongkaran
+export const approveBeritaBongkaran = async ({
+  apiUrl = "http://localhost:1337",
+  emailId,
+  token,
+}: {
+  apiUrl?: string;
+  emailId: string | number;
+  token?: string;
+}) => {
+  const resEmail = await fetch(`${apiUrl}/api/emails/approveberitabongkaran/${emailId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -92,7 +113,33 @@ export const rejectEmailSurat = async ({
   token?: string;
   pesan: string;
 }) => {
-  const resEmail = await fetch(`${apiUrl}/api/emails/reject/${emailId}`, {
+  const resEmail = await fetch(`${apiUrl}/api/emails/rejectberitabongkaran/${emailId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      pesan: pesan,
+    }),
+  });
+
+  return resEmail;
+};
+
+// Request for reject email Berita Bongkaran
+export const rejectBeritaBongkaran = async ({
+  apiUrl = "http://localhost:1337",
+  emailId,
+  token,
+  pesan,
+}: {
+  apiUrl?: string;
+  emailId: string | number;
+  token?: string;
+  pesan: string;
+}) => {
+  const resEmail = await fetch(`${apiUrl}/api/emails/rejectberitabongkaran/${emailId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
