@@ -66,6 +66,14 @@ export default function LoginContentPage() {
         setTimeout(() => {
           window.location.href = "/";
         }, 500);
+      } else if (user.role?.name === "Gardu Induk") {
+        toast.success("Login berhasil!", {
+          description: "Selamat datang kembali, Gardu Induk.",
+          position: "top-center",
+        });
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 500);
       } else {
         toast.error("Kesalahan Login", {
           description: "Email dan password salah",

@@ -29,6 +29,7 @@ import {
 import { EmailRowInbox } from "@/components/email-row";
 import {
   DynamicEmailData,
+  EmailDataAdmin,
   EmailDataVendor,
   isVendorEmailData,
 } from "@/lib/interface";
@@ -60,10 +61,13 @@ interface SectionHeaderProps {
 
 // Helper function untuk mendapatkan tanggal dari surat
 const getTanggalSurat = (item: DynamicEmailData) => {
-  if (isVendorEmailData(item)) {
-    return item.surat_jalan.tanggal_kontrak;
+  const kategori = item.surat_jalan.kategori_surat;
+
+  if (kategori === "Berita Acara") {
+    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
   }
-  return item.surat_jalan.tanggal;
+
+  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
 };
 
 // Fungsi helper untuk mengelompokkan email berdasarkan tanggal
@@ -110,6 +114,12 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     yesterday: true,
     older: true,
   });
+
+  function hasMengetahui(
+    sj: unknown
+  ): sj is { mengetahui: { ttd_mengetahui?: boolean } } {
+    return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
+  }
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -256,14 +266,26 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const knowsIfNotSuratJalan = (item: DynamicEmailData) => {
+        const kategori = item.surat_jalan.kategori_surat;
+
+        if (kategori !== "Surat Jalan") {
+          if (!hasMengetahui(item.surat_jalan)) return false;
+          return Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui);
+        }
+
+        return true;
+      };
+
       return (
         hasSpvStatus &&
-        ((item.recipient.name === user.name &&
+        ((knowsIfNotSuratJalan(item) &&
+          item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
     });
-  } else {
+  } else if (user?.role?.name === "Vendor") {
     emailListFiltered = emailList.filter((item) => {
       const hasVendorStatus = item.email_statuses.some(
         (status) => status.user.name === user?.name && status.isDelete == false
@@ -272,6 +294,19 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       return (
         hasVendorStatus &&
         item.isHaveStatus === true &&
+        item.surat_jalan.kategori_surat === "Berita Acara" &&
+        "Surat Bongkaran"
+      );
+    });
+  } else {
+    emailListFiltered = emailList.filter((item) => {
+      const hasGIStatus = item.email_statuses.some(
+        (status) => status.user.name === user?.name && status.isDelete == false
+      );
+
+      return (
+        hasGIStatus &&
+        item.surat_jalan.status_entry !== "Draft" &&
         item.surat_jalan.kategori_surat === "Berita Acara" &&
         "Surat Bongkaran"
       );
@@ -292,8 +327,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       email.surat_jalan.status_entry !== "Draft"
     );
   }).length;
-
-  console.log("Belum dibaca", unreadCount);
 
   const itemPerPage = 15;
   const totalPages = Math.ceil(emailList.length / itemPerPage);
@@ -432,7 +465,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         throw new Error("Failed to mark email as bookmarked");
       }
 
-      // Update state lokal
       setEmailList((prevEmails) =>
         prevEmails.map((email) => {
           if (email.documentId === emailDocumentId) {
@@ -554,6 +586,59 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         <span className="text-sm text-gray-500 ml-2">{count}</span>
       </div>
     );
+  };
+
+  const renderEmailDetail = () => {
+    if (!openedEmail) return null;
+
+    const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+    const userRole = user?.role?.name;
+
+    if (userRole === "Admin") {
+      return (
+        <EmailDetail
+          email={openedEmail}
+          handleCloseDetail={handleCloseDetail}
+          isSend={true}
+        />
+      );
+    }
+
+    if (userRole === "Vendor" || userRole === "Gardu Induk") {
+      return (
+        <EmailDetailBeritaBongkaran
+          email={openedEmail as EmailDataVendor}
+          handleCloseDetail={handleCloseDetail}
+          isSend={true}
+        />
+      );
+    }
+
+    if (userRole === "Spv") {
+      if (kategoriSurat === "Surat Jalan") {
+        return (
+          <EmailDetail
+            email={openedEmail}
+            handleCloseDetail={handleCloseDetail}
+            isSend={true}
+          />
+        );
+      }
+      else if (
+        kategoriSurat === "Berita Acara" ||
+        kategoriSurat === "Surat Bongkaran"
+      ) {
+        return (
+          <EmailDetailBeritaBongkaran
+            email={openedEmail as EmailDataVendor}
+            handleCloseDetail={handleCloseDetail}
+            isSend={true}
+          />
+        );
+      }
+    }
+
+    return null;
   };
 
   return (
@@ -858,20 +943,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             </div>
           </div>
           {/* Email Detail Panel */}
-          {openedEmail && user?.role?.name === "Admin" && (
-            <EmailDetail
-              email={openedEmail}
-              handleCloseDetail={handleCloseDetail}
-              isSend={true}
-            />
-          )}
-          {openedEmail && user?.role?.name === "Vendor" && (
-            <EmailDetailBeritaBongkaran
-              email={openedEmail as EmailDataVendor}
-              handleCloseDetail={handleCloseDetail}
-              isSend={true}
-            />
-          )}
+          {renderEmailDetail()}
         </div>
       </div>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

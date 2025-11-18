@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { useState, ChangeEvent, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useUserLogin } from "@/lib/user";
 import {
   DynamicEmailData,
-  isVendorEmailData,
   EmailDataVendor,
   EmailDataAdmin,
 } from "@/lib/interface";
@@ -23,10 +22,24 @@ import {
   rejectBeritaBongkaran,
   rejectEmailSurat,
 } from "@/lib/emailRequest";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SignatureCanvas from "react-signature-canvas";
+import {
+  SignatureData,
+  SignatureType,
+} from "@/lib/surat-bongkaran/berita-bongkaran.type";
+import { FileUtils } from "@/lib/surat-bongkaran/file.utils";
+import { StrapiAPIService } from "@/lib/surat-bongkaran/strapi.service";
 
 interface TrackingContentProps {
   data: DynamicEmailData[];
   token?: string;
+}
+
+interface PreviewData {
+  upload: string | null;
+  signature: string | null;
 }
 
 function formatDateTime(isoString: string): string {
@@ -57,6 +70,12 @@ function formatDateTime(isoString: string): string {
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
+function hasMengetahui(
+  sj: unknown
+): sj is { mengetahui: { ttd_mengetahui?: boolean } } {
+  return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
+}
+
 export default function TrackingContentPage({
   data,
   token,
@@ -65,12 +84,10 @@ export default function TrackingContentPage({
 
   // Helper function untuk mendapatkan tanggal dari surat
   const getTanggalSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
+    const kategori = item.surat_jalan.kategori_surat;
 
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.tanggal_kontrak ?? null;
+    if (kategori === "Berita Acara") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
     return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
@@ -78,16 +95,36 @@ export default function TrackingContentPage({
 
   // Helper function untuk mendapatkan nomor surat
   const getNoSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
+    const kategori = item.surat_jalan.kategori_surat;
+
+    if (kategori === "Berita Acara") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.no_berita_acara ?? null;
-    }
-
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
+
+  const [signatureMengetahui, setSignatureMengetahui] = useState<SignatureData>(
+    {
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    }
+  );
+  const [signaturePenerima, setSignaturePenerima] = useState<SignatureData>({
+    upload: null,
+    signature: null,
+    preview: { upload: null, signature: null },
+  });
+  const previewMengetahui: PreviewData = {
+    upload: signatureMengetahui.preview.upload,
+    signature: signatureMengetahui.preview.signature,
+  };
+  const previewPenerima: PreviewData = {
+    upload: signaturePenerima.preview.upload,
+    signature: signaturePenerima.preview.signature,
+  };
+  const signatureRefMengetahui = useRef<SignatureCanvas>(null);
+  const signatureRefPenerima = useRef<SignatureCanvas>(null);
 
   const dataEmail = data.sort(
     (a, b) =>
@@ -114,12 +151,22 @@ export default function TrackingContentPage({
   if (user?.role?.name === "Admin") {
     currentData = dataEmail.slice(startIndex, endIndex);
   } else if (user?.role?.name === "Spv") {
+    const canShow = (item: DynamicEmailData) => {
+      const kategori = item.surat_jalan.kategori_surat;
+      if (kategori === "Surat Jalan") {
+        return item.surat_jalan.status_surat === "In Progress";
+      }
+      const mengetahuiLengkap =
+        hasMengetahui(item.surat_jalan) &&
+        item.surat_jalan.status_surat !== "Reject" &&
+        Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+        Boolean(!item.surat_jalan.penerima.ttd_penerima);
+
+      return mengetahuiLengkap;
+    };
+
     currentData = dataEmail
-      .filter(
-        (item) =>
-          item.surat_jalan.status_surat === "In Progress" &&
-          item.surat_jalan.status_entry !== "Draft"
-      )
+      .filter((item) => canShow(item))
       .slice(startIndex, endIndex);
   } else if (user?.role?.name === "Vendor") {
     currentData = dataEmail
@@ -133,7 +180,7 @@ export default function TrackingContentPage({
     currentData = dataEmail
       .filter(
         (item) =>
-          item.surat_jalan.status_surat === "Approve" &&
+          item.surat_jalan.status_surat === "In Progress" &&
           item.surat_jalan.status_entry !== "Draft" &&
           (item.surat_jalan.kategori_surat === "Berita Acara" ||
             item.surat_jalan.kategori_surat === "Surat Bongkaran")
@@ -165,6 +212,23 @@ export default function TrackingContentPage({
     setIsDialogOpen(true);
     setShowRejectForm(false);
     setRejectMessage("");
+    // Reset signature state
+    setSignatureMengetahui({
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    });
+    setSignaturePenerima({
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    });
+    if (signatureRefMengetahui.current) {
+      signatureRefMengetahui.current.clear();
+    }
+    if (signatureRefPenerima.current) {
+      signatureRefPenerima.current.clear();
+    }
   };
 
   const handleCloseDialog = () => {
@@ -172,32 +236,130 @@ export default function TrackingContentPage({
     setShowRejectForm(false);
     setRejectMessage("");
     setSelectedItem(null);
+    // Reset signature state
+    setSignatureMengetahui({
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    });
+    setSignaturePenerima({
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    });
+    if (signatureRefMengetahui.current) {
+      signatureRefMengetahui.current.clear();
+    }
+    if (signatureRefPenerima.current) {
+      signatureRefPenerima.current.clear();
+    }
   };
 
   const handleApprove = async () => {
     if (!selectedItem) return;
 
+    const kategoriSurat = selectedItem.surat_jalan.kategori_surat;
+    const userRole = user?.role?.name;
+
+    // Validasi signature untuk Gardu Induk dan Spv dengan Berita Acara/Surat Bongkaran
+    if (userRole === "Gardu Induk") {
+      if (!signatureMengetahui.upload && !signatureMengetahui.signature) {
+        toast.error("Mohon berikan tanda tangan terlebih dahulu", {
+          position: "top-center",
+        });
+        return;
+      }
+    } else {
+      if (!signaturePenerima.upload && !signaturePenerima.signature) {
+        toast.error("Mohon berikan tanda tangan terlebih dahulu", {
+          position: "top-center",
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-      if (user?.role?.name === "Spv") {
-        const response = await approveEmailSurat({
-          emailId: selectedItem.documentId,
-          apiUrl,
-          token,
-        });
+      // ROLE SPV
+      if (userRole === "Spv") {
+        // Spv dengan Surat Jalan - tanpa signature
+        if (kategoriSurat === "Surat Jalan") {
+          const response = await approveEmailSurat({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+          });
 
-        if (!response.ok) {
-          throw new Error("Gagal mengupdate status surat jalan");
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate status surat jalan");
+          }
+
+          toast.success("Surat berhasil disetujui", { position: "top-center" });
+        }
+        // Spv dengan Berita Acara atau Surat Bongkaran - dengan signature
+        else if (
+          kategoriSurat === "Berita Acara" ||
+          kategoriSurat === "Surat Bongkaran"
+        ) {
+          // Upload TTD Penerima
+          let ttdPenerimaId = null;
+          if (signaturePenerima.upload) {
+            const uploaded = await StrapiAPIService.uploadFile(
+              signaturePenerima.upload,
+              `${selectedItem.recipient.name}_ttd.png`
+            );
+            ttdPenerimaId = uploaded.id;
+          } else if (signaturePenerima.signature) {
+            const file = await FileUtils.dataURLToFile(
+              signaturePenerima.signature,
+              `${selectedItem.recipient.name}_ttd.png`
+            );
+            const uploaded = await StrapiAPIService.uploadFile(file);
+            ttdPenerimaId = uploaded.id;
+          }
+
+          const response = await approveBeritaBongkaran({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+            signaturePenerima: ttdPenerimaId,
+          });
+
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate status berita bongkaran");
+          }
+
+          toast.success("Berita berhasil disetujui", {
+            position: "top-center",
+          });
+        }
+      }
+      // ROLE GARDU INDUK
+      else if (userRole === "Gardu Induk") {
+        // Upload TTD Mengetahui
+        let ttdMengetahuiId = null;
+        if (signatureMengetahui.upload) {
+          const uploaded = await StrapiAPIService.uploadFile(
+            signatureMengetahui.upload,
+            `${selectedItem.recipient.name}_ttd.png`
+          );
+          ttdMengetahuiId = uploaded.id;
+        } else if (signatureMengetahui.signature) {
+          const file = await FileUtils.dataURLToFile(
+            signatureMengetahui.signature,
+            `${selectedItem.recipient.name}_ttd.png`
+          );
+          const uploaded = await StrapiAPIService.uploadFile(file);
+          ttdMengetahuiId = uploaded.id;
         }
 
-        toast.success("Surat berhasil disetujui", { position: "top-center" });
-      } else {
         const response = await approveBeritaBongkaran({
           emailId: selectedItem.documentId,
           apiUrl,
           token,
+          signature: ttdMengetahuiId,
         });
 
         if (!response.ok) {
@@ -236,21 +398,47 @@ export default function TrackingContentPage({
     setIsSubmitting(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const kategoriSurat = selectedItem.surat_jalan.kategori_surat;
+      const userRole = user?.role?.name;
 
-      if (user?.role?.name === "Spv") {
-        const response = await rejectEmailSurat({
-          emailId: selectedItem.documentId,
-          apiUrl,
-          token,
-          pesan: rejectMessage,
-        });
+      // ===== ROLE SPV =====
+      if (userRole === "Spv") {
+        // Spv dengan Surat Jalan
+        if (kategoriSurat === "Surat Jalan") {
+          const response = await rejectEmailSurat({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+            pesan: rejectMessage,
+          });
 
-        if (!response.ok) {
-          throw new Error("Gagal mengupdate reject email");
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate reject email");
+          }
+
+          toast.success("Surat berhasil ditolak", { position: "top-center" });
         }
+        // Spv dengan Berita Acara atau Surat Bongkaran
+        else if (
+          kategoriSurat === "Berita Acara" ||
+          kategoriSurat === "Surat Bongkaran"
+        ) {
+          const response = await rejectBeritaBongkaran({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+            pesan: rejectMessage,
+          });
 
-        toast.success("Surat berhasil ditolak", { position: "top-center" });
-      } else {
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate reject berita bongkaran");
+          }
+
+          toast.success("Berita berhasil ditolak", { position: "top-center" });
+        }
+      }
+      // ===== ROLE GARDU INDUK =====
+      else if (userRole === "Gardu Induk") {
         const response = await rejectBeritaBongkaran({
           emailId: selectedItem.documentId,
           apiUrl,
@@ -278,7 +466,81 @@ export default function TrackingContentPage({
     }
   };
 
+  // SIGNATURE HANDLERS
+  const handleFileUpload = async (
+    e: ChangeEvent<HTMLInputElement>,
+    type: SignatureType
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = FileUtils.validate(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    const preview = await FileUtils.toBase64(file);
+    const setter =
+      type === "mengetahui" ? setSignatureMengetahui : setSignaturePenerima;
+
+    setter((prev) => ({
+      ...prev,
+      upload: file,
+      preview: { ...prev.preview, upload: preview },
+    }));
+  };
+
+  const removeUploadedSignature = (type: SignatureType) => {
+    const setter =
+      type === "mengetahui" ? setSignatureMengetahui : setSignaturePenerima;
+    setter((prev) => ({
+      ...prev,
+      upload: null,
+      preview: { ...prev.preview, upload: null },
+    }));
+  };
+
+  const saveSignature = (type: SignatureType) => {
+    const ref =
+      type === "mengetahui" ? signatureRefMengetahui : signatureRefPenerima;
+    const setter =
+      type === "mengetahui" ? setSignatureMengetahui : setSignaturePenerima;
+
+    if (ref.current && !ref.current.isEmpty()) {
+      const dataURL = ref.current.toDataURL();
+      setter((prev) => ({
+        ...prev,
+        signature: dataURL,
+        preview: { ...prev.preview, signature: dataURL },
+      }));
+    } else {
+      alert("Mohon buat tanda tangan terlebih dahulu");
+    }
+  };
+
+  const clearSignature = (type: SignatureType) => {
+    const ref =
+      type === "mengetahui" ? signatureRefMengetahui : signatureRefPenerima;
+    const setter =
+      type === "mengetahui" ? setSignatureMengetahui : setSignaturePenerima;
+
+    if (ref.current) {
+      ref.current.clear();
+      setter((prev) => ({
+        ...prev,
+        signature: null,
+        preview: { ...prev.preview, signature: null },
+      }));
+    }
+  };
+
   const isSPV = user?.role?.name === "Spv";
+  const isGI = user?.role?.name === "Gardu Induk";
+  const isSpvNeedSignature =
+    isSPV &&
+    (selectedItem?.surat_jalan.kategori_surat === "Berita Acara" ||
+      selectedItem?.surat_jalan.kategori_surat === "Surat Bongkaran");
 
   return (
     <>
@@ -337,7 +599,7 @@ export default function TrackingContentPage({
                       "Dari",
                       "Kepada",
                       "Perihal",
-                      isSPV ? "Detail" : "Status",
+                      isSPV || isGI ? "Detail" : "Status",
                     ].map((h) => (
                       <th
                         key={h}
@@ -367,7 +629,7 @@ export default function TrackingContentPage({
                         {item.surat_jalan.perihal}
                       </td>
                       <td className="py-4 px-6">
-                        {isSPV ? (
+                        {isSPV || isGI ? (
                           <button
                             onClick={() => handleSeeDetail(item)}
                             className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"
@@ -413,7 +675,7 @@ export default function TrackingContentPage({
                     <span className="text-sm font-semibold text-[#232323]">
                       #{index + 1}
                     </span>
-                    {isSPV ? (
+                    {isSPV || isGI ? (
                       <button
                         onClick={() => handleSeeDetail(row)}
                         className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"
@@ -462,12 +724,18 @@ export default function TrackingContentPage({
         </div>
       </div>
 
-      {/* Dialog from shadcn */}
+      {/* Dialog from shadcn - Made Responsive with max-height */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-[#353739]">
-              Detail Surat Jalan
+              {isSPV
+                ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
+                  ? "Detail Surat Jalan"
+                  : "Detail Berita Acara"
+                : isGI
+                ? "Detail Berita Acara"
+                : "Detail Surat"}
             </DialogTitle>
             <DialogDescription className="sr-only">
               Detail informasi surat jalan dan approval
@@ -478,10 +746,16 @@ export default function TrackingContentPage({
             {/* No Surat Jalan */}
             <div>
               <label className="text-sm font-medium text-gray-600 block mb-1">
-                No. Surat Jalan
+                {isSPV
+                  ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
+                    ? "No Surat Jalan"
+                    : "No Berita Acara"
+                  : isGI
+                  ? "No Berita Acara"
+                  : "No Surat"}
               </label>
               <p className="text-base font-semibold text-[#353739] bg-gray-50 p-3 rounded-lg">
-                {/* {getNoSurat(selectedItem!)} */}
+                {selectedItem && getNoSurat(selectedItem)}
               </p>
             </div>
 
@@ -526,7 +800,7 @@ export default function TrackingContentPage({
             </div>
 
             {/* Reject Form */}
-            {showRejectForm && (
+            {showRejectForm ? (
               <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
                 <label className="text-sm font-medium text-red-900 block mb-2">
                   Alasan Penolakan *
@@ -539,6 +813,216 @@ export default function TrackingContentPage({
                   rows={4}
                 />
               </div>
+            ) : (
+              <>
+                {/* Tampilkan signature section hanya untuk Gardu Induk */}
+                {(isGI || isSpvNeedSignature) && (
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-semibold text-[#353739] mb-3">
+                      Tanda Tangan Penerima *
+                    </h3>
+                    <Tabs defaultValue="upload" className="w-full">
+                      <TabsList className="grid grid-cols-2 w-full mb-3 h-auto">
+                        <TabsTrigger
+                          value="upload"
+                          className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+                        >
+                          Upload File
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="draw"
+                          className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+                        >
+                          Gambar
+                        </TabsTrigger>
+                      </TabsList>
+
+                      {/* Tab Upload */}
+                      {isGI ? (
+                        <>
+                          <TabsContent value="upload" className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) =>
+                                handleFileUpload(e, "mengetahui")
+                              }
+                              className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
+                            />
+                            <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                              {previewMengetahui?.upload ? (
+                                <div className="relative w-full h-full">
+                                  <img
+                                    src={previewMengetahui.upload}
+                                    alt="Preview Tanda Tangan"
+                                    className="w-full h-full object-contain"
+                                  />
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      removeUploadedSignature("mengetahui")
+                                    }
+                                    className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
+                                  >
+                                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="text-center text-gray-400 px-4">
+                                  <div className="mb-2 text-lg sm:text-xl">
+                                    📁
+                                  </div>
+                                  <div className="text-xs sm:text-sm">
+                                    Preview Upload
+                                  </div>
+                                  <div className="text-xs mt-1">
+                                    Format: JPG, PNG, GIF (Max 5MB)
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+
+                          {/* Tab Draw */}
+                          <TabsContent value="draw" className="space-y-3">
+                            <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
+                              <SignatureCanvas
+                                ref={signatureRefMengetahui}
+                                penColor="black"
+                                canvasProps={{
+                                  className: "w-full h-full",
+                                  style: { touchAction: "none" },
+                                }}
+                                backgroundColor="transparent"
+                                onEnd={() => saveSignature("mengetahui")}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => clearSignature("mengetahui")}
+                                className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                              >
+                                🗑️ Hapus
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => saveSignature("mengetahui")}
+                                className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                              >
+                                💾 Simpan
+                              </Button>
+                            </div>
+                            <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                              {previewMengetahui?.signature ? (
+                                <img
+                                  src={previewMengetahui.signature}
+                                  alt="Signature Preview"
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              ) : (
+                                <div className="text-gray-400 text-xs sm:text-sm text-center px-2">
+                                  ✍️ Preview Signature
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+                        </>
+                      ) : (
+                        <>
+                          <TabsContent value="upload" className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, "penerima")}
+                              className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
+                            />
+                            <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                              {previewPenerima?.upload ? (
+                                <div className="relative w-full h-full">
+                                  <img
+                                    src={previewPenerima.upload}
+                                    alt="Preview Tanda Tangan"
+                                    className="w-full h-full object-contain"
+                                  />
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      removeUploadedSignature("penerima")
+                                    }
+                                    className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
+                                  >
+                                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="text-center text-gray-400 px-4">
+                                  <div className="mb-2 text-lg sm:text-xl">
+                                    📁
+                                  </div>
+                                  <div className="text-xs sm:text-sm">
+                                    Preview Upload
+                                  </div>
+                                  <div className="text-xs mt-1">
+                                    Format: JPG, PNG, GIF (Max 5MB)
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+
+                          {/* Tab Draw */}
+                          <TabsContent value="draw" className="space-y-3">
+                            <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
+                              <SignatureCanvas
+                                ref={signatureRefPenerima}
+                                penColor="black"
+                                canvasProps={{
+                                  className: "w-full h-full",
+                                  style: { touchAction: "none" },
+                                }}
+                                backgroundColor="transparent"
+                                onEnd={() => saveSignature("penerima")}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => clearSignature("penerima")}
+                                className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                              >
+                                🗑️ Hapus
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => saveSignature("penerima")}
+                                className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                              >
+                                💾 Simpan
+                              </Button>
+                            </div>
+                            <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                              {previewPenerima?.signature ? (
+                                <img
+                                  src={previewPenerima.signature}
+                                  alt="Signature Preview"
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              ) : (
+                                <div className="text-gray-400 text-xs sm:text-sm text-center px-2">
+                                  ✍️ Preview Signature
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+                        </>
+                      )}
+                    </Tabs>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

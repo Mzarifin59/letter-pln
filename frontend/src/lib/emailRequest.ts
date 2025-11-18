@@ -85,10 +85,14 @@ export const approveBeritaBongkaran = async ({
   apiUrl = "http://localhost:1337",
   emailId,
   token,
+  signature, 
+  signaturePenerima,
 }: {
   apiUrl?: string;
   emailId: string | number;
   token?: string;
+  signature?: string,
+  signaturePenerima?: string,
 }) => {
   const resEmail = await fetch(`${apiUrl}/api/emails/approveberitabongkaran/${emailId}`, {
     method: "PUT",
@@ -96,6 +100,10 @@ export const approveBeritaBongkaran = async ({
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
+    body: JSON.stringify({
+      signature: signature,
+      signaturePenerima: signaturePenerima,
+    }),
   });
 
   return resEmail;
@@ -113,7 +121,7 @@ export const rejectEmailSurat = async ({
   token?: string;
   pesan: string;
 }) => {
-  const resEmail = await fetch(`${apiUrl}/api/emails/rejectberitabongkaran/${emailId}`, {
+  const resEmail = await fetch(`${apiUrl}/api/emails/reject/${emailId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

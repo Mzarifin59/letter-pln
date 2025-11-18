@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import {
   DynamicEmailData,
+  EmailDataAdmin,
   EmailDataVendor,
   FileAttachment,
   isVendorEmailData,
@@ -51,27 +52,31 @@ const formatDateWithDay = (dateString: string) => {
   if (!dateString) return "Senin, 31 Januari 2025";
   return new Date(dateString).toLocaleDateString("id-ID", {
     weekday: "long", // tampilkan nama hari
-    day: "2-digit",  // tampilkan 01, 02, dst.
-    month: "long",   // nama bulan lengkap
+    day: "2-digit", // tampilkan 01, 02, dst.
+    month: "long", // nama bulan lengkap
     year: "numeric", // tahun lengkap
   });
 };
 
-
 // Helper function untuk mendapatkan tanggal dari surat
 const getTanggalSurat = (item: DynamicEmailData) => {
-  if (isVendorEmailData(item)) {
-    return item.surat_jalan.tanggal_kontrak;
+  const kategori = item.surat_jalan.kategori_surat;
+
+  if (kategori === "Berita Acara") {
+    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
   }
-  return item.surat_jalan.tanggal;
+
+  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
 };
 
 // Helper function untuk mendapatkan nomor surat
 const getNoSurat = (item: DynamicEmailData) => {
-  if (isVendorEmailData(item)) {
-    return item.surat_jalan.no_berita_acara;
+  const kategori = item.surat_jalan.kategori_surat;
+
+  if (kategori === "Berita Acara") {
+    return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
   }
-  return item.surat_jalan.no_surat_jalan;
+  return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
 };
 
 function getCompanyAbbreviation(fullName: string, maxLetters = 3): string {
@@ -664,7 +669,7 @@ export const EmailDetail = ({
                   SURAT JALAN
                 </h1>
                 <div className="text-blue-600 font-semibold text-2xl">
-                  {getTanggalSurat(email)}
+                  {getNoSurat(email)}
                 </div>
               </div>
 
@@ -1410,7 +1415,8 @@ export const EmailDetailBeritaBongkaran = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formatDateWithDay(formData.tanggalKontrak) || "Senin, 01 September 2025"}
+                {formatDateWithDay(formData.tanggalKontrak) ||
+                  "Senin, 01 September 2025"}
               </span>
             </div>
           </div>
@@ -1465,7 +1471,8 @@ export const EmailDetailBeritaBongkaran = ({
     <>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
-          Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih
+          Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan
+          kerjasamanya kami ucapkan terima kasih
         </div>
       </div>
 
@@ -1885,7 +1892,8 @@ export const EmailDetailBeritaBongkaran = ({
 
               <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
                 <div className="mt-1 text-lg font-semibold">
-                  Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih
+                  Demikian surat pemberitahuan ini kami sampaikan, atas
+                  perhatian dan kerjasamanya kami ucapkan terima kasih
                 </div>
               </div>
 
@@ -1998,13 +2006,6 @@ export const EmailDetailBeritaBongkaran = ({
                     {email.surat_jalan.mengetahui?.ttd_mengetahui?.url ? (
                       <>
                         <Image
-                          src={`/images/ttd.png`}
-                          alt="TTD"
-                          width={100}
-                          height={100}
-                          className="absolute z-0"
-                        />
-                        <Image
                           width={200}
                           height={200}
                           src={`http://localhost:1337${email.surat_jalan.mengetahui?.ttd_mengetahui.url}`}
@@ -2074,10 +2075,14 @@ export const EmailDetailBeritaBongkaran = ({
             </div>
           </div>
         )}
-        {user?.role?.name === "Admin" &&
+        {(user?.role?.name === "Admin" || user?.role?.name === "Vendor") &&
           email.surat_jalan.status_surat === "Reject" && (
             <Link
-              href={`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`}
+              href={
+                user.role.name === "Admin"
+                  ? `/create-letter?mode=edit&id=${email.surat_jalan.documentId}`
+                  : `/create-letter-bongkaran?mode=edit&id=${email.surat_jalan.documentId}`
+              }
             >
               <Button variant="default" size="lg">
                 Ubah Surat

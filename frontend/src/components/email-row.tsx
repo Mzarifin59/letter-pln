@@ -69,12 +69,10 @@ export const EmailRowInbox = ({
 
   // Helper function untuk mendapatkan tanggal dari surat
   const getTanggalSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
+    const kategori = item.surat_jalan.kategori_surat;
 
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.tanggal_kontrak ?? null;
+    if (kategori === "Berita Acara") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
     return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
@@ -82,14 +80,11 @@ export const EmailRowInbox = ({
 
   // Helper function untuk mendapatkan nomor surat
   const getNoSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
+    const kategori = item.surat_jalan.kategori_surat;
+
+    if (kategori === "Berita Acara") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.no_berita_acara ?? null;
-    }
-
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -149,7 +144,7 @@ export const EmailRowInbox = ({
       <div className="min-w-0 flex-1">
         <div className="flex items-center max-lg:justify-between gap-12">
           <span className="text-sm font-medium text-gray-900">
-            {email.surat_jalan.penerima.perusahaan_penerima} hai
+            {email.surat_jalan.penerima.perusahaan_penerima}
           </span>
 
           {/* Subject */}
@@ -361,12 +356,10 @@ export const EmailRow = ({
 
   // Helper function untuk mendapatkan tanggal dari surat
   const getTanggalSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
+    const kategori = item.surat_jalan.kategori_surat;
 
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.tanggal_kontrak ?? null;
+    if (kategori === "Berita Acara") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
     return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
@@ -374,14 +367,11 @@ export const EmailRow = ({
 
   // Helper function untuk mendapatkan nomor surat
   const getNoSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
+    const kategori = item.surat_jalan.kategori_surat;
+
+    if (kategori === "Berita Acara") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.no_berita_acara ?? null;
-    }
-
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 

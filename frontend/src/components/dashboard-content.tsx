@@ -2,7 +2,11 @@
 
 import { StickyNote, Check, Send, ArchiveX } from "lucide-react";
 
-import { DynamicEmailData, EmailDataAdmin, EmailDataVendor, isVendorEmailData, UserRole } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  EmailDataAdmin,
+  EmailDataVendor,
+} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { JSX } from "react";
 
@@ -86,7 +90,6 @@ interface HomeContentProps {
 
 export default function DashboardContentPage({ allData }: HomeContentProps) {
   const { user } = useUserLogin();
-  const userRole = (user?.role?.name || "Other") as UserRole;
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -94,12 +97,10 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
 
   // Helper function untuk mendapatkan tanggal dari surat
   const getTanggalSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
+    const kategori = item.surat_jalan.kategori_surat;
 
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.tanggal_kontrak ?? null;
+    if (kategori === "Berita Acara") {
+      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
     return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
@@ -107,16 +108,19 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
 
   // Helper function untuk mendapatkan nomor surat
   const getNoSurat = (item: DynamicEmailData) => {
-    if (user?.role?.name === "Vendor") {
+    const kategori = item.surat_jalan.kategori_surat;
+
+    if (kategori === "Berita Acara") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-
-    if (isVendorEmailData(item)) {
-      return item.surat_jalan.no_berita_acara ?? null;
-    }
-
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
+
+  function hasMengetahui(
+    sj: unknown
+  ): sj is { mengetahui: { ttd_mengetahui?: boolean } } {
+    return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
+  }
 
   // Filter data
   const draftData = allData.filter(
@@ -148,10 +152,10 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
     );
   };
 
-  if (userRole === "Admin") {
+  if (user?.role?.name === "Admin") {
     suratDataThisMonth.sort(sortByDate);
     suratData.sort(sortByDate);
-  } else if (userRole === "Vendor") {
+  } else if (user?.role?.name === "Vendor") {
     suratDataThisMonth = suratDataThisMonth
       .sort(sortByDate)
       .filter(
@@ -167,14 +171,46 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           item.surat_jalan.kategori_surat === "Berita Acara" &&
           "Surat Bongkaran"
       );
-  } else {
+  } else if (user?.role?.name === "Gardu Induk") {
     suratDataThisMonth = suratDataThisMonth
       .sort(sortByDate)
-      .filter((item) => item.surat_jalan.status_entry !== "Draft");
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran" &&
+          item.surat_jalan.status_entry !== "Draft"
+      );
 
-    suratData
+    suratData = suratData
       .sort(sortByDate)
-      .filter((item) => item.surat_jalan.status_entry !== "Draft");
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara" &&
+          "Surat Bongkaran" &&
+          item.surat_jalan.status_entry !== "Draft"
+      );
+  } else {
+    const canShow = (item: DynamicEmailData) => {
+      const kategori = item.surat_jalan.kategori_surat;
+      if (kategori === "Surat Jalan") {
+        return item.surat_jalan.status_surat !== "Draft";
+      }
+      const mengetahuiLengkap =
+        hasMengetahui(item.surat_jalan) &&
+        item.surat_jalan.status_surat !== "Reject" &&
+        Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+        Boolean(!item.surat_jalan.penerima.ttd_penerima);
+
+      return mengetahuiLengkap;
+    };
+
+    suratDataThisMonth = suratDataThisMonth
+      .sort(sortByDate)
+      .filter((item) => canShow(item));
+
+    suratData = suratData
+      .sort(sortByDate)
+      .filter((item) => canShow(item));
   }
 
   return (
@@ -384,7 +420,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                       </th>
                     </tr>
                   </thead>
-                  {user?.role?.name === "Admin" || user?.role?.name === "Vendor" ? (
+                  {user?.role?.name === "Admin" ||
+                  user?.role?.name === "Vendor" ? (
                     <tbody>
                       {suratData.map((item, index) => (
                         <tr key={index} className="border-b border-gray-50">
@@ -461,7 +498,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                             </td>
                             {user?.role?.name !== "Vendor" && (
                               <td className="py-4 px-4 text-sm text-[#495057]">
-                                {item.recipient.name} halo
+                                {item.recipient.name}
                               </td>
                             )}
                             <td className="py-4 px-4 text-sm text-[#212529]">

@@ -77,7 +77,7 @@ export default factories.createCoreController(
       }
     },
 
-    async markAsBookmarked(ctx) {
+    async markUnRead(ctx) {
       try {
         const { documentId } = ctx.params;
         const user = ctx.state.user;
@@ -106,7 +106,61 @@ export default factories.createCoreController(
             },
           });
 
-        console.log("EmailStatus:", emailStatus);
+        let result;
+
+        if (emailStatus[0].is_read == true) {
+          result = await strapi
+            .documents("api::email-status.email-status")
+            .update({
+              documentId: emailStatus[0].documentId,
+              data: {
+                is_read: false,
+                read_at: null,
+              },
+              status: "published",
+            });
+        }
+
+        return ctx.send({
+          data: result,
+          message: "Email marked as read successfully",
+        });
+      } catch (error) {
+        console.error("Error in markAsRead:", error);
+        return ctx.badRequest("Failed to mark email as read", {
+          error: error.message,
+        });
+      }
+    },
+
+    async markAsBookmarked(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const user = ctx.state.user;
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+        });
+
+        let emailStatus = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: {
+                documentId: email.documentId,
+              },
+              user: {
+                documentId: user.documentId,
+              },
+            },
+          });
 
         let result;
 
@@ -196,7 +250,7 @@ export default factories.createCoreController(
         });
       }
     },
-  
+
     // Approve Surat Jalan
     async approveSuratJalan(ctx) {
       try {
@@ -212,28 +266,49 @@ export default factories.createCoreController(
 
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
-          populate : {
-            surat_jalan : true,
-          }
+          populate: {
+            surat_jalan: true,
+            email_statuses: true,
+          },
         });
 
-        if(email){
+        let emailStatus = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: {
+                documentId: email.documentId,
+              },
+              user: {
+                documentId: process.env.ADMIN_ID,
+              },
+            },
+          });
+
+        if (email) {
           await strapi.documents("api::email.email").update({
-            documentId : documentId,
+            documentId: documentId,
             data: {
-              isHaveStatus : true,
-              sender : process.env.ADMIN_ID,
-              recipient: process.env.SPV_ID
+              isHaveStatus: true,
+              sender: process.env.ADMIN_ID,
+              recipient: process.env.SPV_ID,
             },
             status: "published",
           });
 
           await strapi.documents("api::surat-jalan.surat-jalan").update({
-            documentId : email.surat_jalan.documentId,
+            documentId: email.surat_jalan.documentId,
             data: {
-              status_surat: "Approve"
+              status_surat: "Approve",
             },
             status: "published",
+          });
+
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: emailStatus[0].documentId,
+            data: {
+              is_read: false,
+            },
           });
 
           console.log("Request Approve Berhasil ✅");
@@ -254,8 +329,11 @@ export default factories.createCoreController(
 
     async approveBeritaBongkaran(ctx) {
       try {
-        const { documentId,  } = ctx.params;
+        const { documentId } = ctx.params;
+        const { signature, signaturePenerima } = ctx.request.body;
         const user = ctx.state.user;
+
+        console.log("📥 Received data:", { signature, signaturePenerima });
 
         // Validasi user
         if (!user) {
@@ -266,42 +344,108 @@ export default factories.createCoreController(
 
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
-          populate : {
-            surat_jalan : true,
+          populate: {
+            surat_jalan: {
+              populate: {
+                mengetahui: true,
+                penerima: true,
+              },
+            },
             recipient: true,
             sender: true,
-          }
+            email_statuses: {
+              populate: {
+                user: {
+                  populate: ["role"],
+                },
+              },
+            },
+          },
         });
 
-        if(email){
-          await strapi.documents("api::email.email").update({
-            documentId : documentId,
+        if (!email) {
+          console.log("❌ Email tidak ditemukan");
+          return ctx.notFound("Email not found");
+        }
+
+        // Update email
+        await strapi.documents("api::email.email").update({
+          documentId: documentId,
+          data: {
+            isHaveStatus: true,
+            sender: email.recipient.documentId,
+            recipient: email.sender.documentId,
+          },
+          status: "published",
+        });
+
+        // ===== PERBAIKAN UTAMA: Ambil data existing dulu =====
+        const existingMengetahui = email.surat_jalan.mengetahui || {};
+        const existingPenerima = email.surat_jalan.penerima || {};
+
+        console.log("📦 Existing mengetahui:", existingMengetahui);
+        console.log("📦 Existing penerima:", existingPenerima);
+
+        // ===== UPDATE SURAT JALAN - LANGSUNG TANPA OBJECT TERPISAH =====
+        await strapi.documents("api::surat-jalan.surat-jalan").update({
+          documentId: email.surat_jalan.documentId,
+          data: {
+            status_surat: "Approve",
+            ...(signature && {
+              mengetahui: {
+                ...existingMengetahui,
+                ttd_mengetahui: signature,
+              },
+            }),
+            ...(signaturePenerima && {
+              penerima: {
+                ...existingPenerima,
+                ttd_penerima: signaturePenerima,
+              },
+            }),
+          },
+          status: "published",
+        });
+
+        let email_statuses = email.email_statuses.filter(
+          (item) => item.user.role.name === "Vendor"
+        );
+
+        // Reset is_read untuk Vendor
+        if (email_statuses.length > 0) {
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: email_statuses[0].documentId,
             data: {
-              isHaveStatus : true,
-              sender : email.recipient.documentId,
-              recipient: email.sender.documentId
+              is_read: false,
             },
             status: "published",
           });
+        }
 
-          await strapi.documents("api::surat-jalan.surat-jalan").update({
-            documentId : email.surat_jalan.documentId,
+        // Create new email status for Spv (jika belum ada)
+        const hasSpvStatus = email.email_statuses.find(
+          (item) => item.user.documentId === process.env.SPV_ID
+        );
+
+        if (!hasSpvStatus && process.env.SPV_ID) {
+          await strapi.documents("api::email-status.email-status").create({
             data: {
-              status_surat: "Approve"
+              email: email.documentId,
+              user: process.env.SPV_ID,
             },
             status: "published",
           });
-
-          console.log("Request Approve Berhasil ✅");
-        } else {
-          console.log("Ada kesalahan dalam request");
         }
 
         return ctx.send({
           message: "Request Approve Berhasil ✅",
+          data: {
+            emailId: email.documentId,
+            status: "Approve",
+          },
         });
       } catch (error) {
-        console.error("Error in Approve:", error);
+        console.error("❌ Error in Approve:", error);
         return ctx.badRequest("Failed to approve surat", {
           error: error.message,
         });
@@ -324,17 +468,30 @@ export default factories.createCoreController(
 
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
-          populate : {
-            surat_jalan : true,
-          }
+          populate: {
+            surat_jalan: true,
+          },
         });
 
-        if(email){
+        let emailStatus = await strapi
+          .documents("api::email-status.email-status")
+          .findMany({
+            filters: {
+              email: {
+                documentId: email.documentId,
+              },
+              user: {
+                documentId: process.env.ADMIN_ID,
+              },
+            },
+          });
+
+        if (email) {
           await strapi.documents("api::email.email").update({
-            documentId : documentId,
+            documentId: documentId,
             data: {
-              isHaveStatus : true,
-              sender : process.env.ADMIN_ID,
+              isHaveStatus: true,
+              sender: process.env.ADMIN_ID,
               recipient: process.env.SPV_ID,
               pesan,
             },
@@ -342,11 +499,18 @@ export default factories.createCoreController(
           });
 
           await strapi.documents("api::surat-jalan.surat-jalan").update({
-            documentId : email.surat_jalan.documentId,
+            documentId: email.surat_jalan.documentId,
             data: {
-              status_surat: "Reject"
+              status_surat: "Reject",
             },
             status: "published",
+          });
+
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: emailStatus[0].documentId,
+            data: {
+              is_read: false,
+            },
           });
 
           console.log("Request Approve Berhasil ✅");
@@ -367,7 +531,8 @@ export default factories.createCoreController(
 
     async rejectBeritaBongkaran(ctx) {
       try {
-        const { documentId,  } = ctx.params;
+        const { documentId } = ctx.params;
+        const { pesan } = ctx.request.body;
         const user = ctx.state.user;
 
         // Validasi user
@@ -379,28 +544,49 @@ export default factories.createCoreController(
 
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
-          populate : {
-            surat_jalan : true,
+          populate: {
+            surat_jalan: true,
             recipient: true,
             sender: true,
-          }
+            email_statuses: {
+              populate: {
+                user: {
+                  populate: ["role"],
+                },
+              },
+            },
+          },
         });
 
-        if(email){
+        if (email) {
           await strapi.documents("api::email.email").update({
-            documentId : documentId,
+            documentId: documentId,
             data: {
-              isHaveStatus : true,
-              sender : email.recipient.documentId,
-              recipient: email.sender.documentId
+              isHaveStatus: true,
+              sender: email.recipient.documentId,
+              recipient: email.sender.documentId,
+              pesan,
             },
+
             status: "published",
           });
 
           await strapi.documents("api::surat-jalan.surat-jalan").update({
-            documentId : email.surat_jalan.documentId,
+            documentId: email.surat_jalan.documentId,
             data: {
-              status_surat: "Reject"
+              status_surat: "Reject",
+            },
+            status: "published",
+          });
+
+          let email_statuses = email.email_statuses.filter(
+            (item) => item.user.role.name === "Vendor"
+          );
+
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: email_statuses[0].documentId,
+            data: {
+              is_read: false,
             },
             status: "published",
           });

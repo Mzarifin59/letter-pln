@@ -121,7 +121,7 @@ export default function SidebarContent({
         icon: StickyNote,
         id: "draft",
         count: 0,
-        hideForRoles: ["Spv"],
+        hideForRoles: ["Spv", "Gardu Induk"],
       },
       {
         href: "/sent",
@@ -129,7 +129,7 @@ export default function SidebarContent({
         icon: Send,
         id: "sent",
         count: getFilteredData("sent").length,
-        hideForRoles: ["Spv"],
+        hideForRoles: ["Spv", "Gardu Induk"],
       },
       {
         href: "/reject",
@@ -179,16 +179,16 @@ export default function SidebarContent({
           </div>
         </div>
 
-        {user?.role?.name === "Admin" && (
-          <Link href={`/create-letter`} onClick={handleItemClick}>
+        {user?.role?.name === "Vendor" && (
+          <Link href={`/create-letter-bongkaran`} onClick={handleItemClick}>
             <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
               <Plus size={18} />
-              Buat Surat
+              Buat Berita Acara Bongkaran
             </Button>
           </Link>
         )}
 
-        {user?.role?.name === "Vendor" && (
+        {user?.role?.name === "Admin" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="w-full flex items-center justify-center gap-2 bg-[#0056B0] hover:bg-[#004494] text-white font-medium py-3 rounded-xl transition-colors cursor-pointer">
@@ -199,8 +199,8 @@ export default function SidebarContent({
 
             <DropdownMenuContent className="w-full">
               <DropdownMenuItem asChild>
-                <Link href="/create-letter-bongkaran">
-                  Berita Acara Material Bongkaran
+                <Link href="/create-letter">
+                  Surat Jalan
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

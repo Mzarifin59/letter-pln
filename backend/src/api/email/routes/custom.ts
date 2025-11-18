@@ -7,6 +7,11 @@ export default {
     },
     {
       method: "PUT",
+      path: "/emails/:documentId/mark-unread",
+      handler: "email.markUnRead",
+    },
+    {
+      method: "PUT",
       path: "/emails/:documentId/mark-bookmarked",
       handler: "email.markAsBookmarked",
     },
