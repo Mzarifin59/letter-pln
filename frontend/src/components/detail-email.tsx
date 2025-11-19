@@ -845,7 +845,7 @@ export const EmailDetail = ({
                       <img
                         width={200}
                         height={200}
-                        src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima?.url}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.penerima.ttd_penerima?.url}`}
                         alt="TTD penerima"
                         className="max-h-full max-w-full object-contain"
                       />
@@ -882,7 +882,7 @@ export const EmailDetail = ({
                         <Image
                           width={200}
                           height={200}
-                          src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.pengirim.ttd_pengirim.url}`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
                         />
@@ -1939,7 +1939,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <img
                         width={200}
                         height={200}
-                        src={`http://localhost:1337${email.surat_jalan.penerima.ttd_penerima?.url}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.penerima.ttd_penerima?.url}`}
                         alt="TTD penerima"
                         className="max-h-full max-w-full object-contain"
                       />
@@ -1976,7 +1976,7 @@ export const EmailDetailBeritaBongkaran = ({
                         <Image
                           width={200}
                           height={200}
-                          src={`http://localhost:1337${email.surat_jalan.pengirim.ttd_pengirim.url}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.pengirim.ttd_pengirim.url}`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
                         />
@@ -2008,7 +2008,7 @@ export const EmailDetailBeritaBongkaran = ({
                         <Image
                           width={200}
                           height={200}
-                          src={`http://localhost:1337${email.surat_jalan.mengetahui?.ttd_mengetahui.url}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.mengetahui?.ttd_mengetahui.url}`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
                         />
