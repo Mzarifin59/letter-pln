@@ -1167,7 +1167,7 @@ export const EmailDetailBeritaBongkaran = ({
     fileAttachment: FileAttachment | null | undefined
   ): string => {
     if (!fileAttachment?.url) return "";
-    if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
+    if (fileAttachment.url.startsWith("http") || fileAttachment.url.startsWith("https")) return fileAttachment.url;
     return `${apiUrl}${fileAttachment.url}`;
   };
 
@@ -1506,7 +1506,7 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="h-20 mb-3 flex items-center justify-center">
             {signaturePenerima.preview.upload ? (
               <img
-                src={signaturePenerima.preview.upload}
+                src={`${apiUrl}${signaturePenerima.preview.upload}`}
                 alt="Signature Penerima"
                 className="max-h-full max-w-full object-contain"
               />
@@ -1535,7 +1535,7 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="h-20 mb-3 flex items-center justify-center">
             {signaturePengirim.preview.upload ? (
               <img
-                src={signaturePengirim.preview.upload!}
+                src={`${apiUrl}${signaturePengirim.preview.upload}`}
                 alt="Signature Pengirim"
                 className="max-h-full max-w-full object-contain z-20"
               />
@@ -1559,7 +1559,7 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="h-20 mb-3 flex items-center justify-center">
             {signatureMengetahui.preview.upload ? (
               <img
-                src={signatureMengetahui.preview.upload}
+                src={`${apiUrl}${signatureMengetahui.preview.upload}`}
                 alt="Signature Mengetahui"
                 className="max-h-full max-w-full object-contain"
               />
