@@ -8,7 +8,6 @@ export const INITIAL_FORM_DATA: FormData = {
   lokasiAsal: "",
   lokasiTujuan: "",
   catatanTambahan: "",
-  pesan : "",
   informasiKendaraan: "",
   namaPengemudi: "",
   perusahaanPenerima: "",

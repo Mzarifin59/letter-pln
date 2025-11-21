@@ -145,7 +145,6 @@ export const useSuratJalanForm = () => {
         lokasi_asal: formData.lokasiAsal,
         lokasi_tujuan: formData.lokasiTujuan,
         catatan_tambahan: formData.catatanTambahan,
-        pesan: formData.pesan,
         informasi_kendaraan: formData.informasiKendaraan,
         nama_pengemudi: formData.namaPengemudi,
         status_surat: "In Progress",
@@ -240,7 +239,6 @@ export const useSuratJalanForm = () => {
           subject: submissionData.perihal,
           from_department: submissionData.pengirim.departemen_pengirim,
           to_company: submissionData.penerima.perusahaan_penerima,
-          pesan: submissionData.pesan,
           surat_jalan: {
             connect: [`${result.data.documentId}`],
           },

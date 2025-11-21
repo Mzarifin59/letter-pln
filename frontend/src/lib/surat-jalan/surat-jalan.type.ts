@@ -7,7 +7,6 @@ export interface FormData {
   lokasiAsal: string;
   lokasiTujuan: string;
   catatanTambahan: string;
-  pesan : string;
   informasiKendaraan: string;
   namaPengemudi: string;
   perusahaanPenerima: string;

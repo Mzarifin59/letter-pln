@@ -143,7 +143,6 @@ export const EmailDetail = ({
     departemenPengirim: email.surat_jalan.pengirim.departemen_pengirim,
     namaPengirim: email.surat_jalan.pengirim.nama_pengirim,
     catatanTambahan: email.surat_jalan.perihal,
-    pesan: email.pesan || "", // Tambahkan field pesan yang kurang
   };
 
   const materials: SuratJalanMaterialForm[] = email.surat_jalan.materials.map(

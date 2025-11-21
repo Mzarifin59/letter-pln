@@ -78,7 +78,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           lokasiAsal: suratJalan.lokasi_asal || "",
           lokasiTujuan: suratJalan.lokasi_tujuan || "",
           catatanTambahan: suratJalan.catatan_tambahan || "",
-          pesan: suratJalan.pesan || "",
           informasiKendaraan: suratJalan.informasi_kendaraan || "",
           namaPengemudi: suratJalan.nama_pengemudi || "",
           perusahaanPenerima: suratJalan.penerima.perusahaan_penerima || "",
@@ -320,7 +319,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         lokasiAsal: "",
         lokasiTujuan: "",
         catatanTambahan: "",
-        pesan: "",
         informasiKendaraan: "",
         namaPengemudi: "",
         perusahaanPenerima: "",
@@ -390,7 +388,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         lokasiAsal: "",
         lokasiTujuan: "",
         catatanTambahan: "",
-        pesan: "",
         informasiKendaraan: "",
         namaPengemudi: "",
         perusahaanPenerima: "",
@@ -721,8 +718,14 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="">Pilih Satuan</option>
-                    <option value="PCS (Pieces)">PCS (Pieces)</option>
-                    <option value="Kg (Kilogram)">Kg (Kilogram)</option>
+                    <option value="Keping">Keping</option>
+                    <option value="PCS">PCS (Pieces)</option>
+                    <option value="Kg">Kg (Kilogram)</option>
+                    <option value="Meter">Meter</option>
+                    <option value="Liter">Liter</option>
+                    <option value="Bh">Bahan</option>
+                    <option value="Set">Set</option>
+                    <option value="Unit">Unit</option>
                   </select>
                 </td>
                 <td className="px-4 py-3">
@@ -1139,19 +1142,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   placeholder="PENGIRIMAN MATERIAL PASIR, KORAL, DLL UNTUK IN-SITU BETON BAT PB 04"
-                />
-              </div>
-              <div>
-                <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-                  Pesan
-                </label>
-                <Textarea
-                  name="pesan"
-                  value={formData.pesan}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  placeholder="Halo Selamat Siang, Ini saya mengirimkan surat..."
                 />
               </div>
 
