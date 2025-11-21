@@ -208,9 +208,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .sort(sortByDate)
       .filter((item) => canShow(item));
 
-    suratData = suratData
-      .sort(sortByDate)
-      .filter((item) => canShow(item));
+    suratData = suratData.sort(sortByDate).filter((item) => canShow(item));
   }
 
   return (
@@ -374,7 +372,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           </div>
 
           {/* Cards Row */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className={`${user?.role?.name === "Spv" ? "xl:grid-cols-2" : "xl:grid-cols-3"} grid grid-cols-1 gap-6`}>
             {/* Tabel Riwayat Card */}
             <div className="lg:col-span-2 bg-white rounded-md border border-gray-200 shadow-sm flex flex-col">
               <div className="p-5 border-b border-gray-100 flex items-center justify-between">
@@ -553,68 +551,70 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
             </div>
 
             {/* New Activity Card */}
-            <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
-              <div className="mb-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="plus-jakarta-sans text-lg font-bold text-[#232323]">
-                    New Activity
-                  </h2>
-                  <span className="text-[12px] text-[#232323] p-2 bg-[#F3F4F6] rounded-sm">
-                    5 Activity
-                  </span>
+            {user?.role?.name !== "Spv" && (
+              <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
+                <div className="mb-8">
+                  <div className="flex items-center justify-between">
+                    <h2 className="plus-jakarta-sans text-lg font-bold text-[#232323]">
+                      New Activity
+                    </h2>
+                    <span className="text-[12px] text-[#232323] p-2 bg-[#F3F4F6] rounded-sm">
+                      5 Activity
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {/* Activity Item 1 */}
+                  {suratData.slice(0, 5).map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 border-b border-gray-100 pb-3"
+                    >
+                      <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                        {item.surat_jalan.status_entry !== "Draft"
+                          ? statusIcons[item.surat_jalan.status_surat]?.icon
+                          : statusIcons["Draft"].icon}
+                      </div>
+                      <div className="flex items-center max-xl:gap-6 min-w-0">
+                        <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
+                          <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
+                            Permohonan Surat Jalan
+                          </p>
+                          <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
+                            oleh Admin Gudang UPT · {timeAgo(item.createdAt)}
+                          </p>
+                        </div>
+                        {item.surat_jalan.status_entry !== "Draft" ? (
+                          <span
+                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                              item.surat_jalan.status_surat === "In Progress"
+                                ? "bg-blue-100 text-blue-700"
+                                : item.surat_jalan.status_surat === "Approve"
+                                ? "bg-green-100 text-green-700"
+                                : item.surat_jalan.status_surat === "Reject"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {item.surat_jalan.status_surat === "Approve"
+                              ? "Disetujui"
+                              : item.surat_jalan.status_surat === "In Progress"
+                              ? "Terkirim"
+                              : "Dibatalkan"}
+                          </span>
+                        ) : (
+                          <span
+                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 bg-gray-100 text-gray-600`}
+                          >
+                            Draft
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-2">
-                {/* Activity Item 1 */}
-                {suratData.slice(0, 5).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 border-b border-gray-100 pb-3"
-                  >
-                    <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                      {item.surat_jalan.status_entry !== "Draft"
-                        ? statusIcons[item.surat_jalan.status_surat]?.icon
-                        : statusIcons["Draft"].icon}
-                    </div>
-                    <div className="flex items-center max-xl:gap-6 min-w-0">
-                      <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                        <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                          Permohonan Surat Jalan
-                        </p>
-                        <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                          oleh Admin Gudang UPT · {timeAgo(item.createdAt)}
-                        </p>
-                      </div>
-                      {item.surat_jalan.status_entry !== "Draft" ? (
-                        <span
-                          className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-                            item.surat_jalan.status_surat === "In Progress"
-                              ? "bg-blue-100 text-blue-700"
-                              : item.surat_jalan.status_surat === "Approve"
-                              ? "bg-green-100 text-green-700"
-                              : item.surat_jalan.status_surat === "Reject"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {item.surat_jalan.status_surat === "Approve"
-                            ? "Disetujui"
-                            : item.surat_jalan.status_surat === "In Progress"
-                            ? "Terkirim"
-                            : "Dibatalkan"}
-                        </span>
-                      ) : (
-                        <span
-                          className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 bg-gray-100 text-gray-600`}
-                        >
-                          Draft
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
