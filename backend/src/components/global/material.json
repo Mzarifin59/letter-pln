@@ -14,8 +14,14 @@
     "satuan": {
       "type": "enumeration",
       "enum": [
-        "PCS (Pieces)",
-        "Kg (Kilogram)"
+        "Keping",
+        "PCS ",
+        "Kg ",
+        "Meter",
+        "Liter",
+        "Bh",
+        "Set",
+        "Unit"
       ]
     },
     "jumlah": {

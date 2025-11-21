@@ -10,7 +10,9 @@ export interface GlobalMaterial extends Struct.ComponentSchema {
     katalog: Schema.Attribute.String;
     keterangan: Schema.Attribute.String;
     nama: Schema.Attribute.String;
-    satuan: Schema.Attribute.Enumeration<['PCS (Pieces)', 'Kg (Kilogram)']>;
+    satuan: Schema.Attribute.Enumeration<
+      ['Keping', 'PCS ', 'Kg ', 'Meter', 'Liter', 'Bh', 'Set', 'Unit']
+    >;
   };
 }
 
