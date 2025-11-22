@@ -149,35 +149,6 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
     }
   };
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const itemPerPage = 15;
-  const totalPages = Math.ceil(data.length / itemPerPage);
-
-  const startIndex = (currentPage - 1) * itemPerPage;
-  const endIndex = startIndex + itemPerPage;
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-
-    document
-      .getElementById("draft-section")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      handlePageChange(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      handlePageChange(currentPage + 1);
-    }
-  };
-
   const handleSelectAll = (): void => {
     if (selectAll) {
       setSelectedEmails([]);
@@ -231,6 +202,35 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
       );
     });
   }
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(emailListFiltered.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("draft-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {

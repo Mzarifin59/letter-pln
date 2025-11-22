@@ -170,35 +170,6 @@ export default function SentContent({ data, token }: SentContentProps) {
     setShowDeleteDialog(true); // buka modal konfirmasi
   };
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const itemPerPage = 15;
-  const totalPages = Math.ceil(data.length / itemPerPage);
-
-  const startIndex = (currentPage - 1) * itemPerPage;
-  const endIndex = startIndex + itemPerPage;
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-
-    document
-      .getElementById("send-section")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      handlePageChange(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      handlePageChange(currentPage + 1);
-    }
-  };
-
   const handleSelectAll = (): void => {
     if (selectAll) {
       setSelectedEmails([]);
@@ -333,7 +304,8 @@ export default function SentContent({ data, token }: SentContentProps) {
       );
 
       return (
-        hasAdminGudangStatus && item.surat_jalan.kategori_surat === "Surat Jalan" &&
+        hasAdminGudangStatus &&
+        item.surat_jalan.kategori_surat === "Surat Jalan" &&
         (item.recipient.name === user.name ||
           (item.recipient.name === "Spv" &&
             item.surat_jalan.status_entry !== "Draft") ||
@@ -366,6 +338,35 @@ export default function SentContent({ data, token }: SentContentProps) {
       );
     });
   }
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(emailListFiltered.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    document
+      .getElementById("send-section")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {

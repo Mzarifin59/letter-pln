@@ -1403,14 +1403,14 @@ export const EmailDetailBeritaBongkaran = ({
             <div className="text-2xl">(Cop Surat)</div>
           )}
         </div>
-        <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
+        {/* <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
           <div className="text-lg font-bold text-[rgb(166,35,68)] leading-tight">
             LEMBAR {lembarIndex + 1}
           </div>
           <div className="text-base text-[rgb(166,35,68)] leading-tight">
             {lembarLabels[lembarIndex]}
           </div>
-        </div>
+        </div> */}
       </div>
       <hr className="border-t-2 border-gray-800 mb-3" />
     </>
@@ -1768,14 +1768,14 @@ export const EmailDetailBeritaBongkaran = ({
                     <div className="text-2xl">(Cop Surat)</div>
                   )}
                 </div>
-                <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
+                {/* <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
                   <div className="plus-jakarta-sans text-[22px] font-bold text-[#A62344]">
                     LEMBAR I
                   </div>
                   <div className="plus-jakarta-sans text-xl text-[#A62344]">
                     Pengirim Barang
                   </div>
-                </div>
+                </div> */}
               </div>
 
               <hr className="border-t-2 border-gray-800 mb-4" />

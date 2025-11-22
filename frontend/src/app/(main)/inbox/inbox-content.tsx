@@ -327,7 +327,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   }).length;
 
   const itemPerPage = 15;
-  const totalPages = Math.ceil(emailList.length / itemPerPage);
+  const totalPages = Math.ceil(emailListFiltered.length / itemPerPage);
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;

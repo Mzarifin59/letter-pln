@@ -249,7 +249,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemPerPage = 15;
-  const totalPages = Math.ceil(data.length / itemPerPage);
+  const totalPages = Math.ceil(emailListFiltered.length / itemPerPage);
 
   const startIndex = (currentPage - 1) * itemPerPage;
   const endIndex = startIndex + itemPerPage;

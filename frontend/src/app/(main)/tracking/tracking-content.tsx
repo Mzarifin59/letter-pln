@@ -141,15 +141,10 @@ export default function TrackingContentPage({
   const [rejectMessage, setRejectMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const itemPerPage = 15;
-  const totalPages = Math.ceil(data.length / itemPerPage);
-
-  const startIndex = (currentPage - 1) * itemPerPage;
-  const endIndex = startIndex + itemPerPage;
   let currentData;
 
   if (user?.role?.name === "Admin") {
-    currentData = dataEmail.slice(startIndex, endIndex);
+    currentData = dataEmail;
   } else if (user?.role?.name === "Spv") {
     const canShow = (item: DynamicEmailData) => {
       const kategori = item.surat_jalan.kategori_surat;
@@ -165,25 +160,19 @@ export default function TrackingContentPage({
       return mengetahuiLengkap;
     };
 
-    currentData = dataEmail
-      .filter((item) => canShow(item))
-      .slice(startIndex, endIndex);
+    currentData = dataEmail.filter((item) => canShow(item));
   } else if (user?.role?.name === "Vendor") {
-    currentData = dataEmail
-      .filter(
-        (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
-      )
-      .slice(startIndex, endIndex);
+    currentData = dataEmail.filter(
+      (item) =>
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+    );
   } else {
-    currentData = dataEmail
-      .filter(
-        (item) =>
-          item.surat_jalan.status_surat === "In Progress" &&
-          item.surat_jalan.status_entry !== "Draft" &&
-          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
-      )
-      .slice(startIndex, endIndex);
+    currentData = dataEmail.filter(
+      (item) =>
+        item.surat_jalan.status_surat === "In Progress" &&
+        item.surat_jalan.status_entry !== "Draft" &&
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+    );
   }
 
   const handlePageChange = (page: number) => {
@@ -192,6 +181,13 @@ export default function TrackingContentPage({
       .getElementById("draft-section")
       ?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Pagination
+  const itemPerPage = 15;
+  const totalPages = Math.ceil(currentData.length / itemPerPage);
+
+  const startIndex = (currentPage - 1) * itemPerPage;
+  const endIndex = startIndex + itemPerPage;
 
   const handlePrevious = () => {
     if (currentPage > 1) {
@@ -586,7 +582,6 @@ export default function TrackingContentPage({
                 <thead className="bg-[#F6F9FF]">
                   <tr>
                     {[
-                      "No",
                       "Tanggal Dibuat",
                       "Dari",
                       "Kepada",
@@ -603,70 +598,67 @@ export default function TrackingContentPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {currentData.map((item, index) => (
-                    <tr key={index} className="border-t border-[#ADB5BD]">
-                      <td className="py-4 px-6 text-sm text-[#545454]">
-                        {index + 1}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[#545454]">
-                        {formatDateTime(getTanggalSurat(item))}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[#545454]">
-                        {item.sender.name}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[#545454]">
-                        {item.recipient.name}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[#545454]">
-                        {item.surat_jalan.perihal}
-                      </td>
-                      <td className="py-4 px-6">
-                        {isSPV || isGI ? (
-                          <button
-                            onClick={() => handleSeeDetail(item)}
-                            className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"
-                          >
-                            See Detail
-                          </button>
-                        ) : (
-                          <>
-                            {item.surat_jalan.status_entry !== "Draft" ? (
-                              <span
-                                className={`${
-                                  item.surat_jalan.status_surat === "Approve"
-                                    ? "text-[#188580] bg-[#188580]/20"
-                                    : item.surat_jalan.status_surat === "Reject"
-                                    ? "text-[#A62344] bg-[#A62344]/20"
-                                    : "text-[#D3A518] bg-[#D3A518]/20"
-                                } plus-jakarta-sans font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
-                              >
-                                {item.surat_jalan.status_surat}
-                              </span>
-                            ) : (
-                              <span className="text-gray-600 bg-gray-100 plus-jakarta-sans font-semibold text-sm px-3 py-1 rounded-2xl inline-block">
-                                Draft
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {currentData
+                    .slice(startIndex, endIndex)
+                    .map((item, index) => (
+                      <tr key={index} className="border-t border-[#ADB5BD]">
+                        <td className="py-4 px-6 text-sm text-[#545454]">
+                          {formatDateTime(getTanggalSurat(item))}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[#545454]">
+                          {item.sender.name}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[#545454]">
+                          {item.recipient.name}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[#545454]">
+                          {item.surat_jalan.perihal}
+                        </td>
+                        <td className="py-4 px-6">
+                          {isSPV || isGI ? (
+                            <button
+                              onClick={() => handleSeeDetail(item)}
+                              className="bg-[#4A90E2] hover:bg-[#3a7bc8] text-white font-semibold text-sm px-4 py-2 rounded-lg transition"
+                            >
+                              See Detail
+                            </button>
+                          ) : (
+                            <>
+                              {item.surat_jalan.status_entry !== "Draft" ? (
+                                <span
+                                  className={`${
+                                    item.surat_jalan.status_surat === "Approve"
+                                      ? "text-[#188580] bg-[#188580]/20"
+                                      : item.surat_jalan.status_surat ===
+                                        "Reject"
+                                      ? "text-[#A62344] bg-[#A62344]/20"
+                                      : "text-[#D3A518] bg-[#D3A518]/20"
+                                  } plus-jakarta-sans font-semibold text-sm px-3 py-1 rounded-2xl inline-block`}
+                                >
+                                  {item.surat_jalan.status_surat}
+                                </span>
+                              ) : (
+                                <span className="text-gray-600 bg-gray-100 plus-jakarta-sans font-semibold text-sm px-3 py-1 rounded-2xl inline-block">
+                                  Draft
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
 
             {/* versi mobile */}
             <div className="space-y-4 md:hidden">
-              {currentData.map((row, index) => (
+              {currentData.slice(startIndex, endIndex).map((row, index) => (
                 <div
                   key={index}
                   className="rounded-xl border border-[#ADB5BD] p-4 bg-white shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-[#232323]">
-                      #{index + 1}
-                    </span>
                     {isSPV || isGI ? (
                       <button
                         onClick={() => handleSeeDetail(row)}
