@@ -164,7 +164,7 @@ export default function PreviewSection({
           SURAT JALAN
         </h1>
         <div className="text-blue-600 font-semibold text-xl">
-          {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
+          {formData.nomorSuratJalan || "(No Surat Jalan)"}
         </div>
       </div>
 
@@ -179,7 +179,7 @@ export default function PreviewSection({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.nomorSuratPermintaan || "001.REQ/GD.UPT-BDG/IX/2025"}
+                {formData.nomorSuratPermintaan || "(No Surat Permintaan)"}
               </span>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function PreviewSection({
               :{" "}
               <span className="font-semibold">
                 {formData.perihal ||
-                  "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                  "(Perihal)"}
               </span>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function PreviewSection({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiAsal || "GUDANG GARENTING"}
+                {formData.lokasiAsal || "(Lokasi Asal)"}
               </span>
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function PreviewSection({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
               </span>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function PreviewSection({
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
           {formData.catatanTambahan ||
-            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+            "(Catatan)"}
         </div>
       </div>
 
@@ -237,18 +237,18 @@ export default function PreviewSection({
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Kendaraan</div>
             <div className="table-cell">
-              : {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+              : {formData.informasiKendaraan || "(Kendaraan)"}
             </div>
           </div>
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Pengemudi</div>
             <div className="table-cell">
-              : {formData.namaPengemudi || "AYI"}
+              : {formData.namaPengemudi || "(Pengemudi)"}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+          <div>Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}</div>
         </div>
       </div>
 
@@ -256,7 +256,7 @@ export default function PreviewSection({
         <div>
           <div className="mb-1.5 text-base">Yang Menerima,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
 
           <div className="h-20 mb-3 flex items-center justify-center">
@@ -272,14 +272,14 @@ export default function PreviewSection({
           </div>
 
           <div className="text-base font-bold">
-            {formData.namaPenerima || "PAK RUDI"}
+            {formData.namaPenerima || "(Nama Penerima)"}
           </div>
         </div>
 
         <div className="relative">
           <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+            {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
           <Image
             src={`/images/ttd.png`}
@@ -301,7 +301,7 @@ export default function PreviewSection({
           </div>
 
           <div className="font-bold text-base">
-            {formData.namaPengirim || "ANDRI SETIAWAN"}
+            {formData.namaPengirim || "(Nama Pengirim)"}
           </div>
         </div>
       </div>

@@ -321,8 +321,194 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     setLampiran((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Form validation
+  const validateForm = (isDraft: boolean = false) => {
+    // Validasi field wajib untuk pengiriman
+    if (!isDraft) {
+      // Validasi Cop Surat
+      if (!formData.copSurat && !copSuratPreview) {
+        return {
+          isValid: false,
+          error: "Cop Surat harus diupload",
+          field: "copSurat",
+        };
+      }
+
+      // Validasi Nomor Berita Acara
+      if (!formData.nomorBeritaAcara.trim()) {
+        return {
+          isValid: false,
+          error: "Nomor Berita Acara harus diisi",
+          field: "nomorBeritaAcara",
+        };
+      }
+
+      // Validasi Nomor Perjanjian Kontrak
+      if (!formData.nomorPerjanjianKontrak.trim()) {
+        return {
+          isValid: false,
+          error: "Nomor Perjanjian Kontrak harus diisi",
+          field: "nomorPerjanjianKontrak",
+        };
+      }
+
+      // Validasi Tanggal Kontrak
+      if (!formData.tanggalKontrak) {
+        return {
+          isValid: false,
+          error: "Tanggal Kontrak harus diisi",
+          field: "tanggalKontrak",
+        };
+      }
+
+      // Validasi Perihal
+      if (!formData.perihal.trim()) {
+        return {
+          isValid: false,
+          error: "Perihal harus diisi",
+          field: "perihal",
+        };
+      }
+
+      // Validasi Lokasi Asal
+      if (!formData.lokasiAsal.trim()) {
+        return {
+          isValid: false,
+          error: "Lokasi Asal harus diisi",
+          field: "lokasiAsal",
+        };
+      }
+
+      // Validasi Lokasi Tujuan
+      if (!formData.lokasiTujuan.trim()) {
+        return {
+          isValid: false,
+          error: "Lokasi Tujuan harus diisi",
+          field: "lokasiTujuan",
+        };
+      }
+
+      // Validasi materials
+      const validMaterials = materials.filter(
+        (m) =>
+          m.namaMaterial.trim() &&
+          m.katalog.trim() &&
+          m.satuan &&
+          parseFloat(m.jumlah) > 0
+      );
+
+      if (validMaterials.length === 0) {
+        return {
+          isValid: false,
+          error:
+            "Minimal harus ada 1 material dengan data lengkap (Nama, Katalog, Satuan, dan Jumlah)",
+          field: "materials",
+        };
+      }
+
+      // Validasi Informasi Kendaraan
+      if (!formData.informasiKendaraan.trim()) {
+        return {
+          isValid: false,
+          error: "Informasi Kendaraan harus diisi",
+          field: "informasiKendaraan",
+        };
+      }
+      if (!formData.namaPengemudi.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Pengemudi harus diisi",
+          field: "namaPengemudi",
+        };
+      }
+
+      if (!formData.perusahaanPenerima.trim()) {
+        return {
+          isValid: false,
+          error: "Perusahaan Penerima harus diisi",
+          field: "perusahaanPenerima",
+        };
+      }
+
+      if (!formData.namaPenerima.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Penerima harus diisi",
+          field: "namaPenerima",
+        };
+      }
+
+      if (!formData.departemenPengirim.trim()) {
+        return {
+          isValid: false,
+          error: "Departemen Pengirim harus diisi",
+          field: "departemenPengirim",
+        };
+      }
+
+      if (!formData.namaPengirim.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Pengirim harus diisi",
+          field: "namaPengirim",
+        };
+      }
+      if (!signaturePengirim.upload && !signaturePengirim.signature) {
+        return {
+          isValid: false,
+          error: "Tanda tangan Pengirim harus diisi",
+          field: "signaturePengirim",
+        };
+      }
+      if (!formData.departemenMengetahui.trim()) {
+        return {
+          isValid: false,
+          error: "Departemen Mengetahui harus diisi",
+          field: "departemenMengetahui",
+        };
+      }
+
+      if (!formData.namaMengetahui.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Mengetahui harus diisi",
+          field: "namaMengetahui",
+        };
+      }
+    } else {
+      if (!formData.nomorBeritaAcara.trim()) {
+        return {
+          isValid: false,
+          error: "Nomor Berita Acara harus diisi untuk menyimpan draft",
+          field: "nomorBeritaAcara",
+        };
+      }
+    }
+
+    return { isValid: true };
+  };
+
   // SUBMISSION HANDLERS
   const handleSubmit = async () => {
+    const validation = validateForm(false);
+
+    if (!validation.isValid) {
+      toast.error(validation.error, {
+        position: "top-center",
+        duration: 4000,
+      });
+
+      const fieldElement = document.querySelector(
+        `[name="${validation.field}"]`
+      );
+      if (fieldElement) {
+        fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        // @ts-ignore
+        fieldElement.focus?.();
+      }
+
+      return;
+    }
     try {
       toast.loading(isEditMode ? "Memperbarui surat..." : "Mengirim surat...", {
         id: "submit",
@@ -386,6 +572,16 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const handleDraft = async () => {
+    const validation = validateForm(true);
+
+    if (!validation.isValid) {
+      toast.error(validation.error, {
+        position: "top-center",
+        duration: 4000,
+      });
+      return;
+    }
+
     try {
       toast.loading(
         isEditMode ? "Memperbarui draft..." : "Menyimpan draft...",
@@ -534,6 +730,16 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     }
   }, [mode, draftId, dataSurat, setFormData]);
 
+  // Set default tanggal kontrak
+  useEffect(() => {
+    if (!formData.tanggalKontrak && mode !== "edit" && !draftId) {
+      setFormData((prev) => ({
+        ...prev,
+        tanggalKontrak: new Date().toISOString().split("T")[0],
+      }));
+    }
+  }, [mode, draftId, formData.tanggalKontrak, setFormData]);
+
   const renderBasicInformation = () => (
     <div>
       <div className="pb-5">
@@ -554,7 +760,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                 onClick={() => {
                   setCopSuratPreview(null);
                   setFormData((prev) => ({ ...prev, copSurat: null }));
-                  setExistingCopSuratId(null); 
+                  setExistingCopSuratId(null);
                 }}
                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 shadow-md transition-colors"
                 title="Hapus gambar"
@@ -618,7 +824,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
         <div className="sm:col-span-2 xl:col-span-1">
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Tanggal Kontrak
+            Tanggal
           </label>
           <div className="relative">
             <input

@@ -28,8 +28,8 @@ const formatDateWithDay = (dateString: string) => {
   if (!dateString) return "Senin, 31 Januari 2025";
   return new Date(dateString).toLocaleDateString("id-ID", {
     weekday: "long", // tampilkan nama hari
-    day: "2-digit",  // tampilkan 01, 02, dst.
-    month: "long",   // nama bulan lengkap
+    day: "2-digit", // tampilkan 01, 02, dst.
+    month: "long", // nama bulan lengkap
     year: "numeric", // tahun lengkap
   });
 };
@@ -220,8 +220,7 @@ export default function PreviewSectionBeritaBongkaran({
             <div className="flex-1">
               :{" "}
               <span className="font-semibold">
-                {formData.perihal ||
-                  "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                {formData.perihal || "(Perihal)"}
               </span>
             </div>
           </div>
@@ -231,7 +230,7 @@ export default function PreviewSectionBeritaBongkaran({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiAsal || "GUDANG GARENTING"}
+                {formData.lokasiAsal || "(Lokasi Asal)"}
               </span>
             </div>
           </div>
@@ -241,7 +240,7 @@ export default function PreviewSectionBeritaBongkaran({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
               </span>
             </div>
           </div>
@@ -250,7 +249,7 @@ export default function PreviewSectionBeritaBongkaran({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.nomorPerjanjianKontrak || "GI BANDUNG UTARA"}
+                {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
               </span>
             </div>
           </div>
@@ -275,18 +274,20 @@ export default function PreviewSectionBeritaBongkaran({
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Kendaraan</div>
             <div className="table-cell">
-              : {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+              : {formData.informasiKendaraan || "(Kendaraan)"}
             </div>
           </div>
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Pengemudi</div>
             <div className="table-cell">
-              : {formData.namaPengemudi || "AYI"}
+              : {formData.namaPengemudi || "(Pengemudi)"}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalKontrak)}</div>
+          <div>
+            Bandung, {formatDate(formData.tanggalKontrak) || "1 Nov 2025"}
+          </div>
         </div>
       </div>
 
@@ -294,7 +295,7 @@ export default function PreviewSectionBeritaBongkaran({
         <div>
           <div className="mb-1.5 text-base">Yang Menerima,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
 
           <div className="h-20 mb-3 flex items-center justify-center">
@@ -310,14 +311,14 @@ export default function PreviewSectionBeritaBongkaran({
           </div>
 
           <div className="text-base font-bold">
-            {formData.namaPenerima || "PAK RUDI"}
+            {formData.namaPenerima || "(Nama Penerima)"}
           </div>
         </div>
 
         <div className="relative">
           <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+            {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
           <Image
             src={`/images/ttd.png`}
@@ -339,32 +340,32 @@ export default function PreviewSectionBeritaBongkaran({
           </div>
 
           <div className="font-bold text-base">
-            {formData.namaPengirim || "ANDRI SETIAWAN"}
+            {formData.namaPengirim || "(Nama Pengirim)"}
           </div>
         </div>
       </div>
       <div className="text-center">
-          <div className="mb-1.5 text-base">Yang Menerima,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.departemenMengetahui || "GI BANDUNG UTARA"}
-          </div>
-
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {getMengetahuiSignature() ? (
-              <img
-                src={getMengetahuiSignature()!}
-                alt="Signature Mengetahui"
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="text-base font-bold">
-            {formData.namaMengetahui || "PAK RUDI"}
-          </div>
+        <div className="mb-1.5 text-base">Yang Mengetahui,</div>
+        <div className="font-bold mb-3 text-base">
+          {formData.departemenMengetahui || "(Departemen Mengetahui)"}
         </div>
+
+        <div className="h-20 mb-3 flex items-center justify-center">
+          {getMengetahuiSignature() ? (
+            <img
+              src={getMengetahuiSignature()!}
+              alt="Signature Mengetahui"
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+          )}
+        </div>
+
+        <div className="text-base font-bold">
+          {formData.namaMengetahui || "(Nama Mengetahui)"}
+        </div>
+      </div>
     </>
   );
 
@@ -404,7 +405,7 @@ export default function PreviewSectionBeritaBongkaran({
 
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
           <div id="preview-content">
-            {[0, 1, 2, 3].map((lembarIndex) => (
+            {[0].map((lembarIndex) => (
               <div key={lembarIndex}>
                 {materialPages.map((pageMaterials, pageIndex) => {
                   const isFirstPage = pageIndex === 0;

@@ -337,7 +337,7 @@ export const EmailDetail = ({
           SURAT JALAN
         </h1>
         <div className="text-blue-600 font-semibold text-xl">
-          {formData.nomorSuratJalan || "NO : 001.SJ/GD.UPT-BDG/IX/2025"}
+          {formData.nomorSuratJalan || "NO Surat Jalan"}
         </div>
       </div>
 
@@ -352,7 +352,7 @@ export const EmailDetail = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.nomorSuratPermintaan || "001.REQ/GD.UPT-BDG/IX/2025"}
+                {formData.nomorSuratPermintaan || "(No Surat Permintaan)"}
               </span>
             </div>
           </div>
@@ -362,8 +362,7 @@ export const EmailDetail = ({
             <div className="flex-1">
               :{" "}
               <span className="font-semibold">
-                {formData.perihal ||
-                  "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                {formData.perihal || "(Perihal)"}
               </span>
             </div>
           </div>
@@ -373,7 +372,7 @@ export const EmailDetail = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiAsal || "GUDANG GARENTING"}
+                {formData.lokasiAsal || "(Lokasi Asal)"}
               </span>
             </div>
           </div>
@@ -383,7 +382,7 @@ export const EmailDetail = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
               </span>
             </div>
           </div>
@@ -400,8 +399,7 @@ export const EmailDetail = ({
       </div>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
-          {formData.catatanTambahan ||
-            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+          {formData.catatanTambahan || "(Catatan Tambahan)"}
         </div>
       </div>
 
@@ -410,18 +408,20 @@ export const EmailDetail = ({
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Kendaraan</div>
             <div className="table-cell">
-              : {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+              : {formData.informasiKendaraan || "(Kendaraan)"}
             </div>
           </div>
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Pengemudi</div>
             <div className="table-cell">
-              : {formData.namaPengemudi || "AYI"}
+              : {formData.namaPengemudi || "(Pengemudi)"}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+          <div>
+            Bandung, {formatDate(formData.tanggalSurat) || "(1 November 2025)"}
+          </div>
         </div>
       </div>
 
@@ -429,7 +429,7 @@ export const EmailDetail = ({
         <div>
           <div className="mb-1.5 text-base">Yang Menerima,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
 
           <div className="h-20 mb-3 flex items-center justify-center">
@@ -445,14 +445,14 @@ export const EmailDetail = ({
           </div>
 
           <div className="text-base font-bold">
-            {formData.namaPenerima || "PAK RUDI"}
+            {formData.namaPenerima || "(Nama Penerima)"}
           </div>
         </div>
 
         <div className="relative">
           <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+            {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
           <Image
             src={`/images/ttd.png`}
@@ -474,7 +474,7 @@ export const EmailDetail = ({
           </div>
 
           <div className="font-bold text-base">
-            {formData.namaPengirim || "ANDRI SETIAWAN"}
+            {formData.namaPengirim || "(Nama Pengirim)"}
           </div>
         </div>
       </div>
@@ -521,14 +521,17 @@ export const EmailDetail = ({
                 >
                   {getCompanyAbbreviation(
                     email.surat_jalan.pengirim.departemen_pengirim
-                  )}
+                  ) || "GA"}
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim}
+                    {email.surat_jalan.pengirim.departemen_pengirim ||
+                      "(Departmen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
-                    to: {email.surat_jalan.penerima.perusahaan_penerima}
+                    to:{" "}
+                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                      "(Perusahaan Penerima)"}
                   </p>
                 </div>
               </div>
@@ -566,10 +569,13 @@ export const EmailDetail = ({
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim}
+                    {email.surat_jalan.pengirim.departemen_pengirim ||
+                      "(Departemen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
-                    to: {email.surat_jalan.penerima.perusahaan_penerima}
+                    to:{" "}
+                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                      "(Perusahaan Penerima)"}
                   </p>
                 </div>
               </div>
@@ -597,7 +603,7 @@ export const EmailDetail = ({
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-3 md:mb-5">
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
-                  {email.surat_jalan.perihal}
+                  {email.surat_jalan.perihal || "(Perihal)"}
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
@@ -621,7 +627,7 @@ export const EmailDetail = ({
             </span>
           </div>
           <p className="text-[#181818] text-xs sm:text-sm md:text-base">
-            {email.pesan}
+            {email.pesan || ""}
           </p>
         </div>
 
@@ -668,7 +674,7 @@ export const EmailDetail = ({
                   SURAT JALAN
                 </h1>
                 <div className="text-blue-600 font-semibold text-2xl">
-                  {getNoSurat(email)}
+                  {getNoSurat(email) || "(No Surat Jalan)"}
                 </div>
               </div>
 
@@ -686,7 +692,7 @@ export const EmailDetail = ({
                         :{" "}
                         <span className="font-semibold">
                           {formData.nomorSuratPermintaan ||
-                            "001.REQ/GD.UPT-BDG/IX/2025"}
+                            "(No Surat Permintaan)"}
                         </span>
                       </div>
                     </div>
@@ -696,8 +702,7 @@ export const EmailDetail = ({
                       <div className="flex-1">
                         :{" "}
                         <span className="font-semibold">
-                          {formData.perihal ||
-                            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                          {formData.perihal || "(Perihal)"}
                         </span>
                       </div>
                     </div>
@@ -707,7 +712,7 @@ export const EmailDetail = ({
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.lokasiAsal || "GUDANG GARENTING"}
+                          {formData.lokasiAsal || "(Lokasi Asal)"}
                         </span>
                       </div>
                     </div>
@@ -717,7 +722,7 @@ export const EmailDetail = ({
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                          {formData.lokasiTujuan || "(Lokasi Tujuan)"}
                         </span>
                       </div>
                     </div>
@@ -798,7 +803,7 @@ export const EmailDetail = ({
               </div>
               <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
                 <div className="mt-1 text-lg font-semibold">
-                  {email.surat_jalan.perihal}
+                  {email.surat_jalan.perihal || "(Perihal)"}
                 </div>
               </div>
 
@@ -811,8 +816,7 @@ export const EmailDetail = ({
                       Kendaraan
                     </div>
                     <div className="table-cell">
-                      :{" "}
-                      {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+                      : {formData.informasiKendaraan || "(Kendaraan)"}
                     </div>
                   </div>
                   <div className="table-row">
@@ -820,12 +824,14 @@ export const EmailDetail = ({
                       Pengemudi
                     </div>
                     <div className="table-cell">
-                      : {formData.namaPengemudi || "AYI"}
+                      : {formData.namaPengemudi || "(Pengemudi)"}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div>Bandung, {formatDate(formData.tanggalSurat)}</div>
+                  <div>
+                    Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}
+                  </div>
                 </div>
               </div>
 
@@ -835,7 +841,7 @@ export const EmailDetail = ({
                   <div className="mb-2 text-lg">Yang Menerima,</div>
                   <div className="font-bold mb-4 text-lg">
                     {email.surat_jalan.penerima.perusahaan_penerima ||
-                      "Nama Departemen"}
+                      "(Nama Departemen Penerima)"}
                   </div>
 
                   {/* Signature Preview */}
@@ -856,7 +862,10 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="text-lg font-bold">
-                    {`${email.surat_jalan.penerima.nama_penerima}`}
+                    {`${
+                      email.surat_jalan.penerima.nama_penerima ||
+                      "Nama Penerima"
+                    }`}
                   </div>
                 </div>
 
@@ -864,7 +873,7 @@ export const EmailDetail = ({
                   <div className="mb-2 text-lg">Yang menyerahkan,</div>
                   <div className="font-bold mb-4 text-lg">
                     {email.surat_jalan.pengirim.departemen_pengirim ||
-                      "Nama Departemen"}
+                      "(Nama Departemen Pengirim)"}
                   </div>
 
                   {/* Signature Preview */}
@@ -894,7 +903,8 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="font-bold text-lg">
-                    {email.surat_jalan.pengirim.nama_pengirim}
+                    {email.surat_jalan.pengirim.nama_pengirim ||
+                      "Nama Pengirim"}
                   </div>
                 </div>
               </div>
@@ -1166,7 +1176,11 @@ export const EmailDetailBeritaBongkaran = ({
     fileAttachment: FileAttachment | null | undefined
   ): string => {
     if (!fileAttachment?.url) return "";
-    if (fileAttachment.url.startsWith("http") || fileAttachment.url.startsWith("https")) return fileAttachment.url;
+    if (
+      fileAttachment.url.startsWith("http") ||
+      fileAttachment.url.startsWith("https")
+    )
+      return fileAttachment.url;
     return `${apiUrl}${fileAttachment.url}`;
   };
 
@@ -1336,7 +1350,11 @@ export const EmailDetailBeritaBongkaran = ({
           pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
         }
 
-        pdf.save(`${formData.nomorBeritaAcara || "Berita Acara Pemeriksaan Tim Mutu"}.pdf`);
+        pdf.save(
+          `${
+            formData.nomorBeritaAcara || "Berita Acara Pemeriksaan Tim Mutu"
+          }.pdf`
+        );
       } catch (error) {
         console.error("Error generating PDF:", error);
         alert("Gagal generate PDF. Silakan coba lagi.");
@@ -1371,7 +1389,7 @@ export const EmailDetailBeritaBongkaran = ({
     <>
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-shrink-0">
-          {copSuratUrl && (
+          {copSuratUrl ? (
             <div className="cop-surat-container mb-4">
               <Image
                 src={copSuratUrl}
@@ -1381,6 +1399,8 @@ export const EmailDetailBeritaBongkaran = ({
                 className="w-[500px] h-full object-cover"
               />
             </div>
+          ) : (
+            <div className="text-2xl">(Cop Surat)</div>
           )}
         </div>
         <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
@@ -1403,7 +1423,7 @@ export const EmailDetailBeritaBongkaran = ({
           Berita Acara Serah Terima Material Bongkaran
         </h1>
         <div className="text-blue-600 font-semibold text-xl">
-          {formData.nomorBeritaAcara || "NO : 001.BA/GAE/XI/2025"}
+          {formData.nomorBeritaAcara || "(No Berita Acara)"}
         </div>
       </div>
 
@@ -1425,8 +1445,7 @@ export const EmailDetailBeritaBongkaran = ({
             <div className="flex-1">
               :{" "}
               <span className="font-semibold">
-                {formData.perihal ||
-                  "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                {formData.perihal || "(Perihal)"}
               </span>
             </div>
           </div>
@@ -1436,7 +1455,7 @@ export const EmailDetailBeritaBongkaran = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiAsal || "GUDANG GARENTING"}
+                {formData.lokasiAsal || "(Lokasi Asal)"}
               </span>
             </div>
           </div>
@@ -1446,7 +1465,7 @@ export const EmailDetailBeritaBongkaran = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
               </span>
             </div>
           </div>
@@ -1455,8 +1474,7 @@ export const EmailDetailBeritaBongkaran = ({
             <div>
               :{" "}
               <span className="font-semibold">
-                {formData.nomorPerjanjianKontrak ||
-                  "001.PJ/DAN.01.03/UPTBDG/2023"}
+                {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
               </span>
             </div>
           </div>
@@ -1480,18 +1498,20 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Kendaraan</div>
             <div className="table-cell">
-              : {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+              : {formData.informasiKendaraan || "(Kendaraan)"}
             </div>
           </div>
           <div className="table-row">
             <div className="table-cell pr-4 font-semibold">Pengemudi</div>
             <div className="table-cell">
-              : {formData.namaPengemudi || "AYI"}
+              : {formData.namaPengemudi || "(Pengemudi)"}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalKontrak)}</div>
+          <div>
+            Bandung, {formatDate(formData.tanggalKontrak) || "17 Nov 2025"}
+          </div>
         </div>
       </div>
 
@@ -1499,7 +1519,7 @@ export const EmailDetailBeritaBongkaran = ({
         <div>
           <div className="mb-1.5 text-base">Yang Menerima,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "GI BANDUNG UTARA"}
+            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
 
           <div className="h-20 mb-3 flex items-center justify-center">
@@ -1515,14 +1535,14 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
 
           <div className="text-base font-bold">
-            {formData.namaPenerima || "PAK RUDI"}
+            {formData.namaPenerima || "(Nama Penerima)"}
           </div>
         </div>
 
         <div className="relative">
           <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "LOGISTIK UPT BANDUNG"}
+            {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
           <Image
             src={`/images/ttd.png`}
@@ -1544,7 +1564,7 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
 
           <div className="font-bold text-base">
-            {formData.namaPengirim || "ANDRI SETIAWAN"}
+            {formData.namaPengirim || "(Nama Pengirim)"}
           </div>
         </div>
       </div>
@@ -1552,7 +1572,7 @@ export const EmailDetailBeritaBongkaran = ({
         <div>
           <div className="mb-1.5 text-base">Yang Mengetahui,</div>
           <div className="font-bold mb-3 text-base">
-            {formData.departemenMengetahui || "GI BANDUNG UTARA"}
+            {formData.departemenMengetahui || "(Departemen Mengetahui)"}
           </div>
 
           <div className="h-20 mb-3 flex items-center justify-center">
@@ -1568,7 +1588,7 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
 
           <div className="text-base font-bold">
-            {formData.namaMengetahui || "PAK RUDI"}
+            {formData.namaMengetahui || "(Nama Mengetahui)"}
           </div>
         </div>
       </div>
@@ -1619,10 +1639,13 @@ export const EmailDetailBeritaBongkaran = ({
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim}
+                    {email.surat_jalan.pengirim.departemen_pengirim ||
+                      "(Departemen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
-                    to: {email.surat_jalan.penerima.perusahaan_penerima}
+                    to:{" "}
+                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                      "(Peruhasaan Penerima)"}
                   </p>
                 </div>
               </div>
@@ -1660,10 +1683,13 @@ export const EmailDetailBeritaBongkaran = ({
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim}
+                    {email.surat_jalan.pengirim.departemen_pengirim ||
+                      "(Departemen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
-                    to: {email.surat_jalan.penerima.perusahaan_penerima}
+                    to:{" "}
+                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                      "(Peruhasaan Penerima)"}
                   </p>
                 </div>
               </div>
@@ -1691,7 +1717,7 @@ export const EmailDetailBeritaBongkaran = ({
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-3 md:mb-5">
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
-                  {email.surat_jalan.perihal}
+                  {email.surat_jalan.perihal || ""}
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
@@ -1708,14 +1734,14 @@ export const EmailDetailBeritaBongkaran = ({
         <div className="inter mb-6 md:mb-8 space-y-3 md:space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm font-semibold text-[#191919]">
-              {formData.nomorBeritaAcara}
+              {formData.nomorBeritaAcara || "(NO Berita Acara)"}
             </span>
             <span className="text-[10px] sm:text-xs md:text-sm font-medium text-[#7F7F7F]">
-              {formatDateWithDay(formData.tanggalKontrak)}
+              {formatDateWithDay(formData.tanggalKontrak) || "1 Nov 2025"}
             </span>
           </div>
           <p className="text-[#181818] text-xs sm:text-sm md:text-base">
-            {email.pesan}
+            {email.pesan || ""}
           </p>
         </div>
 
@@ -1728,7 +1754,7 @@ export const EmailDetailBeritaBongkaran = ({
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
-                  {copSuratUrl && (
+                  {copSuratUrl ? (
                     <div className="cop-surat-container mb-4">
                       <Image
                         src={copSuratUrl}
@@ -1738,6 +1764,8 @@ export const EmailDetailBeritaBongkaran = ({
                         className="w-[600px] h-full object-cover"
                       />
                     </div>
+                  ) : (
+                    <div className="text-2xl">(Cop Surat)</div>
                   )}
                 </div>
                 <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
@@ -1758,7 +1786,7 @@ export const EmailDetailBeritaBongkaran = ({
                   Berita Acara Serah Terima Material Bongkaran
                 </h1>
                 <div className="text-blue-600 font-semibold text-2xl">
-                  {formData.nomorBeritaAcara}
+                  {formData.nomorBeritaAcara || "(No Berita Acara)"}
                 </div>
               </div>
 
@@ -1782,8 +1810,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <div className="flex-1">
                         :{" "}
                         <span className="font-semibold">
-                          {formData.perihal ||
-                            "PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"}
+                          {formData.perihal || "(Perihal)"}
                         </span>
                       </div>
                     </div>
@@ -1793,7 +1820,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.lokasiAsal || "GUDANG GARENTING"}
+                          {formData.lokasiAsal || "(Lokasi Asal)"}
                         </span>
                       </div>
                     </div>
@@ -1803,7 +1830,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.lokasiTujuan || "GI BANDUNG UTARA"}
+                          {formData.lokasiTujuan || "(Lokasi Tujuan)"}
                         </span>
                       </div>
                     </div>
@@ -1812,8 +1839,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <div>
                         :{" "}
                         <span className="font-semibold">
-                          {formData.nomorPerjanjianKontrak ||
-                            "GI BANDUNG UTARA"}
+                          {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
                         </span>
                       </div>
                     </div>
@@ -1905,8 +1931,7 @@ export const EmailDetailBeritaBongkaran = ({
                       Kendaraan
                     </div>
                     <div className="table-cell">
-                      :{" "}
-                      {formData.informasiKendaraan || "COLT DIESEL / D 8584 HL"}
+                      : {formData.informasiKendaraan || "(Kendaraan)"}
                     </div>
                   </div>
                   <div className="table-row">
@@ -1914,12 +1939,15 @@ export const EmailDetailBeritaBongkaran = ({
                       Pengemudi
                     </div>
                     <div className="table-cell">
-                      : {formData.namaPengemudi || "AYI"}
+                      : {formData.namaPengemudi || "(Pengemudi)"}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div>Bandung, {formatDate(formData.tanggalKontrak)}</div>
+                  <div>
+                    Bandung,{" "}
+                    {formatDate(formData.tanggalKontrak) || "(Tanggal Kontrak)"}
+                  </div>
                 </div>
               </div>
 
@@ -1929,7 +1957,7 @@ export const EmailDetailBeritaBongkaran = ({
                   <div className="mb-2 text-lg">Yang Menerima,</div>
                   <div className="font-bold mb-4 text-lg">
                     {email.surat_jalan.penerima.perusahaan_penerima ||
-                      "Nama Departemen"}
+                      "Nama Departemen Penerima"}
                   </div>
 
                   {/* Signature Preview */}
@@ -1950,7 +1978,10 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
 
                   <div className="text-lg font-bold">
-                    {`${email.surat_jalan.penerima.nama_penerima}`}
+                    {`${
+                      email.surat_jalan.penerima.nama_penerima ||
+                      "Nama Penerima"
+                    }`}
                   </div>
                 </div>
 
@@ -1958,7 +1989,7 @@ export const EmailDetailBeritaBongkaran = ({
                   <div className="mb-2 text-lg">Yang menyerahkan,</div>
                   <div className="font-bold mb-4 text-lg">
                     {email.surat_jalan.pengirim.departemen_pengirim ||
-                      "Nama Departemen"}
+                      "Nama Departemen Pengirim"}
                   </div>
 
                   {/* Signature Preview */}
@@ -1988,7 +2019,8 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
 
                   <div className="font-bold text-lg">
-                    {email.surat_jalan.pengirim.nama_pengirim}
+                    {email.surat_jalan.pengirim.nama_pengirim ||
+                      "Nama Pengirim"}
                   </div>
                 </div>
               </div>
@@ -1997,7 +2029,7 @@ export const EmailDetailBeritaBongkaran = ({
                   <div className="mb-2 text-lg">Yang Mengetahui,</div>
                   <div className="font-bold mb-4 text-lg">
                     {email.surat_jalan.mengetahui?.departemen_mengetahui ||
-                      "Nama Departemen"}
+                      "Nama Departemen Mengetahui"}
                   </div>
 
                   {/* Signature Preview */}
@@ -2020,7 +2052,8 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
 
                   <div className="font-bold text-lg text-center">
-                    {email.surat_jalan.mengetahui?.nama_mengetahui}
+                    {email.surat_jalan.mengetahui?.nama_mengetahui ||
+                      "Nama Mengetahui"}
                   </div>
                 </div>
               </div>

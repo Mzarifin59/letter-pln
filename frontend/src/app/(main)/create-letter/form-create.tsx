@@ -301,8 +301,148 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     setLampiran((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Form validation - mengembalikan error pertama yang ditemukan
+  const validateForm = (isDraft: boolean = false) => {
+    if (!isDraft) {
+      if (!formData.nomorSuratPermintaan) {
+        return {
+          isValid: false,
+          error: "Nomor Surat Permintaan harus diisi",
+          field: "nomorSuratPermintaan",
+        };
+      }
+      if (!formData.tanggalSurat) {
+        return {
+          isValid: false,
+          error: "Tanggal Surat harus diisi",
+          field: "tanggalSurat",
+        };
+      }
+      if (!formData.perihal.trim()) {
+        return {
+          isValid: false,
+          error: "Perihal harus diisi",
+          field: "perihal",
+        };
+      }
+      if (!formData.lokasiAsal.trim()) {
+        return {
+          isValid: false,
+          error: "Lokasi Asal harus diisi",
+          field: "lokasiAsal",
+        };
+      }
+      if (!formData.lokasiTujuan.trim()) {
+        return {
+          isValid: false,
+          error: "Lokasi Tujuan harus diisi",
+          field: "lokasiTujuan",
+        };
+      }
+
+      // Validasi materials
+      const validMaterials = materials.filter(
+        (m) =>
+          m.namaMaterial.trim() &&
+          m.katalog.trim() &&
+          m.satuan &&
+          parseFloat(m.jumlah) > 0
+      );
+
+      if (validMaterials.length === 0) {
+        return {
+          isValid: false,
+          error:
+            "Minimal harus ada 1 material dengan data lengkap (Nama, Katalog, Satuan, dan Jumlah)",
+          field: "materials",
+        };
+      }
+
+      // Validasi informasi pengirim
+      if (!formData.departemenPengirim.trim()) {
+        return {
+          isValid: false,
+          error: "Departemen Pengirim harus diisi",
+          field: "departemenPengirim",
+        };
+      }
+      if (!formData.namaPengirim.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Pengirim harus diisi",
+          field: "namaPengirim",
+        };
+      }
+
+      // Validasi tanda tangan pengirim
+      if (!signaturePengirim.upload && !signaturePengirim.signature) {
+        return {
+          isValid: false,
+          error: "Tanda tangan Pengirim harus diisi",
+          field: "signaturePengirim",
+        };
+      }
+
+      // Validasi informasi penerima
+      if (!formData.perusahaanPenerima.trim()) {
+        return {
+          isValid: false,
+          error: "Perusahaan Penerima harus diisi",
+          field: "perusahaanPenerima",
+        };
+      }
+      if (!formData.namaPenerima.trim()) {
+        return {
+          isValid: false,
+          error: "Nama Penerima harus diisi",
+          field: "namaPenerima",
+        };
+      }
+
+      // Validasi tanda tangan penerima
+      if (!signaturePenerima.upload && !signaturePenerima.signature) {
+        return {
+          isValid: false,
+          error: "Tanda tangan Penerima harus diisi",
+          field: "signaturePenerima",
+        };
+      }
+    } else {
+      // Untuk draft
+      if (!formData.nomorSuratJalan.trim()) {
+        return {
+          isValid: false,
+          error: "Nomor Surat Jalan harus diisi untuk menyimpan draft",
+          field: "nomorSuratJalan",
+        };
+      }
+    }
+
+    return { isValid: true };
+  };
+
   // SUBMISSION HANDLERS
   const handleSubmit = async () => {
+    const validation = validateForm(false);
+
+    if (!validation.isValid) {
+      toast.error(validation.error, {
+        position: "top-center",
+        duration: 4000,
+      });
+
+      const fieldElement = document.querySelector(
+        `[name="${validation.field}"]`
+      );
+      if (fieldElement) {
+        fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        // @ts-ignore
+        fieldElement.focus?.();
+      }
+
+      return;
+    }
+
     try {
       toast.loading(isEditMode ? "Memperbarui surat..." : "Mengirim surat...", {
         id: "submit",
@@ -369,6 +509,16 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const handleDraft = async () => {
+    const validation = validateForm(true);
+
+    if (!validation.isValid) {
+      toast.error(validation.error, {
+        position: "top-center",
+        duration: 4000,
+      });
+      return;
+    }
+
     try {
       toast.loading(
         isEditMode ? "Memperbarui draft..." : "Menyimpan draft...",
@@ -520,6 +670,16 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     }
   }, [mode, draftId, dataSurat, setFormData]);
 
+  // Set default tanggal surat
+  useEffect(() => {
+    if (!formData.tanggalSurat && mode !== "edit" && !draftId) {
+      setFormData((prev) => ({
+        ...prev,
+        tanggalSurat: new Date().toISOString().split("T")[0],
+      }));
+    }
+  }, [mode, draftId, formData.tanggalSurat, setFormData]);
+
   const renderBasicInformation = () => (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -535,7 +695,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
             placeholder="NO : 001.SJ/GD.UPT-BDG/IX/2025"
-            readOnly={!isEditMode} 
+            readOnly={!isEditMode}
           />
         </div>
 
@@ -562,7 +722,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
               type="date"
               name="tanggalSurat"
               value={
-                formData.tanggalSurat || new Date().toISOString().split("T")[0]
+                formData.tanggalSurat
               }
               onChange={handleInputChange}
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
