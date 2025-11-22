@@ -99,7 +99,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   const getTanggalSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
@@ -110,7 +110,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   const getNoSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
@@ -153,31 +153,40 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   };
 
   if (user?.role?.name === "Admin") {
-    suratDataThisMonth.sort(sortByDate);
-    suratData.sort(sortByDate);
-  } else if (user?.role?.name === "Vendor") {
     suratDataThisMonth = suratDataThisMonth
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran"
+          item.surat_jalan.kategori_surat === "Surat Jalan" && "Berita Acara Pemeriksaan Tim Mutu"
       );
 
     suratData = suratData
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran"
+          item.surat_jalan.kategori_surat === "Surat Jalan" && "Berita Acara Pemeriksaan Tim Mutu"
+      );
+  } else if (user?.role?.name === "Vendor") {
+    suratDataThisMonth = suratDataThisMonth
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+      );
+
+    suratData = suratData
+      .sort(sortByDate)
+      .filter(
+        (item) =>
+          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
   } else if (user?.role?.name === "Gardu Induk") {
     suratDataThisMonth = suratDataThisMonth
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran" &&
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Material Bongkaran" &&
           item.surat_jalan.status_entry !== "Draft"
       );
 
@@ -185,8 +194,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara" &&
-          "Surat Bongkaran" &&
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Material Bongkaran" &&
           item.surat_jalan.status_entry !== "Draft"
       );
   } else {
@@ -199,7 +208,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         hasMengetahui(item.surat_jalan) &&
         item.surat_jalan.status_surat !== "Reject" &&
         Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
-        Boolean(!item.surat_jalan.penerima.ttd_penerima);
+        Boolean(item.surat_jalan.penerima.ttd_penerima);
 
       return mengetahuiLengkap;
     };
@@ -372,7 +381,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           </div>
 
           {/* Cards Row */}
-          <div className={`${user?.role?.name === "Spv" ? "xl:grid-cols-2" : "xl:grid-cols-3"} grid grid-cols-1 gap-6`}>
+          <div
+            className={`${
+              user?.role?.name === "Spv" ? "xl:grid-cols-2" : "xl:grid-cols-3"
+            } grid grid-cols-1 gap-6`}
+          >
             {/* Tabel Riwayat Card */}
             <div className="lg:col-span-2 bg-white rounded-md border border-gray-200 shadow-sm flex flex-col">
               <div className="p-5 border-b border-gray-100 flex items-center justify-between">

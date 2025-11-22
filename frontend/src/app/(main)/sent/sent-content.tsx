@@ -9,7 +9,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
+import {
+  EmailDetail,
+  EmailDetailBeritaBongkaran,
+} from "@/components/detail-email";
 import {
   DynamicEmailData,
   isVendorEmailData,
@@ -330,14 +333,13 @@ export default function SentContent({ data, token }: SentContentProps) {
       );
 
       return (
-        hasAdminGudangStatus &&
+        hasAdminGudangStatus && item.surat_jalan.kategori_surat === "Surat Jalan" &&
         (item.recipient.name === user.name ||
           (item.recipient.name === "Spv" &&
             item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
       );
     });
-    console.log(emailListFiltered);
   } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
       const hasSpvStatus = item.email_statuses.some(
@@ -360,8 +362,7 @@ export default function SentContent({ data, token }: SentContentProps) {
 
       return (
         hasVendorStatus &&
-        (item.surat_jalan.kategori_surat === "Surat Bongkaran" ||
-          item.surat_jalan.kategori_surat === "Berita Acara")
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
     });
   }

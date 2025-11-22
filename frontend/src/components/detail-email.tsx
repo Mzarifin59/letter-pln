@@ -62,7 +62,7 @@ const formatDateWithDay = (dateString: string) => {
 const getTanggalSurat = (item: DynamicEmailData) => {
   const kategori = item.surat_jalan.kategori_surat;
 
-  if (kategori === "Berita Acara") {
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
     return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
   }
 
@@ -73,7 +73,7 @@ const getTanggalSurat = (item: DynamicEmailData) => {
 const getNoSurat = (item: DynamicEmailData) => {
   const kategori = item.surat_jalan.kategori_surat;
 
-  if (kategori === "Berita Acara") {
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
     return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
   }
   return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
@@ -1336,7 +1336,7 @@ export const EmailDetailBeritaBongkaran = ({
           pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
         }
 
-        pdf.save(`${formData.nomorBeritaAcara || "Berita Acara"}.pdf`);
+        pdf.save(`${formData.nomorBeritaAcara || "Berita Acara Pemeriksaan Tim Mutu"}.pdf`);
       } catch (error) {
         console.error("Error generating PDF:", error);
         alert("Gagal generate PDF. Silakan coba lagi.");

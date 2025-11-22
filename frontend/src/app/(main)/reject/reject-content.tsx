@@ -82,7 +82,12 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
         if (kategori !== "Surat Jalan") {
           if (!hasMengetahui(item.surat_jalan)) return false;
-          return Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui);
+          const conditionBeritaAcara =
+            Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+            item.surat_jalan.status_surat === "Reject" &&
+            item.surat_jalan.penerima.ttd_penerima;
+
+          return conditionBeritaAcara;
         }
 
         return true;
@@ -103,22 +108,21 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
       return (
         hasVendorStatus &&
-        item.surat_jalan.kategori_surat === "Berita Acara" &&
-        "Surat Bongkaran" &&
-        (item.surat_jalan.status_entry !== "Draft" ||
-          item.isHaveStatus === true)
+        item.surat_jalan.kategori_surat ===
+          "Berita Acara Material Bongkaran" &&
+        item.surat_jalan.status_surat === "Reject" 
       );
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
-      const hasAdminGudangStatus = item.email_statuses.some(
+      const hasGarduIndukStatus = item.email_statuses.some(
         (status) => status.user.name === user?.name && status.isDelete == false
       );
 
       return (
-        hasAdminGudangStatus &&
-        item.surat_jalan.kategori_surat === "Berita Acara" &&
-        "Surat Bongkaran" &&
+        hasGarduIndukStatus &&
+        item.surat_jalan.kategori_surat ===
+          "Berita Acara Material Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
       );
@@ -409,17 +413,18 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         <EmailDetail
           email={openedEmail}
           handleCloseDetail={handleCloseDetail}
-          isSend={true}
+          isSend={false}
+          isCanceled={true}
         />
       );
     }
 
-    if (userRole === "Vendor") {
+    if (userRole === "Vendor" || userRole === "Gardu Induk") {
       return (
         <EmailDetailBeritaBongkaran
           email={openedEmail as EmailDataVendor}
           handleCloseDetail={handleCloseDetail}
-          isSend={true}
+          isCanceled={true}
         />
       );
     }
@@ -430,7 +435,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           <EmailDetail
             email={openedEmail}
             handleCloseDetail={handleCloseDetail}
-            isSend={true}
+            isCanceled={true}
           />
         );
       } else {
@@ -438,7 +443,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           <EmailDetailBeritaBongkaran
             email={openedEmail as EmailDataVendor}
             handleCloseDetail={handleCloseDetail}
-            isSend={true}
+            isCanceled={true}
           />
         );
       }

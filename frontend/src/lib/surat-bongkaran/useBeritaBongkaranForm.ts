@@ -165,7 +165,7 @@ export const useBeritaBongkaranForm = () => {
         nama_pengemudi: formData.namaPengemudi,
         status_surat: "In Progress",
         status_entry: isDraft ? "Draft" : "Published",
-        kategori_surat: "Berita Acara",
+        kategori_surat: "Berita Acara Pemeriksaan Tim Mutu",
         materials: materials.map((m) => ({
           nama: m.namaMaterial,
           katalog: m.katalog,

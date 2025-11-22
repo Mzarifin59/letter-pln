@@ -507,7 +507,11 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     emails: Schema.Attribute.Relation<'oneToMany', 'api::email.email'>;
     informasi_kendaraan: Schema.Attribute.String;
     kategori_surat: Schema.Attribute.Enumeration<
-      ['Surat Jalan', 'Surat Bongkaran', 'Berita Acara']
+      [
+        'Surat Jalan',
+        'Berita Acara Material Bongkaran',
+        'Berita Acara Pemeriksaan Tim Mutu',
+      ]
     >;
     lampiran: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',

@@ -63,7 +63,7 @@ interface SectionHeaderProps {
 const getTanggalSurat = (item: DynamicEmailData) => {
   const kategori = item.surat_jalan.kategori_surat;
 
-  if (kategori === "Berita Acara") {
+  if (kategori === "Berita Acara Material Bongkaran") {
     return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
   }
 
@@ -294,8 +294,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       return (
         hasVendorStatus &&
         item.isHaveStatus === true &&
-        item.surat_jalan.kategori_surat === "Berita Acara" &&
-        "Surat Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
     });
   } else {
@@ -307,8 +306,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       return (
         hasGIStatus &&
         item.surat_jalan.status_entry !== "Draft" &&
-        item.surat_jalan.kategori_surat === "Berita Acara" &&
-        "Surat Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
     });
   }
@@ -625,8 +623,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         );
       }
       else if (
-        kategoriSurat === "Berita Acara" ||
-        kategoriSurat === "Surat Bongkaran"
+        kategoriSurat === "Berita Acara Material Bongkaran"
       ) {
         return (
           <EmailDetailBeritaBongkaran

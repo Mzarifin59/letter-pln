@@ -86,7 +86,7 @@ export default function TrackingContentPage({
   const getTanggalSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
@@ -97,7 +97,7 @@ export default function TrackingContentPage({
   const getNoSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
@@ -172,8 +172,7 @@ export default function TrackingContentPage({
     currentData = dataEmail
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara" ||
-          item.surat_jalan.kategori_surat === "Surat Bongkaran"
+          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       )
       .slice(startIndex, endIndex);
   } else {
@@ -182,8 +181,7 @@ export default function TrackingContentPage({
         (item) =>
           item.surat_jalan.status_surat === "In Progress" &&
           item.surat_jalan.status_entry !== "Draft" &&
-          (item.surat_jalan.kategori_surat === "Berita Acara" ||
-            item.surat_jalan.kategori_surat === "Surat Bongkaran")
+          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       )
       .slice(startIndex, endIndex);
   }
@@ -261,7 +259,7 @@ export default function TrackingContentPage({
     const kategoriSurat = selectedItem.surat_jalan.kategori_surat;
     const userRole = user?.role?.name;
 
-    // Validasi signature untuk Gardu Induk dan Spv dengan Berita Acara/Surat Bongkaran
+    // Validasi signature untuk Gardu Induk dan Spv dengan Berita Acara
     if (userRole === "Gardu Induk") {
       if (!signatureMengetahui.upload && !signatureMengetahui.signature) {
         toast.error("Mohon berikan tanda tangan terlebih dahulu", {
@@ -298,11 +296,8 @@ export default function TrackingContentPage({
 
           toast.success("Surat berhasil disetujui", { position: "top-center" });
         }
-        // Spv dengan Berita Acara atau Surat Bongkaran - dengan signature
-        else if (
-          kategoriSurat === "Berita Acara" ||
-          kategoriSurat === "Surat Bongkaran"
-        ) {
+        // Spv dengan Berita Acara
+        else if (kategoriSurat === "Berita Acara Material Bongkaran") {
           // Upload TTD Penerima
           let ttdPenerimaId = null;
           if (signaturePenerima.upload) {
@@ -419,10 +414,7 @@ export default function TrackingContentPage({
           toast.success("Surat berhasil ditolak", { position: "top-center" });
         }
         // Spv dengan Berita Acara atau Surat Bongkaran
-        else if (
-          kategoriSurat === "Berita Acara" ||
-          kategoriSurat === "Surat Bongkaran"
-        ) {
+        else if (kategoriSurat === "Berita Acara Material Bongkaran") {
           const response = await rejectBeritaBongkaran({
             emailId: selectedItem.documentId,
             apiUrl,
@@ -539,8 +531,8 @@ export default function TrackingContentPage({
   const isGI = user?.role?.name === "Gardu Induk";
   const isSpvNeedSignature =
     isSPV &&
-    (selectedItem?.surat_jalan.kategori_surat === "Berita Acara" ||
-      selectedItem?.surat_jalan.kategori_surat === "Surat Bongkaran");
+    selectedItem?.surat_jalan.kategori_surat ===
+      "Berita Acara Material Bongkaran";
 
   return (
     <>
@@ -732,9 +724,9 @@ export default function TrackingContentPage({
               {isSPV
                 ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                   ? "Detail Surat Jalan"
-                  : "Detail Berita Acara"
+                  : "Detail Berita Acara Material Bongkaran"
                 : isGI
-                ? "Detail Berita Acara"
+                ? "Detail Berita Acara Material Bongkaran"
                 : "Detail Surat"}
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -749,9 +741,9 @@ export default function TrackingContentPage({
                 {isSPV
                   ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                     ? "No Surat Jalan"
-                    : "No Berita Acara"
+                    : "No Berita Acara Material Bongkaran"
                   : isGI
-                  ? "No Berita Acara"
+                  ? "No Berita Acara Material Bongkaran"
                   : "No Surat"}
               </label>
               <p className="text-base font-semibold text-[#353739] bg-gray-50 p-3 rounded-lg">

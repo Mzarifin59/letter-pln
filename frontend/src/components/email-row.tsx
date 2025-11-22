@@ -71,7 +71,7 @@ export const EmailRowInbox = ({
   const getTanggalSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
@@ -82,7 +82,7 @@ export const EmailRowInbox = ({
   const getNoSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
@@ -358,7 +358,7 @@ export const EmailRow = ({
   const getTanggalSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
       return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
     }
 
@@ -369,7 +369,7 @@ export const EmailRow = ({
   const getNoSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara") {
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
