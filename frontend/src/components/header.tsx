@@ -91,11 +91,40 @@ export default function Header() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isComponentMountedRef = useRef<boolean>(true);
 
-  // Daftar kategori yang tersedia
-  const availableCategories = [
-    { value: "Surat Jalan", label: "Surat Jalan" },
-    { value: "Surat Bongkaran", label: "Surat Bongkaran" },
-  ];
+  // Get available categories based on user role
+  const getAvailableCategories = () => {
+    const userRole = user?.role?.name;
+
+    if (userRole === "Admin") {
+      return [
+        { value: "Surat Jalan", label: "Surat Jalan" },
+        {
+          value: "Berita Acara Pemeriksaan Tim Mutu",
+          label: "Berita Acara Pemeriksaan Tim Mutu",
+        },
+      ];
+    } else if (userRole === "Spv") {
+      return [
+        { value: "Surat Jalan", label: "Surat Jalan" },
+        {
+          value: "Berita Acara Material Bongkaran",
+          label: "Berita Acara Material Bongkaran",
+        },
+        {
+          value: "Berita Acara Pemeriksaan Tim Mutu",
+          label: "Berita Acara Pemeriksaan Tim Mutu",
+        },
+      ];
+    } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
+      // Vendor dan Gardu Induk tidak memerlukan filter (otomatis Berita Acara Material Bongkaran)
+      return [];
+    }
+
+    return [];
+  };
+
+  const availableCategories = getAvailableCategories();
+  const showFilter = availableCategories.length > 0;
 
   // Memoized fetch function
   const fetchEmails = useCallback(async (showLoading = true) => {
@@ -166,7 +195,8 @@ export default function Header() {
     );
 
     return (
-      userStatus?.is_read === false && email.surat_jalan.status_entry !== "Draft"
+      userStatus?.is_read === false &&
+      email.surat_jalan.status_entry !== "Draft"
     );
   });
 
@@ -265,60 +295,70 @@ export default function Header() {
                   onKeyPress={handleKeyPress}
                   className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500"
                 />
-                <div className="h-5 w-px bg-[#0056B0] mx-2"></div>
 
-                {/* Filter Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
-                    >
-                      <SlidersVertical size={20} />
-                      {/* Badge untuk active filters */}
-                      {selectedCategories.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
-                          {selectedCategories.length}
-                        </span>
-                      )}
-                    </button>
-                  </DropdownMenuTrigger>
+                {/* Only show filter button if user has available categories */}
+                {showFilter && (
+                  <>
+                    <div className="h-5 w-px bg-[#0056B0] mx-2"></div>
 
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-
-                    {availableCategories.map((category) => (
-                      <DropdownMenuCheckboxItem
-                        key={category.value}
-                        checked={selectedCategories.includes(category.value)}
-                        onCheckedChange={() =>
-                          handleCategoryToggle(category.value)
-                        }
-                        className="cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span>{category.label}</span>
-                          {selectedCategories.includes(category.value) && (
-                            <Check size={16} className="text-[#0056B0]" />
-                          )}
-                        </div>
-                      </DropdownMenuCheckboxItem>
-                    ))}
-
-                    {selectedCategories.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setSelectedCategories([])}
-                          className="text-red-500 hover:text-red-600 cursor-pointer justify-center font-medium"
+                    {/* Filter Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
                         >
-                          Clear Filters
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                          <SlidersVertical size={20} />
+                          {/* Badge untuk active filters */}
+                          {selectedCategories.length > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                              {selectedCategories.length}
+                            </span>
+                          )}
+                        </button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>
+                          Filter by Category
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        {availableCategories.map((category) => (
+                          <DropdownMenuCheckboxItem
+                            key={category.value}
+                            checked={selectedCategories.includes(
+                              category.value
+                            )}
+                            onCheckedChange={() =>
+                              handleCategoryToggle(category.value)
+                            }
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span>{category.label}</span>
+                              {selectedCategories.includes(category.value) && (
+                                <Check size={16} className="text-[#0056B0]" />
+                              )}
+                            </div>
+                          </DropdownMenuCheckboxItem>
+                        ))}
+
+                        {selectedCategories.length > 0 && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setSelectedCategories([])}
+                              className="text-red-500 hover:text-red-600 cursor-pointer justify-center font-medium"
+                            >
+                              Clear Filters
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
               </div>
 
               {/* Active Filter Pills */}

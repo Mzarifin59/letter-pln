@@ -12,23 +12,115 @@ import {
   Clock,
   ArrowLeft,
   X,
+  Filter,
 } from "lucide-react";
-import { EmailData } from "@/lib/interface";
+import {
+  DynamicEmailData,
+  isVendorEmailData,
+  EmailDataVendor,
+  EmailDataAdmin,
+} from "@/lib/interface";
 import qs from "qs";
 import Link from "next/link";
-import { EmailDetail } from "@/components/detail-email";
+import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
 import { useUserLogin } from "@/lib/user";
 
-async function searchEmails(query: string) {
+type SearchType = "no_surat" | "material" | "vendor";
+
+interface FilterSuratJalan {
+  kategori_surat?: { $eq: string };
+  no_surat_jalan?: { $containsi: string };
+  no_berita_acara?: { $containsi: string };
+  materials?: {
+    nama: { $containsi: string };
+  };
+  mengetahui?: {
+    departemen_mengetahui: { $containsi: string };
+  };
+}
+
+interface SearchFilters {
+  surat_jalan?: FilterSuratJalan;
+  $or?: Array<{
+    surat_jalan: {
+      no_surat_jalan?: { $containsi: string };
+      no_berita_acara?: { $containsi: string };
+    };
+  }>;
+}
+
+async function searchEmails(
+  query: string,
+  searchType: SearchType,
+  userRole: string
+) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  const queryString = qs.stringify({
-    filters: {
-      surat_jalan: {
-        no_surat_jalan: {
-          $containsi: query,
+
+  // Build filters based on search type and role
+  const filters: SearchFilters = {};
+
+  if (userRole === "Admin") {
+    // Admin: hanya Surat Jalan, filter by no_surat_jalan atau material
+    filters.surat_jalan = {
+      kategori_surat: { $eq: "Surat Jalan" },
+    };
+
+    if (searchType === "no_surat") {
+      filters.surat_jalan.no_surat_jalan = { $containsi: query };
+    } else if (searchType === "material") {
+      filters.surat_jalan.materials = {
+        nama: { $containsi: query },
+      };
+    }
+  } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
+    // Vendor & Gardu Induk: hanya Berita Acara Material Bongkaran
+    filters.surat_jalan = {
+      kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+    };
+
+    if (searchType === "no_surat") {
+      filters.surat_jalan.no_berita_acara = { $containsi: query };
+    } else if (searchType === "material") {
+      filters.surat_jalan.materials = {
+        nama: { $containsi: query },
+      };
+    } else if (searchType === "vendor") {
+      filters.surat_jalan.mengetahui = {
+        departemen_mengetahui: { $containsi: query },
+      };
+    }
+  } else if (userRole === "Spv") {
+    // Spv: semua kategori, semua filter
+    if (searchType === "no_surat") {
+      filters.$or = [
+        {
+          surat_jalan: {
+            no_surat_jalan: { $containsi: query },
+          },
         },
-      },
-    },
+        {
+          surat_jalan: {
+            no_berita_acara: { $containsi: query },
+          },
+        },
+      ];
+    } else if (searchType === "material") {
+      filters.surat_jalan = {
+        materials: {
+          nama: { $containsi: query },
+        },
+      };
+    } else if (searchType === "vendor") {
+      filters.surat_jalan = {
+        mengetahui: {
+          departemen_mengetahui: { $containsi: query },
+        },
+      };
+    }
+  }
+
+  const queryString = qs.stringify({
+    filters,
     populate: {
       surat_jalan: {
         populate: {
@@ -49,7 +141,18 @@ async function searchEmails(query: string) {
               },
             },
           },
+          mengetahui: {
+            fields: ["departemen_mengetahui", "nama_mengetahui"],
+            populate: {
+              ttd_mengetahui: {
+                fields: ["name", "url"],
+              },
+            },
+          },
           lampiran: {
+            fields: ["name", "url"],
+          },
+          cop_surat: {
             fields: ["name", "url"],
           },
         },
@@ -79,33 +182,93 @@ async function searchEmails(query: string) {
   return data.data;
 }
 
+const getNoSurat = (item: DynamicEmailData) => {
+  const kategori = item.surat_jalan.kategori_surat;
+
+  if (kategori === "Berita Acara Material Bongkaran") {
+    return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
+  }
+  return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
+};
+
+const getTanggalSurat = (item: DynamicEmailData) => {
+  const kategori = item.surat_jalan.kategori_surat;
+
+  if (kategori === "Berita Acara Material Bongkaran") {
+    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
+  }
+
+  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+};
+
+
 export default function SearchResultPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const searchTypeParam =
+    (searchParams.get("type") as SearchType) || "no_surat";
   const categoriesParam = searchParams.get("categories") || "";
   const selectedCategories = categoriesParam ? categoriesParam.split(",") : [];
-  
-  const [results, setResults] = useState<EmailData[]>([]);
+
+  const [results, setResults] = useState<DynamicEmailData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchInput, setSearchInput] = useState<string>(query);
-  const [openedEmail, setOpenedEmail] = useState<EmailData | null>(null);
+  const [searchType, setSearchType] = useState<SearchType>(searchTypeParam);
+  const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const { user } = useUserLogin();
+
+  // Get available search types based on role
+  const getAvailableSearchTypes = () => {
+    const userRole = user?.role?.name;
+
+    if (userRole === "Admin") {
+      return [
+        { value: "no_surat" as SearchType, label: "No. Surat Jalan" },
+        { value: "material" as SearchType, label: "Nama Material" },
+      ];
+    } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
+      return [
+        { value: "no_surat" as SearchType, label: "No. Berita Acara" },
+        { value: "material" as SearchType, label: "Nama Material" },
+        { value: "vendor" as SearchType, label: "Nama Vendor" },
+      ];
+    } else if (userRole === "Spv") {
+      return [
+        { value: "no_surat" as SearchType, label: "No. Surat" },
+        { value: "material" as SearchType, label: "Nama Material" },
+        { value: "vendor" as SearchType, label: "Nama Vendor" },
+      ];
+    }
+
+    return [{ value: "no_surat" as SearchType, label: "No. Surat" }];
+  };
+
+  const availableSearchTypes = getAvailableSearchTypes();
+
+  console.log("Data:", results)
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!query) {
+      if (!query || !user?.role?.name) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const data: EmailData[] = await searchEmails(query);
+        const data: DynamicEmailData[] = await searchEmails(
+          query,
+          searchType,
+          user.role.name
+        );
 
-        // Filter berdasarkan role user
+        // Filter berdasarkan status_entry untuk Spv
         let filteredData =
           user?.role?.name === "Spv"
-            ? data.filter((item) => item.surat_jalan.status_entry !== "Draft")
+            ? data.filter((item) => {
+                const suratJalan = item.surat_jalan;
+                return suratJalan.status_entry !== "Draft";
+              })
             : data;
 
         // Filter berdasarkan kategori jika ada
@@ -124,14 +287,14 @@ export default function SearchResultPage() {
     };
 
     fetchResults();
-  }, [query, categoriesParam, user?.role?.name]);
+  }, [query, searchType, categoriesParam, user?.role?.name]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      // Pertahankan filter kategori saat search ulang
       const params = new URLSearchParams();
       params.set("q", searchInput.trim());
+      params.set("type", searchType);
       if (categoriesParam) {
         params.set("categories", categoriesParam);
       }
@@ -143,6 +306,7 @@ export default function SearchResultPage() {
     const newCategories = selectedCategories.filter((c) => c !== category);
     const params = new URLSearchParams();
     params.set("q", query);
+    params.set("type", searchType);
     if (newCategories.length > 0) {
       params.set("categories", newCategories.join(","));
     }
@@ -152,6 +316,7 @@ export default function SearchResultPage() {
   const handleClearAllFilters = () => {
     const params = new URLSearchParams();
     params.set("q", query);
+    params.set("type", searchType);
     window.location.href = `/search?${params.toString()}`;
   };
 
@@ -177,12 +342,13 @@ export default function SearchResultPage() {
   const getCategoryBadgeColor = (category: string) => {
     const colors: { [key: string]: string } = {
       "Surat Jalan": "bg-blue-100 text-blue-700 border-blue-200",
-      "Surat Bongkaran": "bg-purple-100 text-purple-700 border-purple-200",
+      "Berita Acara Material Bongkaran":
+        "bg-purple-100 text-purple-700 border-purple-200",
     };
     return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
-  const handleEmailClick = async (email: EmailData): Promise<void> => {
+  const handleEmailClick = async (email: DynamicEmailData): Promise<void> => {
     setOpenedEmail(email);
   };
 
@@ -190,10 +356,15 @@ export default function SearchResultPage() {
     setOpenedEmail(null);
   };
 
+  const getSearchPlaceholder = () => {
+    const selected = availableSearchTypes.find((t) => t.value === searchType);
+    return `Search by ${selected?.label || "No. Surat"}...`;
+  };
+
   return (
     <div className="lg:ml-72 min-h-screen bg-gray-50">
       {/* Header Search Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Back Button */}
           <Link
@@ -201,16 +372,39 @@ export default function SearchResultPage() {
             className="inline-flex items-center gap-2 text-gray-600 hover:text-[#0056B0] mb-4 transition-colors"
           >
             <ArrowLeft size={20} />
-            <span className="text-sm font-medium">Back to Inbox</span>
+            <span className="text-sm font-medium">Kembali Ke Inbox</span>
           </Link>
 
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={handleSearch} className="space-y-3">
+            {/* Search Type Selector */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter size={18} className="text-gray-500" />
+              <span className="text-sm text-gray-600 font-medium">
+                Cari berdasarkan:
+              </span>
+              {availableSearchTypes.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setSearchType(type.value)}
+                  className={`text-sm px-4 py-1.5 rounded-lg font-medium transition-colors ${
+                    searchType === type.value
+                      ? "bg-[#0056B0] text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
             <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-6 py-4 border-2 border-[#0056B0]/20 focus-within:border-[#0056B0] transition-colors">
               <Search size={24} className="text-[#0056B0]" />
               <input
                 type="text"
-                placeholder="Search by No. Surat Jalan..."
+                placeholder={getSearchPlaceholder()}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500 text-lg"
@@ -220,7 +414,7 @@ export default function SearchResultPage() {
                 type="submit"
                 className="bg-[#0056B0] text-white px-6 py-2 rounded-lg hover:bg-[#004494] transition-colors font-medium"
               >
-                Search
+                Cari
               </button>
             </div>
           </form>
@@ -229,7 +423,7 @@ export default function SearchResultPage() {
           {selectedCategories.length > 0 && (
             <div className="mt-4 flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-600 font-medium">
-                Filtered by:
+                Filter berdasarkan:
               </span>
               {selectedCategories.map((category) => (
                 <span
@@ -251,7 +445,7 @@ export default function SearchResultPage() {
                 className="text-sm text-red-600 hover:text-red-700 font-medium underline"
                 type="button"
               >
-                Clear all filters
+                Hapus semua filter
               </button>
             </div>
           )}
@@ -259,18 +453,26 @@ export default function SearchResultPage() {
           {/* Search Info */}
           {query && (
             <p className="mt-4 text-sm text-gray-600">
-              Showing results for:{" "}
+              Menampilkan hasil untuk:{" "}
               <span className="font-semibold text-gray-900">"{query}"</span>
+              <span className="text-gray-500">
+                {" "}
+                berdasarkan{" "}
+                {
+                  availableSearchTypes.find((t) => t.value === searchType)
+                    ?.label
+                }
+              </span>
               {selectedCategories.length > 0 && (
                 <span className="text-gray-500">
                   {" "}
-                  in {selectedCategories.join(", ")}
+                  di {selectedCategories.join(", ")}
                 </span>
               )}
               {!loading && (
                 <span className="ml-2">
-                  ({results.length} result{results.length !== 1 ? "s" : ""}{" "}
-                  found)
+                  ({results?.length} hasil{results?.length !== 1 ? "" : ""}{" "}
+                  ditemukan)
                 </span>
               )}
             </p>
@@ -299,11 +501,10 @@ export default function SearchResultPage() {
                   Start Your Search
                 </h3>
                 <p className="text-gray-500 text-center max-w-md">
-                  Enter a surat jalan number in the search box above to find
-                  documents
+                  Enter search criteria above to find documents
                 </p>
               </div>
-            ) : results.length === 0 ? (
+            ) : results?.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <FileText size={64} className="text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -312,14 +513,14 @@ export default function SearchResultPage() {
                 <p className="text-gray-500 text-center max-w-md">
                   {selectedCategories.length > 0 ? (
                     <>
-                      We couldn't find any surat  matching "{query}" in{" "}
+                      We couldn't find any documents matching "{query}" in{" "}
                       {selectedCategories.join(", ")}. Try removing filters or
-                      searching with a different number.
+                      searching with different criteria.
                     </>
                   ) : (
                     <>
-                      We couldn't find any surat jalan matching "{query}". Try
-                      searching with a different number.
+                      We couldn't find any documents matching "{query}". Try
+                      searching with different criteria.
                     </>
                   )}
                 </p>
@@ -328,6 +529,9 @@ export default function SearchResultPage() {
               <div className="space-y-4">
                 {results.map((email) => {
                   const isOpened = openedEmail?.id === email.id;
+                  const suratNumber = getNoSurat(email);
+                  const isVendor = isVendorEmailData(email);
+
                   return (
                     <div
                       key={email.id}
@@ -340,7 +544,7 @@ export default function SearchResultPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="text-lg font-semibold text-gray-900">
-                              {email.surat_jalan?.no_surat_jalan || "No Number"}
+                              {suratNumber} 
                             </h3>
                             {email.surat_jalan?.kategori_surat && (
                               <span
@@ -375,17 +579,15 @@ export default function SearchResultPage() {
                       >
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar size={16} className="text-gray-400" />
-                          <span className="text-gray-500">Date:</span>
+                          <span className="text-gray-500">Tanggal:</span>
                           <span className="text-gray-900 font-medium">
-                            {email.surat_jalan?.tanggal
-                              ? formatDate(email.surat_jalan.tanggal)
-                              : "-"}
+                            {formatDate(getTanggalSurat(email)) || "-"}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm">
                           <User size={16} className="text-gray-400" />
-                          <span className="text-gray-500">From:</span>
+                          <span className="text-gray-500">Lokasi Asal:</span>
                           <span className="text-gray-900 font-medium">
                             {email.sender?.name || "Unknown"}
                           </span>
@@ -393,27 +595,22 @@ export default function SearchResultPage() {
 
                         <div className="flex items-center gap-2 text-sm">
                           <MapPin size={16} className="text-gray-400" />
-                          <span className="text-gray-500">Origin:</span>
+                          <span className="text-gray-500">Lokasi Tujuan:</span>
                           <span className="text-gray-900 font-medium">
                             {email.surat_jalan?.lokasi_asal || "-"}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin size={16} className="text-gray-400" />
-                          <span className="text-gray-500">Destination:</span>
-                          <span className="text-gray-900 font-medium">
-                            {email.surat_jalan?.lokasi_tujuan || "-"}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building2 size={16} className="text-gray-400" />
-                          <span className="text-gray-500">To Company:</span>
-                          <span className="text-gray-900 font-medium">
-                            {email.to_company || "Unknown"}
-                          </span>
-                        </div>
+                        {isVendor && email.surat_jalan.mengetahui && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Building2 size={16} className="text-gray-400" />
+                            <span className="text-gray-500">Vendor:</span>
+                            <span className="text-gray-900 font-medium">
+                              {email.surat_jalan.mengetahui.departemen_mengetahui ||
+                                "-"}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="flex items-center gap-2 text-sm">
                           <Clock size={16} className="text-gray-400" />
@@ -434,8 +631,7 @@ export default function SearchResultPage() {
                           >
                             <FileText size={16} className="text-gray-400" />
                             <span>
-                              {email.surat_jalan.materials.length} material(s)
-                              in this document
+                              Terdapat {email.surat_jalan.materials.length} material  
                             </span>
                           </div>
                         )}
@@ -450,7 +646,7 @@ export default function SearchResultPage() {
                           onClick={() => handleEmailClick(email)}
                           className="px-4 py-2 bg-[#0056B0] text-white rounded-lg hover:bg-[#004494] transition-colors font-medium text-sm"
                         >
-                          View Details
+                          Lihat Detail
                         </button>
                       </div>
                     </div>
@@ -462,12 +658,18 @@ export default function SearchResultPage() {
 
           {/* RIGHT SIDE - Email Detail */}
           {openedEmail && (
-            <div className="lg:w-1/2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-y-auto">
-              <EmailDetail
-                email={openedEmail}
-                handleCloseDetail={handleCloseDetail}
-                isCanceled={true}
-              />
+            <div className="lg:w-2/3 bg-white rounded-xl shadow-sm border border-gray-200 overflow-y-auto">
+              {openedEmail.surat_jalan.kategori_surat === "Surat Jalan" ? (
+                <EmailDetail
+                  email={openedEmail as EmailDataAdmin}
+                  handleCloseDetail={handleCloseDetail}
+                />
+              ) : (
+                <EmailDetailBeritaBongkaran
+                  email={openedEmail as EmailDataVendor}
+                  handleCloseDetail={handleCloseDetail}
+                />
+              )}
             </div>
           )}
         </div>
