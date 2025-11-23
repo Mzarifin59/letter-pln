@@ -481,6 +481,78 @@ export const EmailDetail = ({
     </>
   );
 
+  const MATERIAL_THRESHOLD = 8;
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = 18;
+
+  const splitMaterialsIntoPages = () => {
+    const totalMaterials = materials.length;
+
+    // Jika material <= 8, semua di halaman pertama dengan footer
+    if (totalMaterials <= MATERIAL_THRESHOLD) {
+      return [
+        {
+          materials: materials,
+          showFooter: true,
+          isFirstPage: true,
+        },
+      ];
+    }
+
+    // Jika material > 8, maksimalkan halaman pertama dan footer di halaman terpisah
+    const pages = [];
+    let remainingMaterials = [...materials];
+
+    // Halaman pertama: maksimalkan (sekitar 18 baris, tanpa footer)
+    const firstPageMaterials = remainingMaterials.slice(
+      0,
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+    pages.push({
+      materials: firstPageMaterials,
+      showFooter: false,
+      isFirstPage: true,
+    });
+    remainingMaterials = remainingMaterials.slice(
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+
+    // Halaman tengah (jika ada)
+    while (remainingMaterials.length > MATERIALS_PER_PAGE_WITHOUT_FOOTER) {
+      const nextPageMaterials = remainingMaterials.slice(
+        0,
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+      pages.push({
+        materials: nextPageMaterials,
+        showFooter: false,
+        isFirstPage: false,
+      });
+      remainingMaterials = remainingMaterials.slice(
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+    }
+
+    // Halaman terakhir: sisa material + footer
+    if (remainingMaterials.length > 0) {
+      pages.push({
+        materials: remainingMaterials,
+        showFooter: true,
+        isFirstPage: false,
+      });
+    } else {
+      // Jika tidak ada sisa, footer di halaman kosong
+      pages.push({
+        materials: [],
+        showFooter: true,
+        isFirstPage: false,
+      });
+    }
+
+    return pages;
+  };
+
+  const materialPages = splitMaterialsIntoPages();
+
   return (
     <>
       <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
@@ -1023,17 +1095,27 @@ export const EmailDetail = ({
           }}
         >
           <div id="hidden-preview-content">
+            {/* Loop untuk setiap lembar (4 lembar) */}
             {[0, 1, 2, 3].map((lembarIndex) => (
               <div key={lembarIndex}>
-                {materials.map((pageMaterials, pageIndex) => {
-                  const isFirstPage = pageIndex === 0;
-                  const isLastPage = pageIndex === materials.length - 1;
-                  const startIndex = pageIndex * MATERIALS_PER_PAGE;
+                {/* Loop untuk setiap halaman material */}
+                {materialPages.map((pageData, pageIndex) => {
+                  const {
+                    materials: pageMaterials,
+                    showFooter,
+                    isFirstPage,
+                  } = pageData;
+
+                  // Hitung nomor awal untuk halaman ini
+                  let startIndex = 0;
+                  for (let i = 0; i < pageIndex; i++) {
+                    startIndex += materialPages[i].materials.length;
+                  }
 
                   return (
                     <div
                       key={`${lembarIndex}-${pageIndex}`}
-                      className="surat w-[210mm] min-h-[297mm] max-h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col"
+                      className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
                       data-lembar={lembarIndex}
                       data-page={pageIndex}
                       style={{
@@ -1041,109 +1123,112 @@ export const EmailDetail = ({
                         boxSizing: "border-box",
                       }}
                     >
+                      {/* Header - ada di setiap halaman */}
                       {renderHeader(lembarIndex, lembarLabels)}
 
+                      {/* Title dan Info - hanya di halaman pertama */}
                       {isFirstPage && renderTitleAndInfo()}
 
-                      {/* Materials Table */}
-                      <div className="mb-4">
-                        <table
-                          className="w-full border-collapse"
-                          style={{ fontSize: "13px" }}
-                        >
-                          <thead className="bg-gray-100">
-                            <tr className="text-center">
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "5%" }}
-                              >
-                                NO
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "30%" }}
-                              >
-                                NAMA MATERIAL
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "12%" }}
-                              >
-                                KATALOG
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "10%" }}
-                              >
-                                SATUAN
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "10%" }}
-                              >
-                                JUMLAH
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "33%" }}
-                              >
-                                KETERANGAN (LOKASI TYPE, S/N DLL)
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {materials.map((material, idx) => (
-                              <tr key={material.id || idx}>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {startIndex + idx + 1}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5">
-                                  {material.namaMaterial || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.katalog || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.satuan || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.jumlah || "0"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.keterangan || "-"}
-                                </td>
-                              </tr>
-                            ))}
-
-                            {/* Total row hanya di halaman terakhir */}
-                            {isLastPage && (
-                              <tr className="bg-gray-100 font-semibold">
-                                <td
-                                  colSpan={4}
-                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                      {/* Materials Table - jika ada material di halaman ini */}
+                      {pageMaterials.length > 0 && (
+                        <div className="mb-3">
+                          <table
+                            className="w-full border-collapse"
+                            style={{ fontSize: "13px" }}
+                          >
+                            <thead className="bg-gray-100">
+                              <tr className="text-center">
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "5%" }}
                                 >
-                                  TOTAL
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {hasMaterialData() ? calculateTotal() : ""}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                  NO
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "30%" }}
+                                >
+                                  NAMA MATERIAL
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "12%" }}
+                                >
+                                  KATALOG
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "10%" }}
+                                >
+                                  SATUAN
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "10%" }}
+                                >
+                                  JUMLAH
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "33%" }}
+                                >
+                                  KETERANGAN (LOKASI TYPE, S/N DLL)
+                                </th>
                               </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {pageMaterials.map((material, idx) => (
+                                <tr key={material.id || idx}>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {startIndex + idx + 1}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1">
+                                    {material.namaMaterial || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.katalog || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.satuan || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.jumlah || "0"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.keterangan || "-"}
+                                  </td>
+                                </tr>
+                              ))}
 
-                      {/* Footer hanya di halaman terakhir */}
-                      {isLastPage && renderFooter()}
-
-                      {/* Indikator halaman jika multi-page */}
-                      {/* {!isLastPage && (
-                        <div className="text-center text-gray-500 text-xs mt-auto pt-3">
-                          Halaman {pageIndex + 1} dari {materials.length} -
-                          Lanjutan di halaman berikutnya
+                              {/* Total row jika showFooter */}
+                              {showFooter && (
+                                <tr className="bg-gray-100 font-semibold">
+                                  <td
+                                    colSpan={4}
+                                    className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                  >
+                                    TOTAL
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                    {calculateTotal()}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
                         </div>
-                      )} */}
+                      )}
+
+                      {/* Footer jika showFooter */}
+                      {showFooter && renderFooter()}
+
+                      {/* Indikator halaman untuk multi-page */}
+                      {materialPages.length > 1 && (
+                        <div className="text-center text-gray-500 text-xs mt-2">
+                          Halaman {pageIndex + 1} dari {materialPages.length}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1221,7 +1306,7 @@ export const EmailDetailBeritaBongkaran = ({
     signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.penerima.ttd_penerima?.url}`,
+      upload: email.surat_jalan.penerima.ttd_penerima?.url || null,
     },
   };
 
@@ -1230,7 +1315,7 @@ export const EmailDetailBeritaBongkaran = ({
     signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.pengirim.ttd_pengirim.url}`,
+      upload: email.surat_jalan.pengirim.ttd_pengirim.url,
     },
   };
 
@@ -1239,7 +1324,7 @@ export const EmailDetailBeritaBongkaran = ({
     signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.mengetahui?.ttd_mengetahui?.url}`,
+      upload: email.surat_jalan.mengetahui?.ttd_mengetahui?.url || null,
     },
   };
 
@@ -1288,6 +1373,276 @@ export const EmailDetailBeritaBongkaran = ({
     }
   };
 
+  // BREAK PAGE LOGIC - sama seperti PreviewSectionBeritaBongkaran
+  const MATERIAL_THRESHOLD = 3;
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = 18;
+
+  const splitMaterialsIntoPages = () => {
+    const totalMaterials = materials.length;
+
+    if (totalMaterials <= MATERIAL_THRESHOLD) {
+      return [
+        {
+          materials: materials,
+          showFooter: true,
+          isFirstPage: true,
+        },
+      ];
+    }
+
+    const pages = [];
+    let remainingMaterials = [...materials];
+
+    const firstPageMaterials = remainingMaterials.slice(
+      0,
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+    pages.push({
+      materials: firstPageMaterials,
+      showFooter: false,
+      isFirstPage: true,
+    });
+    remainingMaterials = remainingMaterials.slice(
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+
+    while (remainingMaterials.length > MATERIALS_PER_PAGE_WITHOUT_FOOTER) {
+      const nextPageMaterials = remainingMaterials.slice(
+        0,
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+      pages.push({
+        materials: nextPageMaterials,
+        showFooter: false,
+        isFirstPage: false,
+      });
+      remainingMaterials = remainingMaterials.slice(
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+    }
+
+    if (remainingMaterials.length > 0) {
+      pages.push({
+        materials: remainingMaterials,
+        showFooter: true,
+        isFirstPage: false,
+      });
+    } else {
+      pages.push({
+        materials: [],
+        showFooter: true,
+        isFirstPage: false,
+      });
+    }
+
+    return pages;
+  };
+
+  const materialPages = splitMaterialsIntoPages();
+
+  // RENDER FUNCTIONS untuk PDF
+  const renderHeaderPDF = (isFirstPage: boolean) => (
+    <>
+      {isFirstPage && (
+        <div className="flex items-center gap-3 mb-3">
+          <div className="flex-shrink-0">
+            {copSuratUrl ? (
+              <div className="cop-surat-container mb-4">
+                <Image
+                  src={copSuratUrl}
+                  alt="Cop Surat"
+                  width={500}
+                  height={300}
+                  className="w-[500px] h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="font-bold text-2xl">(Cop Surat)</div>
+            )}
+          </div>
+        </div>
+      )}
+      <hr className="border-t-2 border-gray-800 mb-3" />
+    </>
+  );
+
+  const renderTitleAndInfoPDF = () => (
+    <>
+      <div className="text-center mb-3">
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-0.5">
+          Berita Acara Serah Terima Material Bongkaran
+        </h1>
+        <div className="text-blue-600 font-semibold text-lg">
+          {formData.nomorBeritaAcara || "(No Berita Acara)"}
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <div className="space-y-0.5 text-sm">
+          <div className="flex">
+            <div className="min-w-[150px]">Pada Hari ini</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formatDateWithDay(formData.tanggalKontrak) ||
+                  "Senin, 01 September 2025"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[150px]">Perihal</div>
+            <div className="flex-1">
+              :{" "}
+              <span className="font-semibold">
+                {formData.perihal || "(Perihal)"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[150px]">Lokasi Asal</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.lokasiAsal || "(Lokasi Asal)"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex">
+            <div className="min-w-[150px]">Lokasi Tujuan</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
+              </span>
+            </div>
+          </div>
+          <div className="flex">
+            <div className="min-w-[150px]">No Kontrak</div>
+            <div>
+              :{" "}
+              <span className="font-semibold">
+                {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderFooterPDF = () => (
+    <>
+      <div className="py-1.5 pl-2 border-b-2 border-gray-800">
+        <div className="text-sm font-semibold">
+          Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan
+          kerjasamanya kami ucapkan terima kasih
+        </div>
+      </div>
+
+      <div className="pl-2 grid grid-cols-2 gap-8 mb-4 text-sm py-1.5">
+        <div className="table">
+          <div className="table-row">
+            <div className="table-cell pr-4 font-semibold">Kendaraan</div>
+            <div className="table-cell">
+              : {formData.informasiKendaraan || "(Kendaraan)"}
+            </div>
+          </div>
+          <div className="table-row">
+            <div className="table-cell pr-4 font-semibold">Pengemudi</div>
+            <div className="table-cell">
+              : {formData.namaPengemudi || "(Pengemudi)"}
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div>
+            Bandung, {formatDate(formData.tanggalKontrak) || "1 Nov 2025"}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-8 text-center mb-4">
+        <div>
+          <div className="mb-1 text-sm">Yang Menerima,</div>
+          <div className="font-bold mb-2 text-sm">
+            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
+          </div>
+
+          <div className="h-16 mb-2 flex items-center justify-center">
+            {signaturePenerima.preview.upload ? (
+              <img
+                src={`${apiUrl}${signaturePenerima.preview.upload}`}
+                alt="Signature Penerima"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="text-gray-400 text-xs">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="text-sm font-bold">
+            {formData.namaPenerima || "(Nama Penerima)"}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="mb-1 text-sm">Yang Menyerahkan,</div>
+          <div className="font-bold mb-2 text-sm">
+            {formData.departemenPengirim || "(Departemen Pengirim)"}
+          </div>
+          <Image
+            src={`/images/ttd.png`}
+            alt="TTD"
+            width={100}
+            height={100}
+            className="absolute z-0 left-16 bottom-3"
+          />
+          <div className="h-16 mb-2 flex items-center justify-center">
+            {signaturePengirim.preview.upload ? (
+              <img
+                src={`${apiUrl}${signaturePengirim.preview.upload}`}
+                alt="Signature Pengirim"
+                className="max-h-full max-w-full object-contain z-20"
+              />
+            ) : (
+              <div className="text-gray-400 text-xs">(Tanda Tangan)</div>
+            )}
+          </div>
+
+          <div className="font-bold text-sm">
+            {formData.namaPengirim || "(Nama Pengirim)"}
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center">
+        <div className="mb-1 text-sm">Yang Mengetahui,</div>
+        <div className="font-bold mb-2 text-sm">
+          {formData.departemenMengetahui || "(Departemen Mengetahui)"}
+        </div>
+
+        <div className="h-16 mb-2 flex items-center justify-center">
+          {signatureMengetahui.preview.upload ? (
+            <img
+              src={`${apiUrl}${signatureMengetahui.preview.upload}`}
+              alt="Signature Mengetahui"
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <div className="text-gray-400 text-xs">(Tanda Tangan)</div>
+          )}
+        </div>
+
+        <div className="text-sm font-bold">
+          {formData.namaMengetahui || "(Nama Mengetahui)"}
+        </div>
+      </div>
+    </>
+  );
+
   const scaleToFit = (element: HTMLElement, targetHeightMM = 297) => {
     const targetHeightPx = targetHeightMM * 3.78;
     const actualHeightPx = element.scrollHeight;
@@ -1325,7 +1680,6 @@ export const EmailDetailBeritaBongkaran = ({
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i] as HTMLElement;
 
-          // 🔹 Auto scale sebelum render
           scaleToFit(page);
 
           const canvas = await html2canvas(page, {
@@ -1336,7 +1690,6 @@ export const EmailDetailBeritaBongkaran = ({
             imageTimeout: 0,
           });
 
-          // Reset transform agar tidak merusak tampilan asli
           page.style.transform = "";
 
           const imgData = canvas.toDataURL("image/png");
@@ -1359,7 +1712,6 @@ export const EmailDetailBeritaBongkaran = ({
         console.error("Error generating PDF:", error);
         alert("Gagal generate PDF. Silakan coba lagi.");
       } finally {
-        // Selesai generate, hide preview
         setIsGeneratingPDF(false);
       }
     };
@@ -1371,237 +1723,12 @@ export const EmailDetailBeritaBongkaran = ({
     setIsGeneratingPDF(true);
   };
 
-  const MATERIALS_PER_PAGE = 15;
-  const hasMaterialData = () => {
-    return materials.some(
-      (m) => m.namaMaterial || m.katalog || m.satuan || m.jumlah || m.keterangan
-    );
-  };
-
-  const lembarLabels = [
-    "Pengirim Barang",
-    "Penerima Barang",
-    "Satpam",
-    formData.lokasiTujuan,
-  ];
-
-  const renderHeader = (lembarIndex: number, lembarLabels: string[]) => (
-    <>
-      <div className="flex items-center gap-3 mb-3">
-        <div className="flex-shrink-0">
-          {copSuratUrl ? (
-            <div className="cop-surat-container mb-4">
-              <Image
-                src={copSuratUrl}
-                alt="Cop Surat"
-                width={500}
-                height={300}
-                className="w-[500px] h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="text-2xl">(Cop Surat)</div>
-          )}
-        </div>
-        {/* <div className="flex-shrink-0 bg-[rgba(166,35,68,0.1)] px-4 py-1.5 rounded-lg border border-[rgb(166,35,68)]">
-          <div className="text-lg font-bold text-[rgb(166,35,68)] leading-tight">
-            LEMBAR {lembarIndex + 1}
-          </div>
-          <div className="text-base text-[rgb(166,35,68)] leading-tight">
-            {lembarLabels[lembarIndex]}
-          </div>
-        </div> */}
-      </div>
-      <hr className="border-t-2 border-gray-800 mb-3" />
-    </>
-  );
-
-  const renderTitleAndInfo = () => (
-    <>
-      <div className="text-center mb-4">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-1">
-          Berita Acara Serah Terima Material Bongkaran
-        </h1>
-        <div className="text-blue-600 font-semibold text-xl">
-          {formData.nomorBeritaAcara || "(No Berita Acara)"}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <div className="space-y-0.5 text-base">
-          <div className="flex">
-            <div className="min-w-[170px]">Pada Hari ini</div>
-            <div>
-              :{" "}
-              <span className="font-semibold">
-                {formatDateWithDay(formData.tanggalKontrak) ||
-                  "Senin, 01 September 2025"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="min-w-[170px]">Perihal</div>
-            <div className="flex-1">
-              :{" "}
-              <span className="font-semibold">
-                {formData.perihal || "(Perihal)"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="min-w-[170px]">Lokasi Asal</div>
-            <div>
-              :{" "}
-              <span className="font-semibold">
-                {formData.lokasiAsal || "(Lokasi Asal)"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="min-w-[170px]">Lokasi Tujuan</div>
-            <div>
-              :{" "}
-              <span className="font-semibold">
-                {formData.lokasiTujuan || "(Lokasi Tujuan)"}
-              </span>
-            </div>
-          </div>
-          <div className="flex">
-            <div className="min-w-[170px]">No Kontrak</div>
-            <div>
-              :{" "}
-              <span className="font-semibold">
-                {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
-  // Render footer with signatures
-  const renderFooter = () => (
-    <>
-      <div className="py-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">
-          Demikian surat pemberitahuan ini kami sampaikan, atas perhatian dan
-          kerjasamanya kami ucapkan terima kasih
-        </div>
-      </div>
-
-      <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2">
-        <div className="table">
-          <div className="table-row">
-            <div className="table-cell pr-4 font-semibold">Kendaraan</div>
-            <div className="table-cell">
-              : {formData.informasiKendaraan || "(Kendaraan)"}
-            </div>
-          </div>
-          <div className="table-row">
-            <div className="table-cell pr-4 font-semibold">Pengemudi</div>
-            <div className="table-cell">
-              : {formData.namaPengemudi || "(Pengemudi)"}
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div>
-            Bandung, {formatDate(formData.tanggalKontrak) || "17 Nov 2025"}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-12 text-center">
-        <div>
-          <div className="mb-1.5 text-base">Yang Menerima,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
-          </div>
-
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {signaturePenerima.preview.upload ? (
-              <img
-                src={`${apiUrl}${signaturePenerima.preview.upload}`}
-                alt="Signature Penerima"
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="text-base font-bold">
-            {formData.namaPenerima || "(Nama Penerima)"}
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "(Departemen Pengirim)"}
-          </div>
-          <Image
-            src={`/images/ttd.png`}
-            alt="TTD"
-            width={120}
-            height={120}
-            className="absolute z-0 left-16 bottom-4"
-          />
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {signaturePengirim.preview.upload ? (
-              <img
-                src={`${apiUrl}${signaturePengirim.preview.upload}`}
-                alt="Signature Pengirim"
-                className="max-h-full max-w-full object-contain z-20"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="font-bold text-base">
-            {formData.namaPengirim || "(Nama Pengirim)"}
-          </div>
-        </div>
-      </div>
-      <div className="pl-2 flex items-center justify-center mb-6 text-base py-2">
-        <div>
-          <div className="mb-1.5 text-base">Yang Mengetahui,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.departemenMengetahui || "(Departemen Mengetahui)"}
-          </div>
-
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {signatureMengetahui.preview.upload ? (
-              <img
-                src={`${apiUrl}${signatureMengetahui.preview.upload}`}
-                alt="Signature Mengetahui"
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="text-base font-bold">
-            {formData.namaMengetahui || "(Nama Mengetahui)"}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
   return (
     <>
       <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
-        {/* Header */}
+        {/* Header - KODE YANG SAMA SEPERTI SEBELUMNYA */}
         {isSend || isCanceled ? (
           <>
-            {/* Subject and Date */}
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-3 md:mb-5">
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
@@ -2134,132 +2261,137 @@ export const EmailDetailBeritaBongkaran = ({
           }}
         >
           <div id="hidden-preview-content">
-            {[0, 1, 2, 3].map((lembarIndex) => (
-              <div key={lembarIndex}>
-                {materials.map((pageMaterials, pageIndex) => {
-                  const isFirstPage = pageIndex === 0;
-                  const isLastPage = pageIndex === materials.length - 1;
-                  const startIndex = pageIndex * MATERIALS_PER_PAGE;
+            {materialPages.map((pageData, pageIndex) => {
+              const {
+                materials: pageMaterials,
+                showFooter,
+                isFirstPage,
+              } = pageData;
 
-                  return (
-                    <div
-                      key={`${lembarIndex}-${pageIndex}`}
-                      className="surat w-[210mm] min-h-[297mm] max-h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col"
-                      data-lembar={lembarIndex}
-                      data-page={pageIndex}
-                      style={{
-                        padding: "15mm 15mm 15mm 15mm",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {renderHeader(lembarIndex, lembarLabels)}
+              let startIndex = 0;
+              for (let i = 0; i < pageIndex; i++) {
+                startIndex += materialPages[i].materials.length;
+              }
 
-                      {isFirstPage && renderTitleAndInfo()}
+              return (
+                <div
+                  key={pageIndex}
+                  className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                  data-page={pageIndex}
+                  style={{
+                    padding: "15mm 15mm 15mm 15mm",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {/* Header */}
+                  {renderHeaderPDF(isFirstPage)}
 
-                      {/* Materials Table */}
-                      <div className="mb-4">
-                        <table
-                          className="w-full border-collapse"
-                          style={{ fontSize: "13px" }}
-                        >
-                          <thead className="bg-gray-100">
-                            <tr className="text-center">
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "5%" }}
-                              >
-                                NO
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "30%" }}
-                              >
-                                NAMA MATERIAL
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "12%" }}
-                              >
-                                KATALOG
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "10%" }}
-                              >
-                                SATUAN
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "10%" }}
-                              >
-                                JUMLAH
-                              </th>
-                              <th
-                                className="border-2 border-gray-800 px-1.5 py-1.5"
-                                style={{ width: "33%" }}
-                              >
-                                KETERANGAN (LOKASI TYPE, S/N DLL)
-                              </th>
+                  {/* Title dan Info - hanya di halaman pertama */}
+                  {isFirstPage && renderTitleAndInfoPDF()}
+
+                  {/* Materials Table */}
+                  {pageMaterials.length > 0 && (
+                    <div className="mb-2">
+                      <table
+                        className="w-full border-collapse"
+                        style={{ fontSize: "12px" }}
+                      >
+                        <thead className="bg-gray-100">
+                          <tr className="text-center">
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "5%" }}
+                            >
+                              NO
+                            </th>
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "30%" }}
+                            >
+                              NAMA MATERIAL
+                            </th>
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "12%" }}
+                            >
+                              KATALOG
+                            </th>
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "10%" }}
+                            >
+                              SATUAN
+                            </th>
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "10%" }}
+                            >
+                              JUMLAH
+                            </th>
+                            <th
+                              className="border-2 border-gray-800 px-1.5 py-1"
+                              style={{ width: "33%" }}
+                            >
+                              KETERANGAN (LOKASI TYPE, S/N DLL)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pageMaterials.map((material, idx) => (
+                            <tr key={material.id || idx}>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {startIndex + idx + 1}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1">
+                                {material.namaMaterial || "-"}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {material.katalog || "-"}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {material.satuan || "-"}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {material.jumlah || "0"}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {material.keterangan || "-"}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {materials.map((material, idx) => (
-                              <tr key={material.id || idx}>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {startIndex + idx + 1}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5">
-                                  {material.namaMaterial || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.katalog || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.satuan || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.jumlah || "0"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.keterangan || "-"}
-                                </td>
-                              </tr>
-                            ))}
+                          ))}
 
-                            {/* Total row hanya di halaman terakhir */}
-                            {isLastPage && (
-                              <tr className="bg-gray-100 font-semibold">
-                                <td
-                                  colSpan={4}
-                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
-                                >
-                                  TOTAL
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {hasMaterialData() ? calculateTotal() : ""}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Footer hanya di halaman terakhir */}
-                      {isLastPage && renderFooter()}
-
-                      {/* Indikator halaman jika multi-page */}
-                      {/* {!isLastPage && (
-                        <div className="text-center text-gray-500 text-xs mt-auto pt-3">
-                          Halaman {pageIndex + 1} dari {materials.length} -
-                          Lanjutan di halaman berikutnya
-                        </div>
-                      )} */}
+                          {/* Total row jika showFooter */}
+                          {showFooter && (
+                            <tr className="bg-gray-100 font-semibold">
+                              <td
+                                colSpan={4}
+                                className="border-2 border-gray-800 px-1.5 py-1 text-center"
+                              >
+                                TOTAL
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                {calculateTotal()}
+                              </td>
+                              <td className="border-2 border-gray-800 px-1.5 py-1"></td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  )}
+
+                  {/* Footer jika showFooter */}
+                  {showFooter && renderFooterPDF()}
+
+                  {/* Indikator halaman */}
+                  {materialPages.length > 1 && (
+                    <div className="text-center text-gray-500 text-xs mt-2">
+                      Halaman {pageIndex + 1} dari {materialPages.length}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

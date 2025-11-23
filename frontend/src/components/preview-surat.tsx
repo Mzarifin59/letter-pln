@@ -102,21 +102,88 @@ export default function PreviewSection({
     },
   ];
 
-  const MATERIALS_PER_PAGE = 15;
-  const activeMaterials = hasMaterialData() ? materials : dummyMaterials.map((m, idx) => ({
-    id: `dummy-${idx}`,
-    namaMaterial: m.nama,
-    katalog: m.katalog,
-    satuan: m.satuan,
-    jumlah: m.jumlah,
-    keterangan: m.keterangan,
-  }));
+  // Batas untuk menentukan apakah perlu split ke halaman berikutnya
+  const MATERIAL_THRESHOLD = 8; // Jika lebih dari 8, footer pindah ke halaman baru
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = 18; // Kapasitas halaman tengah
 
+  const activeMaterials = hasMaterialData()
+    ? Array.isArray(materials)
+      ? materials
+      : []
+    : dummyMaterials.map((m, idx) => ({
+        id: `dummy-${idx}`,
+        namaMaterial: m.nama,
+        katalog: m.katalog,
+        satuan: m.satuan,
+        jumlah: m.jumlah,
+        keterangan: m.keterangan,
+      }));
+
+  // Fungsi untuk membagi materials ke dalam halaman-halaman
   const splitMaterialsIntoPages = () => {
-    const pages = [];
-    for (let i = 0; i < activeMaterials.length; i += MATERIALS_PER_PAGE) {
-      pages.push(activeMaterials.slice(i, i + MATERIALS_PER_PAGE));
+    const totalMaterials = activeMaterials.length;
+
+    // Jika material <= 8, semua di halaman pertama dengan footer
+    if (totalMaterials <= MATERIAL_THRESHOLD) {
+      return [
+        {
+          materials: activeMaterials,
+          showFooter: true,
+          isFirstPage: true,
+        },
+      ];
     }
+
+    // Jika material > 8, maksimalkan halaman pertama dan footer di halaman terpisah
+    const pages = [];
+    let remainingMaterials = [...activeMaterials];
+
+    // Halaman pertama: maksimalkan (sekitar 18 baris, tanpa footer)
+    const firstPageMaterials = remainingMaterials.slice(
+      0,
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+    pages.push({
+      materials: firstPageMaterials,
+      showFooter: false,
+      isFirstPage: true,
+    });
+    remainingMaterials = remainingMaterials.slice(
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER
+    );
+
+    // Halaman tengah (jika ada)
+    while (remainingMaterials.length > MATERIALS_PER_PAGE_WITHOUT_FOOTER) {
+      const nextPageMaterials = remainingMaterials.slice(
+        0,
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+      pages.push({
+        materials: nextPageMaterials,
+        showFooter: false,
+        isFirstPage: false,
+      });
+      remainingMaterials = remainingMaterials.slice(
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+      );
+    }
+
+    // Halaman terakhir: sisa material + footer
+    if (remainingMaterials.length > 0) {
+      pages.push({
+        materials: remainingMaterials,
+        showFooter: true,
+        isFirstPage: false,
+      });
+    } else {
+      // Jika tidak ada sisa, footer di halaman kosong
+      pages.push({
+        materials: [],
+        showFooter: true,
+        isFirstPage: false,
+      });
+    }
+
     return pages;
   };
 
@@ -156,7 +223,7 @@ export default function PreviewSection({
     </>
   );
 
-  // Render title and form info
+  // Render title and form info (hanya di halaman pertama)
   const renderTitleAndInfo = () => (
     <>
       <div className="text-center mb-4">
@@ -189,8 +256,7 @@ export default function PreviewSection({
             <div className="flex-1">
               :{" "}
               <span className="font-semibold">
-                {formData.perihal ||
-                  "(Perihal)"}
+                {formData.perihal || "(Perihal)"}
               </span>
             </div>
           </div>
@@ -227,8 +293,7 @@ export default function PreviewSection({
       </div>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
         <div className="text-base font-semibold">
-          {formData.catatanTambahan ||
-            "(Catatan)"}
+          {formData.catatanTambahan || "(Catatan)"}
         </div>
       </div>
 
@@ -248,7 +313,9 @@ export default function PreviewSection({
           </div>
         </div>
         <div className="text-right">
-          <div>Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}</div>
+          <div>
+            Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}
+          </div>
         </div>
       </div>
 
@@ -312,7 +379,7 @@ export default function PreviewSection({
     "Pengirim Barang",
     "Penerima Barang",
     "Satpam",
-    formData.lokasiTujuan,
+    formData.lokasiTujuan || "Tujuan",
   ];
 
   return (
@@ -344,17 +411,29 @@ export default function PreviewSection({
 
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
           <div id="preview-content">
+            {/* Loop untuk setiap lembar (4 lembar) */}
             {[0, 1, 2, 3].map((lembarIndex) => (
               <div key={lembarIndex}>
-                {materialPages.map((pageMaterials, pageIndex) => {
-                  const isFirstPage = pageIndex === 0;
+                {/* Loop untuk setiap halaman material */}
+                {materialPages.map((pageData, pageIndex) => {
+                  const {
+                    materials: pageMaterials,
+                    showFooter,
+                    isFirstPage,
+                  } = pageData;
+
+                  // Hitung nomor awal untuk halaman ini
+                  let startIndex = 0;
+                  for (let i = 0; i < pageIndex; i++) {
+                    startIndex += materialPages[i].materials.length;
+                  }
+
                   const isLastPage = pageIndex === materialPages.length - 1;
-                  const startIndex = pageIndex * MATERIALS_PER_PAGE;
 
                   return (
                     <div
                       key={`${lembarIndex}-${pageIndex}`}
-                      className="surat w-[210mm] min-h-[297mm] max-h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col"
+                      className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
                       data-lembar={lembarIndex}
                       data-page={pageIndex}
                       style={{
@@ -362,77 +441,117 @@ export default function PreviewSection({
                         boxSizing: "border-box",
                       }}
                     >
+                      {/* Header - ada di setiap halaman */}
                       {renderHeader(lembarIndex, lembarLabels)}
 
+                      {/* Title dan Info - hanya di halaman pertama */}
                       {isFirstPage && renderTitleAndInfo()}
 
-                      {/* Materials Table */}
-                      <div className="mb-4">
-                        <table className="w-full border-collapse" style={{ fontSize: "13px" }}>
-                          <thead className="bg-gray-100">
-                            <tr className="text-center">
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "5%" }}>NO</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "30%" }}>NAMA MATERIAL</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "12%" }}>KATALOG</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>SATUAN</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "10%" }}>JUMLAH</th>
-                              <th className="border-2 border-gray-800 px-1.5 py-1.5" style={{ width: "33%" }}>KETERANGAN (LOKASI TYPE, S/N DLL)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pageMaterials.map((material, idx) => (
-                              <tr key={material.id || idx}>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {startIndex + idx + 1}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5">
-                                  {material.namaMaterial || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.katalog || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.satuan || "-"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.jumlah || "0"}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {material.keterangan || "-"}
-                                </td>
-                              </tr>
-                            ))}
-
-                            {/* Total row hanya di halaman terakhir */}
-                            {isLastPage && (
-                              <tr className="bg-gray-100 font-semibold">
-                                <td
-                                  colSpan={4}
-                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                      {/* Materials Table - jika ada material di halaman ini */}
+                      {pageMaterials.length > 0 && (
+                        <div className="mb-3">
+                          <table
+                            className="w-full border-collapse"
+                            style={{ fontSize: "13px" }}
+                          >
+                            <thead className="bg-gray-100">
+                              <tr className="text-center">
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "5%" }}
                                 >
-                                  TOTAL
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                  {hasMaterialData()
-                                    ? calculateTotal()
-                                    : dummyMaterials.reduce((sum, m) => sum + m.jumlah, 0)}
-                                </td>
-                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                  NO
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "30%" }}
+                                >
+                                  NAMA MATERIAL
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "12%" }}
+                                >
+                                  KATALOG
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "10%" }}
+                                >
+                                  SATUAN
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "10%" }}
+                                >
+                                  JUMLAH
+                                </th>
+                                <th
+                                  className="border-2 border-gray-800 px-1.5 py-1"
+                                  style={{ width: "33%" }}
+                                >
+                                  KETERANGAN (LOKASI TYPE, S/N DLL)
+                                </th>
                               </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {pageMaterials.map((material, idx) => (
+                                <tr key={material.id || idx}>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {startIndex + idx + 1}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1">
+                                    {material.namaMaterial || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.katalog || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.satuan || "-"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.jumlah || "0"}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                    {material.keterangan || "-"}
+                                  </td>
+                                </tr>
+                              ))}
 
-                      {/* Footer hanya di halaman terakhir */}
-                      {isLastPage && renderFooter()}
-
-                      {/* Indikator halaman jika multi-page */}
-                      {/* {!isLastPage && (
-                        <div className="text-center text-gray-500 text-xs mt-auto pt-3">
-                          Halaman {pageIndex + 1} dari {materialPages.length} - Lanjutan di halaman berikutnya
+                              {/* Total row jika showFooter */}
+                              {showFooter && (
+                                <tr className="bg-gray-100 font-semibold">
+                                  <td
+                                    colSpan={4}
+                                    className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                  >
+                                    TOTAL
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                    {hasMaterialData()
+                                      ? calculateTotal()
+                                      : dummyMaterials.reduce(
+                                          (sum, m) => sum + m.jumlah,
+                                          0
+                                        )}
+                                  </td>
+                                  <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
                         </div>
-                      )} */}
+                      )}
+
+                      {/* Footer jika showFooter */}
+                      {showFooter && renderFooter()}
+
+                      {/* Indikator halaman untuk multi-page */}
+                      {materialPages.length > 1 && (
+                        <div className="text-center text-gray-500 text-xs mt-2">
+                          Halaman {pageIndex + 1} dari {materialPages.length}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

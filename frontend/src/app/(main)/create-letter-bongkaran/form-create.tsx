@@ -1364,7 +1364,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   onClick={handlePreviewPDF}
                   className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
                 >
-                  <Eye width={20} height={20} className="text-[#232323]" />
+                  <Eye width={20} height={20} className="text-[#232323] flex-shrink-0" />
                   Preview PDF
                 </button>
                 <button

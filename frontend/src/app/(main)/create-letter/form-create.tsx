@@ -619,25 +619,35 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i] as HTMLElement;
 
-      scaleToFit(page);
-
-      // Render canvas dengan scale tinggi untuk kualitas bagus
+      // Render canvas dengan scale optimal
       const canvas = await html2canvas(page, {
-        scale: 1.5,
+        scale: 2, // Scale lebih tinggi untuk kualitas
         useCORS: true,
         backgroundColor: "#ffffff",
+        windowWidth: page.scrollWidth,
         windowHeight: page.scrollHeight,
+        width: page.scrollWidth,
         height: page.scrollHeight,
         logging: false,
         imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          const clonedPage = clonedDoc.querySelector(
+            `[data-lembar="${page.getAttribute(
+              "data-lembar"
+            )}"][data-page="${page.getAttribute("data-page")}"]`
+          ) as HTMLElement;
+          if (clonedPage) {
+            // Pastikan tinggi tetap 297mm
+            clonedPage.style.height = "297mm";
+            clonedPage.style.maxHeight = "297mm";
+            clonedPage.style.overflow = "hidden";
+          }
+        },
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png", 1.0);
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
       // Add new page jika bukan halaman pertama
       if (!isFirstPage) {
@@ -645,15 +655,17 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       }
       isFirstPage = false;
 
-      // Jika tinggi gambar melebihi A4, scale to fit
-      if (imgHeight > pageHeight) {
-        const scale = pageHeight / imgHeight;
-        const scaledHeight = imgHeight * scale;
-        const scaledWidth = imgWidth * scale;
-        pdf.addImage(imgData, "PNG", 0, 0, scaledWidth, scaledHeight);
-      } else {
-        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      }
+      // Tambahkan image dengan ukuran exact A4
+      pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        0,
+        pageWidth,
+        pageHeight,
+        undefined,
+        "FAST"
+      );
     }
 
     pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
@@ -721,9 +733,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             <input
               type="date"
               name="tanggalSurat"
-              value={
-                formData.tanggalSurat
-              }
+              value={formData.tanggalSurat}
               onChange={handleInputChange}
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
