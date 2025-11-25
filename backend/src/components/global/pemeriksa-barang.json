@@ -1,0 +1,18 @@
+{
+  "collectionName": "components_global_pemeriksa_barangs",
+  "info": {
+    "displayName": "pemeriksa_barang"
+  },
+  "options": {},
+  "attributes": {
+    "departemen_pemeriksa": {
+      "type": "string"
+    },
+    "mengetahui": {
+      "type": "component",
+      "component": "global.mengetahui",
+      "repeatable": true
+    }
+  },
+  "config": {}
+}

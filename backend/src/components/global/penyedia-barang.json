@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_global_penyedia_barangs",
+  "info": {
+    "displayName": "penyedia_barang"
+  },
+  "options": {},
+  "attributes": {
+    "perusahaan_penyedia_barang": {
+      "type": "string"
+    },
+    "nama_penanggung_jawab": {
+      "type": "string"
+    },
+    "ttd_penerima": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  },
+  "config": {}
+}

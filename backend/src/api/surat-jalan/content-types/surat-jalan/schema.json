@@ -137,23 +137,15 @@
         "Published"
       ]
     },
-    "kategori_surat": {
-      "type": "enumeration",
-      "enum": [
-        "Surat Jalan",
-        "Berita Acara Material Bongkaran",
-        "Berita Acara Pemeriksaan Tim Mutu"
-      ]
-    },
     "no_berita_acara": {
       "type": "string",
       "conditions": {
         "visible": {
-          "==": [
+          "!=": [
             {
               "var": "kategori_surat"
             },
-            "Berita Acara Material Bongkaran"
+            "Surat Jalan"
           ]
         }
       }
@@ -162,11 +154,11 @@
       "type": "string",
       "conditions": {
         "visible": {
-          "==": [
+          "!=": [
             {
               "var": "kategori_surat"
             },
-            "Berita Acara Material Bongkaran"
+            "Surat Jalan"
           ]
         }
       }
@@ -175,11 +167,11 @@
       "type": "datetime",
       "conditions": {
         "visible": {
-          "==": [
+          "!=": [
             {
               "var": "kategori_surat"
             },
-            "Berita Acara Material Bongkaran"
+            "Surat Jalan"
           ]
         }
       }
@@ -218,6 +210,100 @@
       },
       "component": "global.mengetahui",
       "repeatable": false
+    },
+    "penyedia_barang": {
+      "type": "component",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      },
+      "component": "global.penyedia-barang",
+      "repeatable": false
+    },
+    "pemeriksa_barang": {
+      "type": "component",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      },
+      "component": "global.pemeriksa-barang",
+      "repeatable": false
+    },
+    "tanggal_pelaksanaan": {
+      "type": "datetime",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
+    },
+    "perihal_kontrak": {
+      "type": "text",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
+    },
+    "hasil_pemeriksaan": {
+      "type": "enumeration",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      },
+      "enum": [
+        "Diterima",
+        "Ditolak"
+      ]
+    },
+    "kategori_surat": {
+      "type": "enumeration",
+      "enum": [
+        "Surat Jalan",
+        "Berita Acara Material Bongkaran",
+        "Berita Acara Pemeriksaan Tim Mutu"
+      ]
+    },
+    "kelengkapan_dokumen": {
+      "type": "richtext",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     }
   }
 }

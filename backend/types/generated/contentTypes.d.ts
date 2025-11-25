@@ -505,6 +505,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     emails: Schema.Attribute.Relation<'oneToMany', 'api::email.email'>;
+    hasil_pemeriksaan: Schema.Attribute.Enumeration<['Diterima', 'Ditolak']>;
     informasi_kendaraan: Schema.Attribute.String;
     kategori_surat: Schema.Attribute.Enumeration<
       [
@@ -513,6 +514,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
         'Berita Acara Pemeriksaan Tim Mutu',
       ]
     >;
+    kelengkapan_dokumen: Schema.Attribute.RichText;
     lampiran: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',
       true
@@ -532,9 +534,18 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     no_perjanjian_kontrak: Schema.Attribute.String;
     no_surat_jalan: Schema.Attribute.String;
     no_surat_permintaan: Schema.Attribute.String;
+    pemeriksa_barang: Schema.Attribute.Component<
+      'global.pemeriksa-barang',
+      false
+    >;
     penerima: Schema.Attribute.Component<'global.penerima', false>;
     pengirim: Schema.Attribute.Component<'global.pengirim', false>;
+    penyedia_barang: Schema.Attribute.Component<
+      'global.penyedia-barang',
+      false
+    >;
     perihal: Schema.Attribute.Text;
+    perihal_kontrak: Schema.Attribute.Text;
     pesan: Schema.Attribute.Text;
     publishedAt: Schema.Attribute.DateTime;
     status_entry: Schema.Attribute.Enumeration<['Draft', 'Published']>;
@@ -543,6 +554,7 @@ export interface ApiSuratJalanSuratJalan extends Struct.CollectionTypeSchema {
     >;
     tanggal: Schema.Attribute.DateTime;
     tanggal_kontrak: Schema.Attribute.DateTime;
+    tanggal_pelaksanaan: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
