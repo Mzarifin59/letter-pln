@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DynamicEmailData} from "@/lib/interface";
+import { DynamicEmailData, getPerihal, getPerusahaanPenerima, getTanggalSurat} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { deleteEmailReal } from "@/lib/emailRequest";
 
@@ -134,7 +134,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
         );
 
         toast.success("Draft berhasil dihapus", {
-          description: selectedToDelete.surat_jalan.perihal,
+          description: getPerihal(selectedToDelete),
           position: "top-center",
         });
       }
@@ -168,12 +168,17 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
   const handleRowClick = (email: DynamicEmailData): void => {
     sessionStorage.setItem("draftData", JSON.stringify(email));
+    const kategori = email.surat_jalan.kategori_surat;
+    
     if(user?.role?.name === "Admin"){
-      router.push(`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`);
+      if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+        router.push(`/create-letter/berita-acara-pemeriksaan-tim-mutu?mode=edit&id=${email.surat_jalan.documentId}`);
+      } else {
+        router.push(`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`);
+      }
     } else {
       router.push(`/create-letter-bongkaran?mode=edit&id=${email.surat_jalan.documentId}`);
     }
-    
   };
 
   const sortedInitialData = [...data].sort(
@@ -189,7 +194,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
         (status) => status.user.name === "Admin Gudang"
       );
 
-      return hasAdminGudangStatus && item.recipient.name === "Spv";
+      return hasAdminGudangStatus && item.recipient.name === "Spv" && item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran" ;
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
@@ -198,7 +203,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
       );
 
       return (
-        hasVendorStatus && item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" && item.surat_jalan.status_entry === "Draft"
       );
     });
   }
@@ -289,13 +294,13 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
         <div className="flex-1 min-w-0">
           <div className="flex max-lg:justify-between lg:gap-12 items-center">
             <span className="text-sm font-medium text-gray-900 truncate">
-              {email.surat_jalan.penerima.perusahaan_penerima}
+              {getPerusahaanPenerima(email)}
             </span>
             <>
               <span
                 className={`max-xl:hidden text-sm text-[#545454] block whitespace-normal break-words`}
               >
-                {email.surat_jalan.perihal}
+                {getPerihal(email)}
               </span>
               <span className="max-sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
                 {formatDate(email.surat_jalan.createdAt, "long")}
@@ -308,7 +313,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
           <span
             className={`text-sm text-[#545454] block whitespace-normal break-words truncate xl:hidden`}
           >
-            {email.surat_jalan.perihal}
+            {getPerihal(email)}
           </span>
         </div>
 
@@ -482,7 +487,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
                 </span>
               </>
             )}

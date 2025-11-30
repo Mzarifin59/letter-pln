@@ -54,6 +54,27 @@ export async function getAllSuratJalan() {
             },
           },
         },
+        penyedia_barang: {
+          fields: ["perusahaan_penyedia_barang", "nama_penanggung_jawab"],
+          populate: {
+            ttd_penerima: {
+              fields: ["name", "url"],
+            },
+          },
+        },
+        pemeriksa_barang: {
+          fields: ["departemen_pemeriksa"],
+          populate: {
+            mengetahui: {
+              fields: ["departemen_mengetahui", "nama_mengetahui"],
+              populate: {
+                ttd_mengetahui: {
+                  fields: ["name", "url"],
+                },
+              },
+            },
+          },
+        },
         mengetahui: {
           fields: ["departemen_mengetahui", "nama_mengetahui"],
           populate: {
@@ -117,6 +138,27 @@ export async function getAllEmails() {
               populate: {
                 ttd_pengirim: {
                   fields: ["name", "url"],
+                },
+              },
+            },
+            penyedia_barang: {
+              fields: ["perusahaan_penyedia_barang", "nama_penanggung_jawab"],
+              populate: {
+                ttd_penerima: {
+                  fields: ["name", "url"],
+                },
+              },
+            },
+            pemeriksa_barang: {
+              fields: ["departemen_pemeriksa"],
+              populate: {
+                mengetahui: {
+                  fields: ["departemen_mengetahui", "nama_mengetahui"],
+                  populate: {
+                    ttd_mengetahui: {
+                      fields: ["name", "url"],
+                    },
+                  },
                 },
               },
             },

@@ -606,5 +606,202 @@ export default factories.createCoreController(
         });
       }
     },
+
+    async approveBeritaPemeriksaan(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const { signaturePenyediaBarang, signaturesMengetahui } = ctx.request.body;
+        const user = ctx.state.user;
+
+        console.log("📥 Received data:", { signaturePenyediaBarang, signaturesMengetahui });
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+          populate: {
+            surat_jalan: {
+              populate: {
+                penyedia_barang: true,
+                pemeriksa_barang: {
+                  populate: {
+                    mengetahui: true,
+                  },
+                },
+              },
+            },
+            recipient: true,
+            sender: true,
+            email_statuses: {
+              populate: {
+                user: {
+                  populate: ["role"],
+                },
+              },
+            },
+          },
+        });
+
+        if (!email) {
+          console.log("❌ Email tidak ditemukan");
+          return ctx.notFound("Email not found");
+        }
+
+        // Update email
+        await strapi.documents("api::email.email").update({
+          documentId: documentId,
+          data: {
+            isHaveStatus: true,
+            sender: email.recipient.documentId,
+            recipient: email.sender.documentId,
+          },
+          status: "published",
+        });
+
+        // Update surat jalan
+        await strapi.documents("api::surat-jalan.surat-jalan").update({
+          documentId: email.surat_jalan.documentId,
+          data: {
+            status_surat: "Approve",
+          },
+          status: "published",
+        });
+
+        // Reset is_read untuk Admin (sender)
+        let email_statuses = email.email_statuses.filter(
+          (item) => item.user.role.name === "Admin"
+        );
+
+        if (email_statuses.length > 0) {
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: email_statuses[0].documentId,
+            data: {
+              is_read: false,
+            },
+            status: "published",
+          });
+        }
+
+        // Create new email status for Spv (jika belum ada)
+        const hasSpvStatus = email.email_statuses.find(
+          (item) => item.user.documentId === process.env.SPV_ID
+        );
+
+        if (!hasSpvStatus && process.env.SPV_ID) {
+          await strapi.documents("api::email-status.email-status").create({
+            data: {
+              email: email.documentId,
+              user: process.env.SPV_ID,
+            },
+            status: "published",
+          });
+        }
+
+        return ctx.send({
+          message: "Request Approve Berhasil ✅",
+          data: {
+            emailId: email.documentId,
+            status: "Approve",
+          },
+        });
+      } catch (error) {
+        console.error("❌ Error in Approve Berita Pemeriksaan:", error);
+        return ctx.badRequest("Failed to approve berita pemeriksaan", {
+          error: error.message,
+        });
+      }
+    },
+
+    async rejectBeritaPemeriksaan(ctx) {
+      try {
+        const { documentId } = ctx.params;
+        const { pesan } = ctx.request.body;
+        const user = ctx.state.user;
+
+        // Validasi user
+        if (!user) {
+          return ctx.unauthorized(
+            "You must be logged in to perform this action"
+          );
+        }
+
+        const email = await strapi.documents("api::email.email").findOne({
+          documentId: documentId,
+          populate: {
+            surat_jalan: true,
+            recipient: true,
+            sender: true,
+            email_statuses: {
+              populate: {
+                user: {
+                  populate: ["role"],
+                },
+              },
+            },
+          },
+        });
+
+        if (!email) {
+          console.log("❌ Email tidak ditemukan");
+          return ctx.notFound("Email not found");
+        }
+
+        // Update email
+        await strapi.documents("api::email.email").update({
+          documentId: documentId,
+          data: {
+            isHaveStatus: true,
+            sender: email.recipient.documentId,
+            recipient: email.sender.documentId,
+            pesan,
+          },
+          status: "published",
+        });
+
+        // Update surat jalan status menjadi Reject
+        await strapi.documents("api::surat-jalan.surat-jalan").update({
+          documentId: email.surat_jalan.documentId,
+          data: {
+            status_surat: "Reject",
+          },
+          status: "published",
+        });
+
+        // Reset is_read untuk Admin (sender)
+        let email_statuses = email.email_statuses.filter(
+          (item) => item.user.role.name === "Admin"
+        );
+
+        if (email_statuses.length > 0) {
+          await strapi.documents("api::email-status.email-status").update({
+            documentId: email_statuses[0].documentId,
+            data: {
+              is_read: false,
+            },
+            status: "published",
+          });
+        }
+
+        console.log("Request Reject Berhasil ✅");
+
+        return ctx.send({
+          message: "Request Reject Berhasil ✅",
+          data: {
+            emailId: email.documentId,
+            status: "Reject",
+          },
+        });
+      } catch (error) {
+        console.error("❌ Error in Reject Berita Pemeriksaan:", error);
+        return ctx.badRequest("Failed to reject berita pemeriksaan", {
+          error: error.message,
+        });
+      }
+    },
   })
 );

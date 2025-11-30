@@ -15,12 +15,17 @@ import {
   DynamicEmailData,
   EmailDataVendor,
   EmailDataAdmin,
+  EmailDataOther,
+  getPerihal,
+  getTanggalSurat,
 } from "@/lib/interface";
 import {
   approveBeritaBongkaran,
   approveEmailSurat,
   rejectBeritaBongkaran,
   rejectEmailSurat,
+  approveBeritaPemeriksaan,
+  rejectBeritaPemeriksaan,
 } from "@/lib/emailRequest";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,15 +87,9 @@ export default function TrackingContentPage({
 }: TrackingContentProps) {
   const { user } = useUserLogin();
 
-  // Helper function untuk mendapatkan tanggal dari surat
-  const getTanggalSurat = (item: DynamicEmailData) => {
-    const kategori = item.surat_jalan.kategori_surat;
-
-    if (kategori === "Berita Acara Material Bongkaran") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
-
-    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  // Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+  const getTanggalSuratLocal = (item: DynamicEmailData) => {
+    return getTanggalSurat(item) || item.surat_jalan.createdAt;
   };
 
   // Helper function untuk mendapatkan nomor surat
@@ -100,6 +99,11 @@ export default function TrackingContentPage({
     if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
+    
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+      return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+    }
+    
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -128,8 +132,8 @@ export default function TrackingContentPage({
 
   const dataEmail = data.sort(
     (a, b) =>
-      new Date(getTanggalSurat(b)).getTime() -
-      new Date(getTanggalSurat(a)).getTime()
+      new Date(getTanggalSuratLocal(b)).getTime() -
+      new Date(getTanggalSuratLocal(a)).getTime()
   );
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,18 +148,28 @@ export default function TrackingContentPage({
   let currentData;
 
   if (user?.role?.name === "Admin") {
-    currentData = dataEmail;
+    currentData = dataEmail.filter(
+      (item) =>
+        item.surat_jalan.kategori_surat === "Surat Jalan" ||
+        item.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+    );
   } else if (user?.role?.name === "Spv") {
     const canShow = (item: DynamicEmailData) => {
       const kategori = item.surat_jalan.kategori_surat;
-      if (kategori === "Surat Jalan") {
+      
+      // Surat Jalan dan Berita Pemeriksaan - sama seperti Surat Jalan
+      if (kategori === "Surat Jalan" || kategori === "Berita Acara Pemeriksaan Tim Mutu") {
         return item.surat_jalan.status_surat === "In Progress";
       }
+      
+      // Berita Acara Material Bongkaran - perlu cek mengetahui
       const mengetahuiLengkap =
         hasMengetahui(item.surat_jalan) &&
         item.surat_jalan.status_surat !== "Reject" &&
         Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
-        Boolean(!item.surat_jalan.penerima.ttd_penerima);
+        ("penerima" in item.surat_jalan && item.surat_jalan.penerima
+          ? Boolean(!item.surat_jalan.penerima.ttd_penerima)
+          : false);
 
       return mengetahuiLengkap;
     };
@@ -255,7 +269,7 @@ export default function TrackingContentPage({
     const kategoriSurat = selectedItem.surat_jalan.kategori_surat;
     const userRole = user?.role?.name;
 
-    // Validasi signature untuk Gardu Induk dan Spv dengan Berita Acara
+    // Validasi signature untuk Gardu Induk dan Spv dengan Berita Acara Material Bongkaran
     if (userRole === "Gardu Induk") {
       if (!signatureMengetahui.upload && !signatureMengetahui.signature) {
         toast.error("Mohon berikan tanda tangan terlebih dahulu", {
@@ -263,7 +277,8 @@ export default function TrackingContentPage({
         });
         return;
       }
-    } else {
+    } else if (userRole === "Spv" && kategoriSurat === "Berita Acara Material Bongkaran") {
+      // Spv hanya perlu signature untuk Berita Acara Material Bongkaran
       if (!signaturePenerima.upload && !signaturePenerima.signature) {
         toast.error("Mohon berikan tanda tangan terlebih dahulu", {
           position: "top-center",
@@ -271,6 +286,7 @@ export default function TrackingContentPage({
         return;
       }
     }
+    // Spv dengan Surat Jalan atau Berita Pemeriksaan tidak perlu signature
 
     setIsSubmitting(true);
     try {
@@ -292,7 +308,21 @@ export default function TrackingContentPage({
 
           toast.success("Surat berhasil disetujui", { position: "top-center" });
         }
-        // Spv dengan Berita Acara
+        // Spv dengan Berita Acara Pemeriksaan Tim Mutu - tanpa signature (sama seperti Surat Jalan)
+        else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+          const response = await approveBeritaPemeriksaan({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+          });
+
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate status berita pemeriksaan");
+          }
+
+          toast.success("Berita berhasil disetujui", { position: "top-center" });
+        }
+        // Spv dengan Berita Acara Material Bongkaran - perlu signature
         else if (kategoriSurat === "Berita Acara Material Bongkaran") {
           // Upload TTD Penerima
           let ttdPenerimaId = null;
@@ -409,7 +439,22 @@ export default function TrackingContentPage({
 
           toast.success("Surat berhasil ditolak", { position: "top-center" });
         }
-        // Spv dengan Berita Acara atau Surat Bongkaran
+        // Spv dengan Berita Acara Pemeriksaan Tim Mutu (sama seperti Surat Jalan)
+        else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+          const response = await rejectBeritaPemeriksaan({
+            emailId: selectedItem.documentId,
+            apiUrl,
+            token,
+            pesan: rejectMessage,
+          });
+
+          if (!response.ok) {
+            throw new Error("Gagal mengupdate reject berita pemeriksaan");
+          }
+
+          toast.success("Berita berhasil ditolak", { position: "top-center" });
+        }
+        // Spv dengan Berita Acara Material Bongkaran
         else if (kategoriSurat === "Berita Acara Material Bongkaran") {
           const response = await rejectBeritaBongkaran({
             emailId: selectedItem.documentId,
@@ -529,6 +574,10 @@ export default function TrackingContentPage({
     isSPV &&
     selectedItem?.surat_jalan.kategori_surat ===
       "Berita Acara Material Bongkaran";
+  const isSpvBeritaPemeriksaan =
+    isSPV &&
+    selectedItem?.surat_jalan.kategori_surat ===
+      "Berita Acara Pemeriksaan Tim Mutu";
 
   return (
     <>
@@ -603,7 +652,7 @@ export default function TrackingContentPage({
                     .map((item, index) => (
                       <tr key={index} className="border-t border-[#ADB5BD]">
                         <td className="py-4 px-6 text-sm text-[#545454]">
-                          {formatDateTime(getTanggalSurat(item))}
+                          {formatDateTime(getTanggalSuratLocal(item))}
                         </td>
                         <td className="py-4 px-6 text-sm text-[#545454]">
                           {item.sender.name}
@@ -612,7 +661,7 @@ export default function TrackingContentPage({
                           {item.recipient.name}
                         </td>
                         <td className="py-4 px-6 text-sm text-[#545454]">
-                          {item.surat_jalan.perihal}
+                          {getPerihal(item)}
                         </td>
                         <td className="py-4 px-6">
                           {isSPV || isGI ? (
@@ -689,7 +738,7 @@ export default function TrackingContentPage({
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mb-1">
-                    {formatDateTime(getTanggalSurat(row))}
+                    {formatDateTime(getTanggalSuratLocal(row))}
                   </p>
                   <p className="text-sm text-[#545454]">
                     <span className="font-medium">Dari:</span> {row.sender.name}
@@ -699,7 +748,7 @@ export default function TrackingContentPage({
                     {row.recipient.name}
                   </p>
                   <p className="text-sm text-[#545454] mt-1">
-                    {row.surat_jalan.perihal}
+                    {getPerihal(row)}
                   </p>
                 </div>
               ))}
@@ -716,6 +765,8 @@ export default function TrackingContentPage({
               {isSPV
                 ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                   ? "Detail Surat Jalan"
+                  : selectedItem?.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+                  ? "Detail Berita Acara Pemeriksaan Tim Mutu"
                   : "Detail Berita Acara Material Bongkaran"
                 : isGI
                 ? "Detail Berita Acara Material Bongkaran"
@@ -733,6 +784,8 @@ export default function TrackingContentPage({
                 {isSPV
                   ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                     ? "No Surat Jalan"
+                    : selectedItem?.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+                    ? "No Berita Acara Pemeriksaan Tim Mutu"
                     : "No Berita Acara Material Bongkaran"
                   : isGI
                   ? "No Berita Acara Material Bongkaran"
@@ -749,7 +802,7 @@ export default function TrackingContentPage({
                 Tanggal
               </label>
               <p className="text-base text-[#545454]">
-                {selectedItem && formatDateTime(getTanggalSurat(selectedItem))}
+                {selectedItem && formatDateTime(getTanggalSuratLocal(selectedItem))}
               </p>
             </div>
 
@@ -779,7 +832,7 @@ export default function TrackingContentPage({
                 Perihal
               </label>
               <p className="text-base text-[#545454]">
-                {selectedItem?.surat_jalan.perihal}
+                {selectedItem && getPerihal(selectedItem)}
               </p>
             </div>
 
@@ -799,7 +852,8 @@ export default function TrackingContentPage({
               </div>
             ) : (
               <>
-                {/* Tampilkan signature section hanya untuk Gardu Induk */}
+                {/* Tampilkan signature section hanya untuk Gardu Induk atau Spv dengan Berita Acara Material Bongkaran */}
+                {/* Spv dengan Berita Pemeriksaan tidak perlu signature (sama seperti Surat Jalan) */}
                 {(isGI || isSpvNeedSignature) && (
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-semibold text-[#353739] mb-3">

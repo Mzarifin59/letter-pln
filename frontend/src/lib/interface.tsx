@@ -28,12 +28,26 @@ export interface Pengirim {
   ttd_pengirim: FileAttachment;
 }
 
+export interface PenyediaBarang {
+  id: number;
+  perusahaan_penyedia_barang: string;
+  nama_penanggung_jawab: string;
+  ttd_penerima: FileAttachment;
+}
+
 export interface Mengetahui {
   id: number;
   departemen_mengetahui: string;
   nama_mengetahui: string;
   ttd_mengetahui: FileAttachment;
 }
+
+export interface PemeriksaBarang {
+  id: number;
+  departemen_pemeriksa: string;
+  mengetahui : Mengetahui[];
+}
+
 
 export interface Sender {
   id: number;
@@ -133,6 +147,29 @@ export interface BeritaBongkaran  {
   emails: EmailItem[];
 }
 
+export interface BeritaPemeriksaan  {
+  id: number;
+  documentId: string;
+  no_berita_acara: string;
+  no_perjanjian_kontrak: string;
+  tanggal_kontrak: string;
+  tanggal_pelaksanaan: string;
+  perihal_kontrak: string;
+  hasil_pemeriksaan : string;
+  kelengkapan_dokumen: string;
+  lokasi_asal: string;
+  lokasi_tujuan: string;
+  status_surat: string;
+  status_entry: string;
+  kategori_surat: string;
+  createdAt: string;
+  updatedAt: string;
+  materials: Material[];
+  penyedia_barang: PenyediaBarang;
+  pemeriksa_barang: PemeriksaBarang;
+  emails: EmailItem[];
+}
+
 // Role types
 export type UserRole = "Admin" | "Vendor" | "Other";
 
@@ -147,7 +184,7 @@ export interface EmailData<T extends UserRole = "Admin"> {
   isHaveStatus: boolean;
   createdAt: string;
   updatedAt: string;
-  surat_jalan: T extends "Vendor" ? BeritaBongkaran : SuratJalan;
+  surat_jalan: T extends "Vendor" ? BeritaBongkaran : T extends "Admin" ? SuratJalan : BeritaPemeriksaan ;
   sender: Sender;
   recipient: Recipient;
   email_statuses: EmailStatus[];
@@ -176,4 +213,62 @@ export function getEmailDataByRole<T extends UserRole>(
   role: T
 ): EmailData<T> {
   return data as EmailData<T>;
+}
+
+// Helper function untuk mendapatkan perihal dengan aman
+export function getPerihal(data: DynamicEmailData): string {
+  const kategori = data.surat_jalan.kategori_surat;
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (data as EmailDataOther).surat_jalan.perihal_kontrak || "";
+  }
+  
+  // Untuk SuratJalan dan BeritaBongkaran, gunakan perihal
+  if ("perihal" in data.surat_jalan) {
+    return data.surat_jalan.perihal || "";
+  }
+  
+  return "";
+}
+
+// Helper function untuk mendapatkan perusahaan penerima/penyedia dengan aman
+export function getPerusahaanPenerima(data: DynamicEmailData): string {
+  const kategori = data.surat_jalan.kategori_surat;
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (data as EmailDataOther).surat_jalan.penyedia_barang.perusahaan_penyedia_barang || "";
+  }
+  
+  // Untuk SuratJalan dan BeritaBongkaran, gunakan penerima
+  if ("penerima" in data.surat_jalan && data.surat_jalan.penerima) {
+    return data.surat_jalan.penerima.perusahaan_penerima || "";
+  }
+  
+  return "";
+}
+
+// Helper function untuk mendapatkan tanggal dengan aman
+export function getTanggalSurat(data: DynamicEmailData): string {
+  const kategori = data.surat_jalan.kategori_surat;
+  
+  if (kategori === "Berita Acara Material Bongkaran") {
+    return (data as EmailDataVendor).surat_jalan.tanggal_kontrak || "";
+  }
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (data as EmailDataOther).surat_jalan.tanggal_pelaksanaan || 
+           (data as EmailDataOther).surat_jalan.tanggal_kontrak || "";
+  }
+  
+  // Untuk SuratJalan
+  if ("tanggal" in data.surat_jalan) {
+    return data.surat_jalan.tanggal || "";
+  }
+  
+  return data.surat_jalan.createdAt || "";
+}
+
+// Helper function untuk mengecek apakah data adalah BeritaPemeriksaan
+export function isBeritaPemeriksaanData(data: DynamicEmailData): data is EmailDataOther {
+  return data.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu";
 }

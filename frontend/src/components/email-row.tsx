@@ -6,6 +6,10 @@ import {
   isVendorEmailData,
   EmailDataAdmin,
   EmailDataVendor,
+  EmailDataOther,
+  getPerihal,
+  getPerusahaanPenerima,
+  getTanggalSurat,
 } from "@/lib/interface";
 import { Star, Trash2 } from "lucide-react";
 import { useUserLogin } from "@/lib/user";
@@ -67,15 +71,9 @@ export const EmailRowInbox = ({
   const isOpened = openedEmail?.id === email.id;
   const { user } = useUserLogin();
 
-  // Helper function untuk mendapatkan tanggal dari surat
-  const getTanggalSurat = (item: DynamicEmailData) => {
-    const kategori = item.surat_jalan.kategori_surat;
-
-    if (kategori === "Berita Acara Material Bongkaran") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
-
-    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  // Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+  const getTanggalSuratLocal = (item: DynamicEmailData) => {
+    return getTanggalSurat(item) || item.surat_jalan.createdAt;
   };
 
   // Helper function untuk mendapatkan nomor surat
@@ -85,6 +83,11 @@ export const EmailRowInbox = ({
     if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
+    
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+      return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+    }
+    
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -137,14 +140,14 @@ export const EmailRowInbox = ({
           rounded-full text-sm font-medium text-white bg-blue-500
         `}
       >
-        {getCompanyAbbreviation(email.surat_jalan.penerima.perusahaan_penerima)}
+        {getCompanyAbbreviation(getPerusahaanPenerima(email))}
       </div>
 
       {/* Sender & Preview */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center max-lg:justify-between gap-12">
           <span className="text-sm font-medium text-gray-900">
-            {email.surat_jalan.penerima.perusahaan_penerima}
+            {getPerusahaanPenerima(email)}
           </span>
 
           {/* Subject */}
@@ -165,45 +168,55 @@ export const EmailRowInbox = ({
                     text-sm text-[#545454]
                   `}
                 >
-                  {email.surat_jalan.perihal}
+                  {getPerihal(email)}
                 </span>
 
                 {/* Attachments */}
-                {email.surat_jalan.lampiran &&
-                  email.surat_jalan.lampiran.length > 0 && (
+                {(() => {
+                  // Check if surat_jalan has lampiran property (only SuratJalan and BeritaBongkaran have it)
+                  const suratJalan = email.surat_jalan as any;
+                  const hasLampiran = "lampiran" in suratJalan && 
+                    suratJalan.lampiran && 
+                    Array.isArray(suratJalan.lampiran) &&
+                    suratJalan.lampiran.length > 0;
+                  
+                  if (!hasLampiran) return null;
+                  
+                  const lampiran = suratJalan.lampiran as Array<{ name: string }>;
+                  
+                  return (
                     <div className="flex items-center space-x-2">
-                      {email.surat_jalan.lampiran
-                        .slice(0, 2)
-                        .map((attachment, index) => (
+                      {lampiran.slice(0, 2).map((attachment, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-1"
+                        >
                           <div
-                            key={index}
-                            className="flex items-center space-x-1"
+                            className={`flex h-3 w-3 items-center justify-center rounded ${
+                              index === 0 ? "bg-green-100" : "bg-red-100"
+                            }`}
                           >
                             <div
-                              className={`flex h-3 w-3 items-center justify-center rounded ${
-                                index === 0 ? "bg-green-100" : "bg-red-100"
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                index === 0 ? "bg-green-500" : "bg-red-500"
                               }`}
-                            >
-                              <div
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  index === 0 ? "bg-green-500" : "bg-red-500"
-                                }`}
-                              />
-                            </div>
-                            <span className="truncate text-xs text-gray-600">
-                              {attachment.name}
-                            </span>
+                            />
                           </div>
-                        ))}
+                          <span className="truncate text-xs text-gray-600">
+                            {attachment.name}
+                          </span>
+                        </div>
+                      ))}
 
                       {/* Indicator untuk attachment tambahan */}
-                      {email.surat_jalan.lampiran.length > 2 && (
+                      {lampiran.length > 2 && (
                         <span className="text-xs text-gray-500">
-                          +{email.surat_jalan.lampiran.length - 2} more
+                          +{lampiran.length - 2} more
                         </span>
                       )}
                     </div>
-                  )}
+                  );
+                })()}
               </div>
               <div
                 className={`px-3 py-1 rounded-xl max-sm:hidden ${
@@ -229,10 +242,10 @@ export const EmailRowInbox = ({
               {/* Time */}
               <div>
                 <span className="max-sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                  {formatDate(getTanggalSurat(email), "long")}
+                  {formatDate(getTanggalSuratLocal(email), "long")}
                 </span>
                 <span className="sm:hidden ml-2 flex-shrink-0 text-[10px] sm:text-xs text-gray-500">
-                  {formatDate(getTanggalSurat(email), "short")}
+                  {formatDate(getTanggalSuratLocal(email), "short")}
                 </span>
                 <div
                   className={`px-3 py-1 rounded-xl sm:hidden ${
@@ -280,46 +293,56 @@ export const EmailRowInbox = ({
             }
           `}
         >
-          {email.surat_jalan.perihal}
+          {getPerihal(email)}
         </span>
 
         {/* Attachments (opened or responsive) */}
-        {email.surat_jalan.lampiran &&
-          email.surat_jalan.lampiran.length > 0 && (
+        {(() => {
+          // Check if surat_jalan has lampiran property (only SuratJalan and BeritaBongkaran have it)
+          const suratJalan = email.surat_jalan as any;
+          const hasLampiran = "lampiran" in suratJalan && 
+            suratJalan.lampiran && 
+            Array.isArray(suratJalan.lampiran) &&
+            suratJalan.lampiran.length > 0;
+          
+          if (!hasLampiran) return null;
+          
+          const lampiran = suratJalan.lampiran as Array<{ name: string }>;
+          
+          return (
             <div
               className={`
               flex items-center space-x-2
               ${openedEmail ? "flex" : "min-[1440px]:hidden"}
             `}
             >
-              {email.surat_jalan.lampiran
-                .slice(0, 2)
-                .map((attachment, index) => (
-                  <div key={index} className="flex items-center space-x-1">
+              {lampiran.slice(0, 2).map((attachment, index) => (
+                <div key={index} className="flex items-center space-x-1">
+                  <div
+                    className={`flex h-3 w-3 items-center justify-center rounded ${
+                      index === 0 ? "bg-green-100" : "bg-red-100"
+                    }`}
+                  >
                     <div
-                      className={`flex h-3 w-3 items-center justify-center rounded ${
-                        index === 0 ? "bg-green-100" : "bg-red-100"
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        index === 0 ? "bg-green-500" : "bg-red-500"
                       }`}
-                    >
-                      <div
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          index === 0 ? "bg-green-500" : "bg-red-500"
-                        }`}
-                      />
-                    </div>
-                    <span className="truncate text-xs text-gray-600">
-                      {attachment.name}
-                    </span>
+                    />
                   </div>
-                ))}
+                  <span className="truncate text-xs text-gray-600">
+                    {attachment.name}
+                  </span>
+                </div>
+              ))}
 
-              {email.surat_jalan.lampiran.length > 2 && (
+              {lampiran.length > 2 && (
                 <span className="text-xs text-gray-500">
-                  +{email.surat_jalan.lampiran.length - 2} more
+                  +{lampiran.length - 2} more
                 </span>
               )}
             </div>
-          )}
+          );
+        })()}
       </div>
 
       {/* Unread Indicator & Actions */}
@@ -354,24 +377,23 @@ export const EmailRow = ({
   const isOpened = openedEmail?.documentId === email.documentId;
   const { user } = useUserLogin();
 
-  // Helper function untuk mendapatkan tanggal dari surat
-  const getTanggalSurat = (item: DynamicEmailData) => {
-    const kategori = item.surat_jalan.kategori_surat;
-
-    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
-
-    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  // Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+  const getTanggalSuratLocal = (item: DynamicEmailData) => {
+    return getTanggalSurat(item) || item.surat_jalan.createdAt;
   };
 
   // Helper function untuk mendapatkan nomor surat
   const getNoSurat = (item: DynamicEmailData) => {
     const kategori = item.surat_jalan.kategori_surat;
 
-    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
+    
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+      return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+    }
+    
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -453,14 +475,14 @@ export const EmailRow = ({
         )}
         <div className="flex items-center max-lg:justify-between lg:gap-12">
           <span className="text-sm font-medium text-gray-900 truncate">
-            {email.surat_jalan.penerima.perusahaan_penerima}
+            {getPerusahaanPenerima(email)}
           </span>
           {!openedEmail && (
             <>
               <span
                 className={`max-xl:hidden jtext-sm text-[#545454] block whitespace-normal break-words`}
               >
-                {email.surat_jalan.perihal}
+                {getPerihal(email)}
               </span>
               <span className="max-sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
                 {formatDate(email.surat_jalan.createdAt, "long")}
@@ -476,7 +498,7 @@ export const EmailRow = ({
             openedEmail ? "whitespace-normal break-words" : "truncate xl:hidden"
           }`}
         >
-          {email.surat_jalan.perihal}
+          {getPerihal(email)}
         </span>
       </div>
 
@@ -498,3 +520,4 @@ export const EmailRow = ({
     </div>
   );
 };
+

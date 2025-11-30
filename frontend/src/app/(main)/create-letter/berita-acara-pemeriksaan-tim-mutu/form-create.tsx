@@ -7,40 +7,62 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import SignatureCanvas from "react-signature-canvas";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
-import { Plus, Trash2, Eye, StickyNote, Send, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 
-import { SignatureType } from "@/lib/surat-jalan/surat-jalan.type";
-import { INITIAL_MATERIAL } from "@/lib/surat-jalan/form.constants";
-import { FileUtils } from "@/lib/surat-jalan/file.utils";
-import { useSuratJalanForm } from "@/lib/surat-jalan/useSuratJalanForm";
-import PreviewSection from "@/components/preview-surat";
+import {
+  SignatureType,
+  FormData as FormDataPemeriksaan,
+  MaterialForm,
+  SignatureData,
+  MengetahuiForm,
+} from "@/lib/surat-pemeriksaan/berita-pemeriksaan.type";
+import { FileUtils } from "@/lib/surat-pemeriksaan/file.utils";
+import { useBeritaPemeriksaanForm } from "@/lib/surat-pemeriksaan/useBeritaPemeriksaanForm";
+import { BeritaPemeriksaan, FileAttachment } from "@/lib/interface";
 import { toast } from "sonner";
-import { FileAttachment, SuratJalan } from "@/lib/interface";
-import { useUserLogin } from "@/lib/user";
-import { generateNextSuratNumber } from "@/lib/generate-no-surat";
-
-interface PreviewData {
-  upload: string | null;
-  signature: string | null;
-}
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, StickyNote, Send } from "lucide-react";
+import PreviewBeritaPemeriksaan from "@/components/preview-berita-pemeriksaan";
 
 interface FormCreateProps {
-  dataSurat: SuratJalan[];
+  dataSurat: BeritaPemeriksaan[];
 }
+
+// Daftar kelengkapan dokumen
+const KELENGKAPAN_DOKUMEN_LIST = [
+  { id: 1, label: "Outline", type: "radio", value: "outline" },
+  { id: 2, label: "Approval Drawing", type: "radio", value: "approval" },
+  {
+    id: 3,
+    label:
+      "Buku Instruction Manual dalam bahasa Inggris & Indonesia (Hardcopy & Softcopy)",
+  },
+  { id: 4, label: "Surat Keterangan Asal Usul Barang" },
+  { id: 5, label: "Factory Test Certificate / Routine Test" },
+  { id: 6, label: "Technical Particular and Guarantee & Brosur Barang" },
+  { id: 7, label: "Certificate of Origin (COO)" },
+  { id: 8, label: "Certificate of Manufacture (COM)" },
+  { id: 9, label: "ISO 9001 Dan ISO 14001 dari pabrikan yang masih berlaku" },
+  { id: 10, label: "Copy Result of Inspection and test (COA)" },
+  { id: 11, label: "Surat Pernyataan Garansi Barang" },
+  { id: 12, label: "Surat Pernyataan 100% Barang Baru dan Asli" },
+  {
+    id: 13,
+    label:
+      "Surat Pernyataan dari penyedia /Pabrikan yang menyatakan bertanggung jawab bahwa barang yang disupply tersebut dalam keadan baik bisa di gunakan oleh pihak PLN.",
+  },
+];
 
 export default function FormCreatePemeriksaanPage({
   dataSurat,
 }: FormCreateProps) {
   const router = useRouter();
-  const { user } = useUserLogin();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const draftId = searchParams.get("id");
@@ -48,113 +70,414 @@ export default function FormCreatePemeriksaanPage({
   const {
     formData,
     materials,
-    signaturePenerima,
-    signaturePengirim,
-    lampiran,
-
+    signaturePenyediaBarang,
+    pemeriksaBarang,
     setFormData,
     setMaterials,
-    setSignaturePenerima,
-    setSignaturePengirim,
-    setLampiran,
+    setSignaturePenyediaBarang,
+    setPemeriksaBarang,
     handleSubmit: submitForm,
-  } = useSuratJalanForm();
+  } = useBeritaPemeriksaanForm();
 
-  const [showPreview, setShowPreview] = useState(false);
+  // State untuk kelengkapan dokumen
+  const [jenisGambar, setJenisGambar] = useState<string>("");
+  const [checkedKelengkapan, setCheckedKelengkapan] = useState<Set<number>>(
+    new Set()
+  );
+  const [dokumenLainnya, setDokumenLainnya] = useState<string>("");
+  const [dokumenInfo, setDokumenInfo] = useState({
+    dokumen: "",
+    noDokumen: "",
+    tanggal: "",
+  });
+
+  // State untuk edit mode dan loading
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
-  const signatureRefPenerima = useRef<SignatureCanvas>(null);
-  const signatureRefPengirim = useRef<SignatureCanvas>(null);
+  // Signature Refs
+  const signatureRefPenyediaBarang = useRef<SignatureCanvas>(null);
+  const signatureRefsMengetahui = useRef<Map<number, SignatureCanvas>>(
+    new Map()
+  );
+
+  // Fungsi untuk menambah mengetahui baru
+  const addMengetahui = () => {
+    const newId = Date.now();
+    const newMengetahui: MengetahuiForm = {
+      id: newId,
+      departemenMengetahui: "",
+      namaMengetahui: "",
+      signature: {
+        upload: null,
+        signature: null,
+        preview: { upload: null, signature: null },
+      },
+    };
+
+    setPemeriksaBarang((prev) => ({
+      ...prev,
+      mengetahui: [...prev.mengetahui, newMengetahui],
+    }));
+  };
+
+  const removeMengetahui = (id: number) => {
+    setPemeriksaBarang((prev) => {
+      // Jangan hapus jika hanya ada 1 mengetahui
+      if (prev.mengetahui.length <= 1) {
+        return prev;
+      }
+      return {
+        ...prev,
+        mengetahui: prev.mengetahui.filter((m) => m.id !== id),
+      };
+    });
+    signatureRefsMengetahui.current.delete(id);
+  };
+
+  // Fungsi untuk convert kelengkapan dokumen ke markdown
+  const convertKelengkapanToMarkdown = (
+    checkedItems: Set<number>,
+    gambarValue: string,
+    lainnyaValue: string,
+    dokumenInfoValue: { dokumen: string; noDokumen: string; tanggal: string }
+  ): string => {
+    const items: string[] = [];
+    let itemNumber = 1;
+
+    // Tambahkan nomor 1 jika ada data dokumen
+    if (
+      dokumenInfoValue.dokumen.trim() ||
+      dokumenInfoValue.noDokumen.trim() ||
+      dokumenInfoValue.tanggal.trim()
+    ) {
+      const parts: string[] = [];
+      if (dokumenInfoValue.dokumen.trim()) {
+        parts.push(dokumenInfoValue.dokumen.trim());
+      }
+      if (dokumenInfoValue.noDokumen.trim()) {
+        parts.push(`No ${dokumenInfoValue.noDokumen.trim()}`);
+      }
+      if (dokumenInfoValue.tanggal.trim()) {
+        const date = new Date(dokumenInfoValue.tanggal);
+        const formattedDate = date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+        parts.push(`Tanggal ${formattedDate}`);
+      }
+      if (parts.length > 0) {
+        items.push(`${itemNumber}. ${parts.join(", ")}`);
+        itemNumber++;
+      }
+    }
+
+    // Tambahkan jenis gambar jika dipilih (nomor 2)
+    if (gambarValue) {
+      items.push(
+        `${itemNumber}. ${
+          gambarValue === "outline" ? "Outline" : "Approval Drawing"
+        }`
+      );
+      itemNumber++;
+    }
+
+    // Tambahkan checkbox yang dicentang (urutkan berdasarkan id, tapi nomor urut dari itemNumber)
+    const sortedIds = Array.from(checkedItems).sort((a, b) => a - b);
+    sortedIds.forEach((id) => {
+      const item = KELENGKAPAN_DOKUMEN_LIST.find((d) => d.id === id);
+      if (item && !item.type) {
+        // Skip radio button (id 1 dan 2) dan nomor 1 (sudah ditangani di atas)
+        if (id === 14 && lainnyaValue.trim()) {
+          items.push(`${itemNumber}. Dokumen Lainnya: ${lainnyaValue.trim()}`);
+          itemNumber++;
+        } else if (id !== 14 && id !== 1 && id !== 2) {
+          items.push(`${itemNumber}. ${item.label}`);
+          itemNumber++;
+        }
+      }
+    });
+
+    // Convert ke format tanpa bullet point
+    return items.length > 0 ? items.join("\n") : "";
+  };
+
+  // Fungsi untuk parse kelengkapan dokumen dari markdown kembali ke state
+  const parseKelengkapanFromMarkdown = (markdown: string) => {
+    const checkedItems = new Set<number>();
+    let gambarValue = "";
+    let lainnyaValue = "";
+    let parsedDokumenInfo = {
+      dokumen: "",
+      noDokumen: "",
+      tanggal: "",
+    };
+
+    if (!markdown) {
+      return {
+        checkedItems,
+        gambarValue,
+        lainnyaValue,
+        dokumenInfo: parsedDokumenInfo,
+      };
+    }
+
+    const lines = markdown.split("\n").filter((line) => line.trim());
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+
+      // Check untuk nomor 1 (dokumen info) - format: "1. Dokumen, No Dokumen, Tanggal"
+      if (trimmed.match(/^1\.\s*.+/)) {
+        const content = trimmed.replace(/^1\.\s*/, "");
+        // Parse format: "Dokumen, No NoDokumen, Tanggal Tanggal"
+        const parts = content.split(",").map((p) => p.trim());
+        parts.forEach((part) => {
+          if (part.startsWith("No ")) {
+            parsedDokumenInfo.noDokumen = part.replace(/^No\s+/, "");
+          } else if (part.startsWith("Tanggal ")) {
+            const dateStr = part.replace(/^Tanggal\s+/, "");
+            // Convert Indonesian date format to YYYY-MM-DD
+            try {
+              const date = new Date(dateStr);
+              if (!isNaN(date.getTime())) {
+                parsedDokumenInfo.tanggal = date.toISOString().split("T")[0];
+              }
+            } catch (e) {
+              // Ignore date parsing errors
+            }
+          } else if (
+            part &&
+            !part.startsWith("No ") &&
+            !part.startsWith("Tanggal ")
+          ) {
+            // This should be the dokumen name
+            parsedDokumenInfo.dokumen = part;
+          }
+        });
+      }
+
+      // Check untuk jenis gambar (Outline atau Approval Drawing)
+      if (trimmed.includes("Outline") && !trimmed.includes("1.")) {
+        gambarValue = "outline";
+        checkedItems.add(2);
+      } else if (trimmed.includes("Approval Drawing")) {
+        gambarValue = "approval";
+        checkedItems.add(2);
+      }
+
+      // Check untuk dokumen lainnya
+      if (trimmed.includes("Dokumen Lainnya:")) {
+        const match = trimmed.match(/Dokumen Lainnya:\s*(.+)/);
+        if (match && match[1]) {
+          lainnyaValue = match[1].trim();
+          checkedItems.add(14);
+        }
+      }
+
+      // Check untuk item lainnya (3-13) berdasarkan label
+      for (let i = 3; i <= 13; i++) {
+        const item = KELENGKAPAN_DOKUMEN_LIST.find((d) => d.id === i);
+        if (item && trimmed.includes(item.label)) {
+          checkedItems.add(i);
+          break;
+        }
+      }
+    });
+
+    return {
+      checkedItems,
+      gambarValue,
+      lainnyaValue,
+      dokumenInfo: parsedDokumenInfo,
+    };
+  };
+
+  // Handler untuk checkbox kelengkapan dokumen
+  const handleKelengkapanCheckbox = (id: number, checked: boolean) => {
+    setCheckedKelengkapan((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(id);
+      } else {
+        newSet.delete(id);
+      }
+      // Update kelengkapanDokumen di formData dengan state baru
+      const markdown = convertKelengkapanToMarkdown(
+        newSet,
+        jenisGambar,
+        dokumenLainnya,
+        dokumenInfo
+      );
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        kelengkapanDokumen: markdown,
+      }));
+      return newSet;
+    });
+  };
+
+  // Handler untuk radio jenis gambar
+  const handleJenisGambarChange = (value: string) => {
+    setJenisGambar(value);
+    // Update kelengkapanDokumen dengan state baru
+    const markdown = convertKelengkapanToMarkdown(
+      checkedKelengkapan,
+      value,
+      dokumenLainnya,
+      dokumenInfo
+    );
+    setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
+  };
+
+  // Handler untuk dokumen lainnya
+  const handleDokumenLainnyaChange = (value: string) => {
+    setDokumenLainnya(value);
+    // Update kelengkapanDokumen dengan state baru
+    const markdown = convertKelengkapanToMarkdown(
+      checkedKelengkapan,
+      jenisGambar,
+      value,
+      dokumenInfo
+    );
+    setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
+  };
 
   // Load draft data when in edit mode
   const loadDraftData = useCallback(async () => {
     try {
-      if (dataSurat) {
-        const suratJalan = dataSurat.filter(
+      if (dataSurat && draftId) {
+        const beritaPemeriksaan = dataSurat.find(
           (item) => item.documentId === draftId
-        )[0];
+        );
+
+        if (!beritaPemeriksaan) {
+          toast.error("Data tidak ditemukan", { position: "top-center" });
+          router.push("/draft");
+          return;
+        }
 
         // Populate form data
         setFormData({
-          nomorSuratJalan: suratJalan.no_surat_jalan || "",
-          nomorSuratPermintaan: suratJalan.no_surat_permintaan || "",
-          tanggalSurat: suratJalan.tanggal
-            ? new Date(suratJalan.tanggal).toISOString().split("T")[0]
+          nomorBeritaAcara: beritaPemeriksaan.no_berita_acara || "",
+          nomorPerjanjianKontrak: beritaPemeriksaan.no_perjanjian_kontrak || "",
+          tanggalKontrak: beritaPemeriksaan.tanggal_kontrak
+            ? new Date(beritaPemeriksaan.tanggal_kontrak)
+                .toISOString()
+                .split("T")[0]
             : "",
-          perihal: suratJalan.perihal || "",
-          lokasiAsal: suratJalan.lokasi_asal || "",
-          lokasiTujuan: suratJalan.lokasi_tujuan || "",
-          catatanTambahan: suratJalan.catatan_tambahan || "",
-          informasiKendaraan: suratJalan.informasi_kendaraan || "",
-          namaPengemudi: suratJalan.nama_pengemudi || "",
-          perusahaanPenerima: suratJalan.penerima.perusahaan_penerima || "",
-          namaPenerima: suratJalan.penerima.nama_penerima || "",
-          departemenPengirim: suratJalan.pengirim.departemen_pengirim || "",
-          namaPengirim: suratJalan.pengirim.nama_pengirim || "",
+          tanggalPelaksanaan: beritaPemeriksaan.tanggal_pelaksanaan
+            ? new Date(beritaPemeriksaan.tanggal_pelaksanaan)
+                .toISOString()
+                .split("T")[0]
+            : "",
+          perihalKontrak: beritaPemeriksaan.perihal_kontrak || "",
+          hasilPemeriksaan: beritaPemeriksaan.hasil_pemeriksaan || "",
+          kelengkapanDokumen: beritaPemeriksaan.kelengkapan_dokumen || "",
+          perusahaanPenyediaBarang:
+            beritaPemeriksaan.penyedia_barang?.perusahaan_penyedia_barang || "",
+          namaPenanggungJawab:
+            beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab || "",
+          departemenPemeriksa:
+            beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
         });
 
+        // Parse kelengkapan dokumen dari markdown
+        const parsedKelengkapan = parseKelengkapanFromMarkdown(
+          beritaPemeriksaan.kelengkapan_dokumen || ""
+        );
+        setCheckedKelengkapan(parsedKelengkapan.checkedItems);
+        setJenisGambar(parsedKelengkapan.gambarValue);
+        setDokumenLainnya(parsedKelengkapan.lainnyaValue);
+        setDokumenInfo(parsedKelengkapan.dokumenInfo);
+
+        // Load materials
+        if (
+          beritaPemeriksaan.materials &&
+          beritaPemeriksaan.materials.length > 0
+        ) {
+          const loadedMaterials = beritaPemeriksaan.materials.map(
+            (mat, index) => ({
+              id: index + 1,
+              namaMaterial: mat.nama || "",
+              katalog: mat.katalog || "",
+              satuan: mat.satuan || "",
+              tipe: (mat as any).tipe || "",
+              serial_number: (mat as any).serial_number || "",
+              lokasi: (mat as any).lokasi || "",
+              jumlah: mat.jumlah?.toString() || "0",
+            })
+          );
+          setMaterials(loadedMaterials);
+        }
+
+        // Load signature penyedia barang
         const getFileUrl = (
           fileAttachment: FileAttachment | null | undefined
         ): string => {
           if (!fileAttachment?.url) return "";
           if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
-          return `http://localhost:1337${fileAttachment.url}`;
+          return `${process.env.NEXT_PUBLIC_API_URL}${fileAttachment.url}`;
         };
 
-        if (suratJalan.penerima.ttd_penerima) {
-          const signatureUrl = getFileUrl(suratJalan.penerima.ttd_penerima);
-          setSignaturePenerima((prev) => ({
+        if (beritaPemeriksaan.penyedia_barang?.ttd_penerima) {
+          const signatureUrl = getFileUrl(
+            beritaPemeriksaan.penyedia_barang.ttd_penerima
+          );
+          setSignaturePenyediaBarang((prev) => ({
             ...prev,
             signature: signatureUrl,
             preview: { ...prev.preview, upload: signatureUrl, signature: null },
           }));
         }
 
-        if (suratJalan.pengirim.ttd_pengirim) {
-          const signatureUrl = getFileUrl(suratJalan.pengirim.ttd_pengirim);
-          setSignaturePengirim((prev) => ({
-            ...prev,
-            signature: signatureUrl,
-            preview: { ...prev.preview, upload: signatureUrl, signature: null },
-          }));
-        }
+        // Load mengetahui
+        if (
+          beritaPemeriksaan.pemeriksa_barang?.mengetahui &&
+          beritaPemeriksaan.pemeriksa_barang.mengetahui.length > 0
+        ) {
+          const loadedMengetahui =
+            beritaPemeriksaan.pemeriksa_barang.mengetahui.map((m, index) => {
+              const mengetahuiId = Date.now() + index;
+              let signaturePreview: { upload: string | null; signature: null } =
+                { upload: null, signature: null };
 
-        if (suratJalan.materials && suratJalan.materials.length > 0) {
-          const loadedMaterials = suratJalan.materials.map((mat, index) => ({
-            id: index + 1,
-            namaMaterial: mat.nama || "",
-            katalog: mat.katalog || "",
-            satuan: mat.satuan || "",
-            jumlah: mat.jumlah?.toString() || "0",
-            keterangan: mat.keterangan || "",
-          }));
-          setMaterials(loadedMaterials);
-        }
+              if (m.ttd_mengetahui) {
+                const signatureUrl = getFileUrl(m.ttd_mengetahui);
+                signaturePreview = { upload: signatureUrl, signature: null };
+              }
 
-        if (suratJalan.lampiran && suratJalan.lampiran.length > 0) {
-          try {
-            const loadedLampiran = await Promise.all(
-              suratJalan.lampiran.map(async (attachment: FileAttachment) => {
-                const fileUrl = getFileUrl(attachment);
-                const response = await fetch(fileUrl);
-                const blob = await response.blob();
-                return new File([blob], attachment.name || "lampiran", {
-                  type: blob.type,
-                });
-              })
-            );
-            setLampiran(loadedLampiran);
-          } catch (error) {
-            console.error("Error loading lampiran:", error);
-            toast.error("Beberapa lampiran gagal dimuat", {
-              position: "top-center",
+              return {
+                id: mengetahuiId,
+                departemenMengetahui: m.departemen_mengetahui || "",
+                namaMengetahui: m.nama_mengetahui || "",
+                signature: {
+                  upload: null,
+                  signature: signaturePreview.upload,
+                  preview: signaturePreview,
+                },
+              };
             });
-          }
+          setPemeriksaBarang((prev) => ({
+            ...prev,
+            departemenPemeriksa:
+              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
+            mengetahui: loadedMengetahui,
+          }));
+        } else {
+          // Jika tidak ada mengetahui, tetap update departemenPemeriksa
+          setPemeriksaBarang((prev) => ({
+            ...prev,
+            departemenPemeriksa:
+              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
+          }));
         }
 
         toast.success("Data berhasil dimuat", {
-          description: "Anda dapat melanjutkan mengedit surat jalan",
+          description:
+            "Anda dapat melanjutkan mengedit berita acara pemeriksaan",
           position: "top-center",
         });
       } else {
@@ -169,11 +492,12 @@ export default function FormCreatePemeriksaanPage({
     }
   }, [
     router,
+    draftId,
+    dataSurat,
     setFormData,
-    setLampiran,
     setMaterials,
-    setSignaturePenerima,
-    setSignaturePengirim,
+    setSignaturePenyediaBarang,
+    setPemeriksaBarang,
   ]);
 
   const hasLoadedRef = useRef(false);
@@ -187,322 +511,48 @@ export default function FormCreatePemeriksaanPage({
     }
   }, [mode, draftId, loadDraftData]);
 
-  // Preview data untuk backward compatibility dengan render functions
-  const previewPenerima: PreviewData = {
-    upload: signaturePenerima.preview.upload,
-    signature: signaturePenerima.preview.signature,
-  };
-
-  const previewPengirim: PreviewData = {
-    upload: signaturePengirim.preview.upload,
-    signature: signaturePengirim.preview.signature,
-  };
-
   // FORM HANDLERS
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // MATERIAL HANDLERS
-  const addMaterial = () => {
-    const newId = Math.max(...materials.map((m) => m.id)) + 1;
-    setMaterials((prev) => [...prev, { id: newId, ...INITIAL_MATERIAL }]);
+  const handlePemeriksaChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setPemeriksaBarang((prev) => ({ ...prev, departemenPemeriksa: value }));
   };
 
-  const removeMaterial = (id: number) => {
-    if (materials.length > 1) {
-      setMaterials((prev) => prev.filter((m) => m.id !== id));
-    }
-  };
-
-  const handleMaterialChange = (id: number, field: string, value: string) => {
-    setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
-    );
-  };
-
-  const calculateTotal = () => {
-    return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
-  };
-
-  // SIGNATURE HANDLERS
-  const handleFileUpload = async (
-    e: ChangeEvent<HTMLInputElement>,
-    type: SignatureType
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validation = FileUtils.validate(file);
-    if (!validation.valid) {
-      alert(validation.error);
-      return;
-    }
-
-    const preview = await FileUtils.toBase64(file);
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
-
-    setter((prev) => ({
-      ...prev,
-      upload: file,
-      preview: { ...prev.preview, upload: preview },
-    }));
-  };
-
-  const saveSignature = (type: SignatureType) => {
-    const ref =
-      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
-
-    if (ref.current && !ref.current.isEmpty()) {
-      const dataURL = ref.current.toDataURL();
-      setter((prev) => ({
-        ...prev,
-        signature: dataURL,
-        preview: { ...prev.preview, signature: dataURL },
-      }));
-    } else {
-      alert("Mohon buat tanda tangan terlebih dahulu");
-    }
-  };
-
-  const clearSignature = (type: SignatureType) => {
-    const ref =
-      type === "penerima" ? signatureRefPenerima : signatureRefPengirim;
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
-
-    if (ref.current) {
-      ref.current.clear();
-      setter((prev) => ({
-        ...prev,
-        signature: null,
-        preview: { ...prev.preview, signature: null },
-      }));
-    }
-  };
-
-  const removeUploadedSignature = (type: SignatureType) => {
-    const setter =
-      type === "penerima" ? setSignaturePenerima : setSignaturePengirim;
-    setter((prev) => ({
-      ...prev,
-      upload: null,
-      preview: { ...prev.preview, upload: null },
-    }));
-  };
-
-  // LAMPIRAN HANDLERS
-  const handleFileChangeLampiran = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setLampiran((prev) => [...prev, ...Array.from(files)]);
-    }
-  };
-
-  const handleRemoveLampiran = (index: number) => {
-    setLampiran((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Form validation - mengembalikan error pertama yang ditemukan
-  const validateForm = (isDraft: boolean = false) => {
-    if (!isDraft) {
-      if (!formData.nomorSuratPermintaan) {
-        return {
-          isValid: false,
-          error: "Nomor Surat Permintaan harus diisi",
-          field: "nomorSuratPermintaan",
-        };
-      }
-      if (!formData.tanggalSurat) {
-        return {
-          isValid: false,
-          error: "Tanggal Surat harus diisi",
-          field: "tanggalSurat",
-        };
-      }
-      if (!formData.perihal.trim()) {
-        return {
-          isValid: false,
-          error: "Perihal harus diisi",
-          field: "perihal",
-        };
-      }
-      if (!formData.lokasiAsal.trim()) {
-        return {
-          isValid: false,
-          error: "Lokasi Asal harus diisi",
-          field: "lokasiAsal",
-        };
-      }
-      if (!formData.lokasiTujuan.trim()) {
-        return {
-          isValid: false,
-          error: "Lokasi Tujuan harus diisi",
-          field: "lokasiTujuan",
-        };
-      }
-
-      // Validasi materials
-      const validMaterials = materials.filter(
-        (m) =>
-          m.namaMaterial.trim() &&
-          m.katalog.trim() &&
-          m.satuan &&
-          parseFloat(m.jumlah) > 0
-      );
-
-      if (validMaterials.length === 0) {
-        return {
-          isValid: false,
-          error:
-            "Minimal harus ada 1 material dengan data lengkap (Nama, Katalog, Satuan, dan Jumlah)",
-          field: "materials",
-        };
-      }
-
-      // Validasi informasi pengirim
-      if (!formData.departemenPengirim.trim()) {
-        return {
-          isValid: false,
-          error: "Departemen Pengirim harus diisi",
-          field: "departemenPengirim",
-        };
-      }
-      if (!formData.namaPengirim.trim()) {
-        return {
-          isValid: false,
-          error: "Nama Pengirim harus diisi",
-          field: "namaPengirim",
-        };
-      }
-
-      // Validasi tanda tangan pengirim
-      if (!signaturePengirim.upload && !signaturePengirim.signature) {
-        return {
-          isValid: false,
-          error: "Tanda tangan Pengirim harus diisi",
-          field: "signaturePengirim",
-        };
-      }
-
-      // Validasi informasi penerima
-      if (!formData.perusahaanPenerima.trim()) {
-        return {
-          isValid: false,
-          error: "Perusahaan Penerima harus diisi",
-          field: "perusahaanPenerima",
-        };
-      }
-      if (!formData.namaPenerima.trim()) {
-        return {
-          isValid: false,
-          error: "Nama Penerima harus diisi",
-          field: "namaPenerima",
-        };
-      }
-
-      // Validasi tanda tangan penerima
-      if (!signaturePenerima.upload && !signaturePenerima.signature) {
-        return {
-          isValid: false,
-          error: "Tanda tangan Penerima harus diisi",
-          field: "signaturePenerima",
-        };
-      }
-    } else {
-      // Untuk draft
-      if (!formData.nomorSuratJalan.trim()) {
-        return {
-          isValid: false,
-          error: "Nomor Surat Jalan harus diisi untuk menyimpan draft",
-          field: "nomorSuratJalan",
-        };
-      }
-    }
-
-    return { isValid: true };
-  };
-
-  // SUBMISSION HANDLERS
+  // Handler untuk submit dan draft
   const handleSubmit = async () => {
-    const validation = validateForm(false);
-
-    if (!validation.isValid) {
-      toast.error(validation.error, {
-        position: "top-center",
-        duration: 4000,
-      });
-
-      const fieldElement = document.querySelector(
-        `[name="${validation.field}"]`
-      );
-      if (fieldElement) {
-        fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
-        // @ts-ignore
-        fieldElement.focus?.();
-      }
-
-      return;
-    }
-
     try {
-      toast.loading(isEditMode ? "Memperbarui surat..." : "Mengirim surat...", {
+      // Update kelengkapan dokumen sebelum submit dengan state terbaru
+      const markdown = convertKelengkapanToMarkdown(
+        checkedKelengkapan,
+        jenisGambar,
+        dokumenLainnya,
+        dokumenInfo
+      );
+      setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
+
+      // Tunggu state update selesai
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      toast.loading("Mengirim surat...", {
         id: "submit",
         position: "top-center",
       });
 
       await submitForm(false);
 
-      setFormData({
-        nomorSuratJalan: "",
-        nomorSuratPermintaan: "",
-        tanggalSurat: "",
-        perihal: "",
-        lokasiAsal: "",
-        lokasiTujuan: "",
-        catatanTambahan: "",
-        informasiKendaraan: "",
-        namaPengemudi: "",
-        perusahaanPenerima: "",
-        namaPenerima: "",
-        departemenPengirim: "",
-        namaPengirim: "",
+      toast.success("Surat berhasil dikirim 🎉", {
+        id: "submit",
+        position: "top-center",
+        duration: 3000,
       });
 
-      setLampiran([]);
-      setSignaturePenerima({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
-      setSignaturePengirim({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
-      setMaterials([{ id: 1, ...INITIAL_MATERIAL }]);
-
-      toast.success(
-        isEditMode
-          ? "Surat berhasil diperbarui 🎉"
-          : "Surat berhasil dikirim 🎉",
-        {
-          id: "submit",
-          position: "top-center",
-          duration: 3000,
-          description: isEditMode
-            ? "Perubahan surat jalan telah disimpan dan dikirim."
-            : "Surat jalan telah berhasil dikirim ke penerima.",
-        }
-      );
-
-      sessionStorage.removeItem("draftData");
+      router.push("/draft");
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -517,72 +567,33 @@ export default function FormCreatePemeriksaanPage({
   };
 
   const handleDraft = async () => {
-    const validation = validateForm(true);
-
-    if (!validation.isValid) {
-      toast.error(validation.error, {
-        position: "top-center",
-        duration: 4000,
-      });
-      return;
-    }
-
     try {
-      toast.loading(
-        isEditMode ? "Memperbarui draft..." : "Menyimpan draft...",
-        {
-          id: "draft",
-          position: "top-center",
-        }
+      // Update kelengkapan dokumen sebelum draft dengan state terbaru
+      const markdown = convertKelengkapanToMarkdown(
+        checkedKelengkapan,
+        jenisGambar,
+        dokumenLainnya,
+        dokumenInfo
       );
+      setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
+
+      // Tunggu state update selesai
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      toast.loading("Menyimpan draft...", {
+        id: "draft",
+        position: "top-center",
+      });
 
       await submitForm(true);
 
-      setFormData({
-        nomorSuratJalan: "",
-        nomorSuratPermintaan: "",
-        tanggalSurat: "",
-        perihal: "",
-        lokasiAsal: "",
-        lokasiTujuan: "",
-        catatanTambahan: "",
-        informasiKendaraan: "",
-        namaPengemudi: "",
-        perusahaanPenerima: "",
-        namaPenerima: "",
-        departemenPengirim: "",
-        namaPengirim: "",
+      toast.success("Draft berhasil disimpan 📝", {
+        id: "draft",
+        position: "top-center",
+        duration: 3000,
       });
 
-      setLampiran([]);
-      setSignaturePenerima({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
-      setSignaturePengirim({
-        upload: null,
-        signature: null,
-        preview: { upload: null, signature: null },
-      });
-      setMaterials([{ id: 1, ...INITIAL_MATERIAL }]);
-
-      toast.success(
-        isEditMode
-          ? "Draft berhasil diperbarui 📝"
-          : "Draft berhasil disimpan 📝",
-        {
-          id: "draft",
-          position: "top-center",
-          duration: 3000,
-          description: "Surat jalan disimpan sebagai draft.",
-        }
-      );
-
-      if (isEditMode) {
-        sessionStorage.removeItem("draftData");
-        router.push("/draft");
-      }
+      router.push("/draft");
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Gagal menyimpan draft 😢";
@@ -594,21 +605,59 @@ export default function FormCreatePemeriksaanPage({
     }
   };
 
-  const handlePreviewPDF = () => {
-    setShowPreview(true);
+  const handleMengetahuiChange = (
+    id: number,
+    field: "departemenMengetahui" | "namaMengetahui",
+    value: string
+  ) => {
+    setPemeriksaBarang((prev) => ({
+      ...prev,
+      mengetahui: prev.mengetahui.map((m) =>
+        m.id === id ? { ...m, [field]: value } : m
+      ),
+    }));
   };
 
-  const scaleToFit = (element: HTMLElement, targetHeightMM = 297) => {
-    const targetHeightPx = targetHeightMM * 3.78;
-    const actualHeightPx = element.scrollHeight;
+  // MATERIAL HANDLERS
+  const addMaterial = () => {
+    const newId = Math.max(...materials.map((m) => m.id), 0) + 1;
+    setMaterials((prev) => [
+      ...prev,
+      {
+        id: newId,
+        namaMaterial: "",
+        katalog: "",
+        satuan: "",
+        tipe: "",
+        serial_number: "",
+        lokasi: "",
+        jumlah: "",
+      },
+    ]);
+  };
 
-    if (actualHeightPx > targetHeightPx) {
-      const scale = targetHeightPx / actualHeightPx;
-      element.style.transform = `scale(${scale})`;
-      element.style.transformOrigin = "top left";
-    } else {
-      element.style.transform = "scale(1)";
+  const removeMaterial = (id: number) => {
+    if (materials.length > 1) {
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
     }
+  };
+
+  const handleMaterialChange = (
+    id: number,
+    field: keyof MaterialForm,
+    value: string
+  ) => {
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+    );
+  };
+
+  const calculateTotal = () => {
+    return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
+  };
+
+  const handlePreviewPDF = () => {
+    setShowPreview(true);
   };
 
   const handleDownloadPDF = async () => {
@@ -676,29 +725,160 @@ export default function FormCreatePemeriksaanPage({
       );
     }
 
-    pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
+    pdf.save(`${formData.nomorBeritaAcara || "berita-acara-pemeriksaan"}.pdf`);
   };
 
-  // Generate no surat
-  useEffect(() => {
-    if (mode !== "edit" && !draftId && dataSurat && dataSurat.length >= 0) {
-      const autoGeneratedNumber = generateNextSuratNumber(dataSurat);
-      setFormData((prev) => ({
-        ...prev,
-        nomorSuratJalan: autoGeneratedNumber,
-      }));
-    }
-  }, [mode, draftId, dataSurat, setFormData]);
+  // SIGNATURE HANDLERS - Penyedia Barang
+  const handleFileUploadPenyediaBarang = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Set default tanggal surat
-  useEffect(() => {
-    if (!formData.tanggalSurat && mode !== "edit" && !draftId) {
-      setFormData((prev) => ({
+    const validation = FileUtils.validate(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    const preview = await FileUtils.toBase64(file);
+    setSignaturePenyediaBarang((prev) => ({
+      ...prev,
+      upload: file,
+      preview: { ...prev.preview, upload: preview },
+    }));
+  };
+
+  const saveSignaturePenyediaBarang = () => {
+    if (
+      signatureRefPenyediaBarang.current &&
+      !signatureRefPenyediaBarang.current.isEmpty()
+    ) {
+      const dataURL = signatureRefPenyediaBarang.current.toDataURL();
+      setSignaturePenyediaBarang((prev) => ({
         ...prev,
-        tanggalSurat: new Date().toISOString().split("T")[0],
+        signature: dataURL,
+        preview: { ...prev.preview, signature: dataURL },
+      }));
+    } else {
+      alert("Mohon buat tanda tangan terlebih dahulu");
+    }
+  };
+
+  const clearSignaturePenyediaBarang = () => {
+    if (signatureRefPenyediaBarang.current) {
+      signatureRefPenyediaBarang.current.clear();
+      setSignaturePenyediaBarang((prev) => ({
+        ...prev,
+        signature: null,
+        preview: { ...prev.preview, signature: null },
       }));
     }
-  }, [mode, draftId, formData.tanggalSurat, setFormData]);
+  };
+
+  const removeUploadedSignaturePenyediaBarang = () => {
+    setSignaturePenyediaBarang((prev) => ({
+      ...prev,
+      upload: null,
+      preview: { ...prev.preview, upload: null },
+    }));
+  };
+
+  // SIGNATURE HANDLERS - Mengetahui
+  const handleFileUploadMengetahui = async (
+    e: ChangeEvent<HTMLInputElement>,
+    mengetahuiId: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = FileUtils.validate(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    const preview = await FileUtils.toBase64(file);
+    setPemeriksaBarang((prev) => ({
+      ...prev,
+      mengetahui: prev.mengetahui.map((m) =>
+        m.id === mengetahuiId
+          ? {
+              ...m,
+              signature: {
+                ...m.signature,
+                upload: file,
+                preview: { ...m.signature.preview, upload: preview },
+              },
+            }
+          : m
+      ),
+    }));
+  };
+
+  const saveSignatureMengetahui = (mengetahuiId: number) => {
+    const ref = signatureRefsMengetahui.current.get(mengetahuiId);
+    if (ref && !ref.isEmpty()) {
+      const dataURL = ref.toDataURL();
+      setPemeriksaBarang((prev) => ({
+        ...prev,
+        mengetahui: prev.mengetahui.map((m) =>
+          m.id === mengetahuiId
+            ? {
+                ...m,
+                signature: {
+                  ...m.signature,
+                  signature: dataURL,
+                  preview: { ...m.signature.preview, signature: dataURL },
+                },
+              }
+            : m
+        ),
+      }));
+    } else {
+      alert("Mohon buat tanda tangan terlebih dahulu");
+    }
+  };
+
+  const clearSignatureMengetahui = (mengetahuiId: number) => {
+    const ref = signatureRefsMengetahui.current.get(mengetahuiId);
+    if (ref) {
+      ref.clear();
+      setPemeriksaBarang((prev) => ({
+        ...prev,
+        mengetahui: prev.mengetahui.map((m) =>
+          m.id === mengetahuiId
+            ? {
+                ...m,
+                signature: {
+                  ...m.signature,
+                  signature: null,
+                  preview: { ...m.signature.preview, signature: null },
+                },
+              }
+            : m
+        ),
+      }));
+    }
+  };
+
+  const removeUploadedSignatureMengetahui = (mengetahuiId: number) => {
+    setPemeriksaBarang((prev) => ({
+      ...prev,
+      mengetahui: prev.mengetahui.map((m) =>
+        m.id === mengetahuiId
+          ? {
+              ...m,
+              signature: {
+                ...m.signature,
+                upload: null,
+                preview: { ...m.signature.preview, upload: null },
+              },
+            }
+          : m
+      ),
+    }));
+  };
 
   const renderBasicInformation = () => (
     <div>
@@ -709,12 +889,11 @@ export default function FormCreatePemeriksaanPage({
           </label>
           <Input
             type="text"
-            name="nomorSuratJalan"
-            value={formData.nomorSuratJalan}
+            name="nomorBeritaAcara"
+            value={formData.nomorBeritaAcara}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
-            placeholder="NO : 001.SJ/GD.UPT-BDG/IX/2025"
-            readOnly={!isEditMode}
+            placeholder="NO : 001.BA/GD.UPT-BDG/IX/2025"
           />
         </div>
 
@@ -724,8 +903,8 @@ export default function FormCreatePemeriksaanPage({
           </label>
           <Input
             type="text"
-            name="nomorSuratPermintaan"
-            value={formData.nomorSuratPermintaan}
+            name="nomorPerjanjianKontrak"
+            value={formData.nomorPerjanjianKontrak}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
             placeholder="001.REQ/GD.UPT-BDG/IX/2025"
@@ -739,8 +918,8 @@ export default function FormCreatePemeriksaanPage({
           <div className="relative">
             <input
               type="date"
-              name="tanggalSurat"
-              value={formData.tanggalSurat}
+              name="tanggalKontrak"
+              value={formData.tanggalKontrak}
               onChange={handleInputChange}
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -753,8 +932,8 @@ export default function FormCreatePemeriksaanPage({
           </label>
           <input
             type="date"
-            name="tanggalSurat"
-            value={formData.tanggalSurat}
+            name="tanggalPelaksanaan"
+            value={formData.tanggalPelaksanaan}
             onChange={handleInputChange}
             className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -766,11 +945,11 @@ export default function FormCreatePemeriksaanPage({
           </label>
           <Input
             type="text"
-            name="nomorSuratPermintaan"
-            value={formData.nomorSuratPermintaan}
+            name="perihalKontrak"
+            value={formData.perihalKontrak}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
-            placeholder="001.REQ/GD.UPT-BDG/IX/2025"
+            placeholder="Perihal kontrak..."
           />
         </div>
 
@@ -778,10 +957,14 @@ export default function FormCreatePemeriksaanPage({
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
             Hasil Pemeriksaan
           </label>
-          <select className="w-full px-2 py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white">
-            <option value="Diterima" className="">
-              DITERIMA
-            </option>
+          <select
+            name="hasilPemeriksaan"
+            value={formData.hasilPemeriksaan}
+            onChange={handleInputChange}
+            className="w-full px-2 py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            <option value="">Pilih Hasil</option>
+            <option value="Diterima">DITERIMA</option>
             <option value="Ditolak">DITOLAK</option>
           </select>
         </div>
@@ -789,61 +972,104 @@ export default function FormCreatePemeriksaanPage({
     </div>
   );
 
-  if (isLoading) {
-    return (
-      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0] mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat Form...</p>
-        </div>
-      </div>
-    );
-  }
-
   const renderKelengkapanSection = () => (
     <div className="border border-gray-200 rounded-xl p-4 sm:p-6">
       <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-6">
         Kelengkapan Dokumen
       </h3>
-
-      {/* Row 1: Dokumen, No Dokumen, Tanggal */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Dokumen
-          </label>
-          <input
-            type="text"
-            defaultValue="Surat Jalan"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Surat Jalan"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            No Dokumen
-          </label>
-          <input
-            type="text"
-            defaultValue="No 09126434321"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="No 09126434321"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tanggal
-          </label>
-          <input
-            type="text"
-            defaultValue="No 09126434321"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="No 09126434321"
-          />
+      <div className="mb-6 flex items-center gap-3">
+        <span className="text-sm font-medium text-gray-700 w-6">1.</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Dokumen
+            </label>
+            <input
+              type="text"
+              value={dokumenInfo.dokumen}
+              onChange={(e) => {
+                const newDokumenInfo = {
+                  ...dokumenInfo,
+                  dokumen: e.target.value,
+                };
+                setDokumenInfo(newDokumenInfo);
+                // Update kelengkapanDokumen dengan state baru
+                const markdown = convertKelengkapanToMarkdown(
+                  checkedKelengkapan,
+                  jenisGambar,
+                  dokumenLainnya,
+                  newDokumenInfo
+                );
+                setFormData((prev) => ({
+                  ...prev,
+                  kelengkapanDokumen: markdown,
+                }));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Surat Jalan"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              No Dokumen
+            </label>
+            <input
+              type="text"
+              value={dokumenInfo.noDokumen}
+              onChange={(e) => {
+                const newDokumenInfo = {
+                  ...dokumenInfo,
+                  noDokumen: e.target.value,
+                };
+                setDokumenInfo(newDokumenInfo);
+                // Update kelengkapanDokumen dengan state baru
+                const markdown = convertKelengkapanToMarkdown(
+                  checkedKelengkapan,
+                  jenisGambar,
+                  dokumenLainnya,
+                  newDokumenInfo
+                );
+                setFormData((prev) => ({
+                  ...prev,
+                  kelengkapanDokumen: markdown,
+                }));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="No 09126434321"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tanggal
+            </label>
+            <input
+              type="date"
+              value={dokumenInfo.tanggal}
+              onChange={(e) => {
+                const newDokumenInfo = {
+                  ...dokumenInfo,
+                  tanggal: e.target.value,
+                };
+                setDokumenInfo(newDokumenInfo);
+                // Update kelengkapanDokumen dengan state baru
+                const markdown = convertKelengkapanToMarkdown(
+                  checkedKelengkapan,
+                  jenisGambar,
+                  dokumenLainnya,
+                  newDokumenInfo
+                );
+                setFormData((prev) => ({
+                  ...prev,
+                  kelengkapanDokumen: markdown,
+                }));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Row 2: Radio Buttons */}
+      {/* Row 2: Radio Buttons (Nomor 2) */}
       <div className="mb-6 flex items-center gap-3">
         <span className="text-sm font-medium text-gray-700 w-6">2.</span>
         <div className="flex gap-8">
@@ -852,6 +1078,8 @@ export default function FormCreatePemeriksaanPage({
               type="radio"
               name="jenisGambar"
               value="outline"
+              checked={jenisGambar === "outline"}
+              onChange={(e) => handleJenisGambarChange(e.target.value)}
               className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
             <span className="ml-2 text-sm text-gray-700">Outline</span>
@@ -861,6 +1089,8 @@ export default function FormCreatePemeriksaanPage({
               type="radio"
               name="jenisGambar"
               value="approval"
+              checked={jenisGambar === "approval"}
+              onChange={(e) => handleJenisGambarChange(e.target.value)}
               className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
             <span className="ml-2 text-sm text-gray-700">Approval Drawing</span>
@@ -870,184 +1100,30 @@ export default function FormCreatePemeriksaanPage({
 
       {/* Checkbox List */}
       <div className="space-y-3">
-        {/* Item 3 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            3.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Buku Instruction Manual dalam bahasa Inggris & Indonesia (Hardcopy &
-            Softcopy)
-          </span>
-        </label>
-
-        {/* Item 4 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            4.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Surat Keterangan Asal Usul Barang
-          </span>
-        </label>
-
-        {/* Item 5 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            5.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Factory Test Certificate / Routine Test
-          </span>
-        </label>
-
-        {/* Item 6 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            6.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Technical Particular and Guarantee & Brosur Barang
-          </span>
-        </label>
-
-        {/* Item 7 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            7.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Certificate of Origin (COO)
-          </span>
-        </label>
-
-        {/* Item 8 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            8.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Certificate of Manufacture (COM)
-          </span>
-        </label>
-
-        {/* Item 9 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            9.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            ISO 9001 Dan ISO 14001 dari pabrikan yang masih berlaku
-          </span>
-        </label>
-
-        {/* Item 10 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            10.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Copy Result of Inspection and test (COA)
-          </span>
-        </label>
-
-        {/* Item 11 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            11.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Surat Pernyataan Garansi Barang
-          </span>
-        </label>
-
-        {/* Item 12 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            12.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Surat Pernyataan 100% Barang Baru dan Asli
-          </span>
-        </label>
-
-        {/* Item 13 */}
-        <label className="flex items-start cursor-pointer group">
-          <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
-            13.
-          </span>
-          <div className="flex items-center h-6 mr-3">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-          </div>
-          <span className="text-sm text-gray-700">
-            Surat Pernyataan dari penyedia /Pabrikan yang menyatakan bertanggung
-            jawab bahwa barang yang disupply tersebut dalam keadan baik bisa di
-            gunakan oleh pihak PLN.
-          </span>
-        </label>
+        {/* Item 3-13: Checkbox List */}
+        {KELENGKAPAN_DOKUMEN_LIST.filter(
+          (item) => item.id >= 3 && item.id <= 13
+        ).map((item) => (
+          <label
+            key={item.id}
+            className="flex items-start cursor-pointer group"
+          >
+            <span className="text-sm font-medium text-gray-700 w-6 flex-shrink-0">
+              {item.id}.
+            </span>
+            <div className="flex items-center h-6 mr-3">
+              <input
+                type="checkbox"
+                checked={checkedKelengkapan.has(item.id)}
+                onChange={(e) =>
+                  handleKelengkapanCheckbox(item.id, e.target.checked)
+                }
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+            </div>
+            <span className="text-sm text-gray-700">{item.label}</span>
+          </label>
+        ))}
 
         {/* Item 14 - Dokumen Lainnya */}
         <div className="pt-2">
@@ -1058,6 +1134,10 @@ export default function FormCreatePemeriksaanPage({
             <div className="flex items-center h-6 mr-3">
               <input
                 type="checkbox"
+                checked={checkedKelengkapan.has(14)}
+                onChange={(e) =>
+                  handleKelengkapanCheckbox(14, e.target.checked)
+                }
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
             </div>
@@ -1067,6 +1147,8 @@ export default function FormCreatePemeriksaanPage({
           </div>
           <input
             type="text"
+            value={dokumenLainnya}
+            onChange={(e) => handleDokumenLainnyaChange(e.target.value)}
             placeholder="Input dokumen lainnya"
             className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ml-9"
             style={{ marginLeft: "2.25rem" }}
@@ -1093,7 +1175,7 @@ export default function FormCreatePemeriksaanPage({
       </div>
 
       <div className="rounded-2xl border border-[#ADB5BD] overflow-x-auto">
-        <table className="w-full border-collapse text-xs sm:text-sm md:text-base min-w-[500px]">
+        <table className="w-full border-collapse text-xs sm:text-sm md:text-base min-w-[800px]">
           <thead className="bg-[#F6F9FF]">
             <tr>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
@@ -1107,6 +1189,9 @@ export default function FormCreatePemeriksaanPage({
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
                 Tipe
+              </th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
+                Serial Number
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
                 Satuan
@@ -1161,16 +1246,27 @@ export default function FormCreatePemeriksaanPage({
                 <td className="px-4 py-3">
                   <Input
                     type="text"
-                    value={material.keterangan}
+                    value={material.tipe}
+                    onChange={(e) =>
+                      handleMaterialChange(material.id, "tipe", e.target.value)
+                    }
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Tipe"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <Input
+                    type="text"
+                    value={material.serial_number}
                     onChange={(e) =>
                       handleMaterialChange(
                         material.id,
-                        "keterangan",
+                        "serial_number",
                         e.target.value
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Lokasi"
+                    placeholder="Serial Number"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -1214,11 +1310,11 @@ export default function FormCreatePemeriksaanPage({
                 <td className="px-4 py-3">
                   <Input
                     type="text"
-                    value={material.keterangan}
+                    value={material.lokasi}
                     onChange={(e) =>
                       handleMaterialChange(
                         material.id,
-                        "keterangan",
+                        "lokasi",
                         e.target.value
                       )
                     }
@@ -1242,7 +1338,7 @@ export default function FormCreatePemeriksaanPage({
           </tbody>
           <tfoot className="bg-[#F6F9FF] border-t border-[#ADB5BD]">
             <tr>
-              <td colSpan={4}></td>
+              <td colSpan={5}></td>
               <td className="px-4 py-3 font-semibold text-gray-700">TOTAL:</td>
               <td className="px-4 py-3 font-bold text-lg text-gray-900">
                 {calculateTotal().toFixed(1)}
@@ -1255,59 +1351,44 @@ export default function FormCreatePemeriksaanPage({
     </div>
   );
 
-  const renderSignatureSection = (
-    type: SignatureType,
-    title: string,
-    personTitle: string,
-    ttdTitle: string,
-    perusahaanValue: string,
-    namaValue: string,
-    perusahaanName: string,
-    namaNama: string,
-    preview: PreviewData,
-    isShowTitle: boolean
-  ) => (
+  const renderSignatureSectionPenyediaBarang = () => (
     <div className="border border-gray-200 rounded-xl p-4 sm:p-6">
-      {isShowTitle && (
-        <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-4">
-          {title}
-        </h3>
-      )}
+      <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-4">
+        Penyedia Barang
+      </h3>
 
       <div className="space-y-4 sm:space-y-6">
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Perusahaan {title}
+            Perusahaan Penyedia Barang
           </label>
           <input
             type="text"
-            name={perusahaanName}
-            value={perusahaanValue}
+            name="perusahaanPenyediaBarang"
+            value={formData.perusahaanPenyediaBarang}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={
-              type === "penerima" ? "GI Bandung Utara" : "Logistik UPT Bandung"
-            }
+            placeholder="PT ABC"
           />
         </div>
 
         <div>
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Nama {personTitle}
+            Nama Penanggung Jawab
           </label>
           <input
             type="text"
-            name={namaNama}
-            value={namaValue}
+            name="namaPenanggungJawab"
+            value={formData.namaPenanggungJawab}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={type === "penerima" ? "Pak Rudi" : "Andri Setiawan"}
+            placeholder="Nama Penanggung Jawab"
           />
         </div>
 
         <div className="mb-6">
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-            Tanda Tangan {ttdTitle}
+            Tanda Tangan
           </label>
           <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid grid-cols-2 w-full mb-3 h-auto">
@@ -1329,21 +1410,21 @@ export default function FormCreatePemeriksaanPage({
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileUpload(e, type)}
+                onChange={handleFileUploadPenyediaBarang}
                 className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
               />
               <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-                {preview.upload ? (
+                {signaturePenyediaBarang.preview.upload ? (
                   <div className="relative w-full h-full">
                     <img
-                      src={preview.upload}
+                      src={signaturePenyediaBarang.preview.upload}
                       alt="Preview Tanda Tangan"
                       className="w-full h-full object-contain"
                     />
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => removeUploadedSignature(type)}
+                      onClick={removeUploadedSignaturePenyediaBarang}
                       className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
                     >
                       <X className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -1364,24 +1445,20 @@ export default function FormCreatePemeriksaanPage({
             <TabsContent value="draw" className="space-y-3">
               <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
                 <SignatureCanvas
-                  ref={
-                    type === "penerima"
-                      ? signatureRefPenerima
-                      : signatureRefPengirim
-                  }
+                  ref={signatureRefPenyediaBarang}
                   penColor="black"
                   canvasProps={{
                     className: "w-full h-full",
                     style: { touchAction: "none" },
                   }}
                   backgroundColor="transparent"
-                  onEnd={() => saveSignature(type)}
+                  onEnd={saveSignaturePenyediaBarang}
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => clearSignature(type)}
+                  onClick={clearSignaturePenyediaBarang}
                   className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
                 >
                   <span className="mr-1 sm:mr-2">🗑️</span>
@@ -1390,7 +1467,7 @@ export default function FormCreatePemeriksaanPage({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => saveSignature(type)}
+                  onClick={saveSignaturePenyediaBarang}
                   className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
                 >
                   <span className="mr-1 sm:mr-2">💾</span>
@@ -1399,9 +1476,9 @@ export default function FormCreatePemeriksaanPage({
                 </Button>
               </div>
               <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                {preview.signature ? (
+                {signaturePenyediaBarang.preview.signature ? (
                   <img
-                    src={preview.signature}
+                    src={signaturePenyediaBarang.preview.signature}
                     alt="Signature Preview"
                     className="max-h-full max-w-full object-contain"
                   />
@@ -1419,155 +1496,271 @@ export default function FormCreatePemeriksaanPage({
     </div>
   );
 
-  if (showPreview) {
+  const renderSignatureSectionMengetahui = (
+    mengetahui: MengetahuiForm,
+    index: number
+  ) => (
+    <div className="border border-gray-200 rounded-xl p-4 sm:p-6 relative">
+      <div className="space-y-4 sm:space-y-6">
+        <div>
+          <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+            Mengetahui {index + 1}
+          </label>
+          <input
+            type="text"
+            value={mengetahui.namaMengetahui}
+            onChange={(e) =>
+              handleMengetahuiChange(
+                mengetahui.id,
+                "namaMengetahui",
+                e.target.value
+              )
+            }
+            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Nama Mengetahui"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+            Tanda Tangan
+          </label>
+          <Tabs defaultValue="upload" className="w-full">
+            <TabsList className="grid grid-cols-2 w-full mb-3 h-auto">
+              <TabsTrigger
+                value="upload"
+                className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+              >
+                Upload File
+              </TabsTrigger>
+              <TabsTrigger
+                value="draw"
+                className="text-xs sm:text-sm py-2 px-2 sm:px-4"
+              >
+                Gambar
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="upload" className="space-y-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileUploadMengetahui(e, mengetahui.id)}
+                className="block p-2 w-full text-xs sm:text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer"
+              />
+              <div className="h-32 sm:h-40 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                {mengetahui.signature.preview.upload ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={mengetahui.signature.preview.upload}
+                      alt="Preview Tanda Tangan"
+                      className="w-full h-full object-contain"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() =>
+                        removeUploadedSignatureMengetahui(mengetahui.id)
+                      }
+                      className="absolute top-1 right-1 h-6 w-6 p-0 sm:top-2 sm:right-2 sm:h-8 sm:w-8"
+                    >
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 px-4">
+                    <div className="mb-2 text-lg sm:text-xl">📁</div>
+                    <div className="text-xs sm:text-sm">Preview Upload</div>
+                    <div className="text-xs mt-1">
+                      Format: JPG, PNG, GIF (Max 5MB)
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="draw" className="space-y-3">
+              <div className="border border-gray-300 rounded-lg overflow-hidden bg-white h-32 sm:h-40">
+                <SignatureCanvas
+                  ref={(ref) => {
+                    if (ref) {
+                      signatureRefsMengetahui.current.set(mengetahui.id, ref);
+                    }
+                  }}
+                  penColor="black"
+                  canvasProps={{
+                    className: "w-full h-full",
+                    style: { touchAction: "none" },
+                  }}
+                  backgroundColor="transparent"
+                  onEnd={() => saveSignatureMengetahui(mengetahui.id)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => clearSignatureMengetahui(mengetahui.id)}
+                  className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                >
+                  <span className="mr-1 sm:mr-2">🗑️</span>
+                  <span className="hidden sm:inline">Hapus</span>
+                  <span className="sm:hidden">Clear</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => saveSignatureMengetahui(mengetahui.id)}
+                  className="flex-1 text-xs sm:text-sm py-2 px-2 sm:px-4"
+                >
+                  <span className="mr-1 sm:mr-2">💾</span>
+                  <span className="hidden sm:inline">Simpan</span>
+                  <span className="sm:hidden">Save</span>
+                </Button>
+              </div>
+              <div className="h-20 sm:h-28 border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                {mengetahui.signature.preview.signature ? (
+                  <img
+                    src={mengetahui.signature.preview.signature}
+                    alt="Signature Preview"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="text-gray-400 text-xs sm:text-sm text-center px-2">
+                    <span className="block mb-1">✍️</span>
+                    Preview Signature
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
     return (
-      <div className="lg:ml-72">
-        <PreviewSection
-          formData={formData}
-          materials={materials}
-          signaturePenerima={signaturePenerima}
-          signaturePengirim={signaturePengirim}
-          onClose={() => setShowPreview(false)}
-          onSubmit={handleSubmit}
-          onDraft={handleDraft}
-          onDownloadPDF={handleDownloadPDF}
-          calculateTotal={calculateTotal}
-        />
+      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0] mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat Form...</p>
+        </div>
       </div>
     );
   }
 
-  if (!showPreview) {
+  if (showPreview) {
     return (
-      <>
-        <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
-          <div className="flex flex-col bg-white rounded-xl shadow-md">
-            {/* Header */}
-            <div className="flex flex-col xl:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4">
-              <div className="flex items-center gap-3">
-                <h1 className="plus-jakarta-sans text-2xl sm:text-[28px] lg:text-[32px] font-semibold text-[#353739]">
-                  Buat Berita Acara Pemeriksaan Tim Mutu
-                </h1>
-              </div>
+      <PreviewBeritaPemeriksaan
+        formData={formData}
+        materials={materials}
+        signaturePenyediaBarang={signaturePenyediaBarang}
+        pemeriksaBarang={pemeriksaBarang}
+        onClose={() => setShowPreview(false)}
+        onSubmit={handleSubmit}
+        onDraft={handleDraft}
+        onDownloadPDF={handleDownloadPDF}
+        calculateTotal={calculateTotal}
+      />
+    );
+  }
 
-              {/* Action Buttons - Stack on mobile */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-[30px]">
-                <button
-                  onClick={handlePreviewPDF}
-                  className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
-                >
-                  <Eye width={20} height={20} className="text-[#232323]" />
-                  Preview PDF
-                </button>
-                <button
-                  onClick={handleDraft}
-                  className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
-                >
-                  <StickyNote
-                    width={18}
-                    height={18}
-                    className="text-[#232323]"
-                  />
-                  Draft
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-white rounded-xl bg-[#0056B0] border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
-                >
-                  <Send width={18} height={18} className="text-white" />
-                  Kirim
-                </button>
-              </div>
-            </div>
+  return (
+    <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
+      <div className="flex flex-col bg-white rounded-xl shadow-md">
+        {/* Header */}
+        <div className="flex flex-col xl:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="plus-jakarta-sans text-2xl sm:text-[28px] lg:text-[32px] font-semibold text-[#353739]">
+              Buat Berita Acara Pemeriksaan Tim Mutu
+            </h1>
+          </div>
 
-            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-              {/* Basic Information */}
-              {renderBasicInformation()}
+          {/* Action Buttons */}
+          <div className="grid grid-cols-3 gap-3 sm:gap-[30px]">
+            <button
+              onClick={handlePreviewPDF}
+              className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
+            >
+              <Eye width={20} height={20} className="text-[#232323]" />
+              Preview
+            </button>
+            <button
+              onClick={handleDraft}
+              className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
+            >
+              <StickyNote width={18} height={18} className="text-[#232323]" />
+              Draft
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-white rounded-xl bg-[#0056B0] border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
+            >
+              <Send width={18} height={18} className="text-white" />
+              Kirim
+            </button>
+          </div>
+        </div>
 
-              {renderKelengkapanSection()}
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Basic Information */}
+          {renderBasicInformation()}
 
-              {/* Materials Table - Add horizontal scroll on mobile */}
-              {renderMaterialsTable()}
+          {renderKelengkapanSection()}
 
-              {/* Sender and Receiver Signatures - Responsive Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6">
-                {renderSignatureSection(
-                  "penerima",
-                  "Penyedia Barang",
-                  "Penanggung Jawab",
-                  "Penerima",
-                  formData.perusahaanPenerima,
-                  formData.namaPenerima,
-                  "perusahaanPenerima",
-                  "namaPenerima",
-                  previewPenerima,
-                  true
-                )}
+          {/* Materials Table */}
+          {renderMaterialsTable()}
 
-                <div className="grid gap-5 ">
-                  <div className="border border-gray-200 rounded-xl p-4 sm:p-6">
-                    <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-4">
-                      Pemeriksa Barang
-                    </h3>
+          {/* Signatures - Responsive Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6">
+            {renderSignatureSectionPenyediaBarang()}
 
-                    <div className="space-y-4 sm:space-y-6">
-                      <div>
-                        <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
-                          Departemen Pemeriksa
-                        </label>
-                        <input
-                          type="text"
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder={"PT PLN PERSERO"}
-                        />
-                      </div>
-                    </div>
+            <div className="grid gap-5">
+              <div className="border border-gray-200 rounded-xl p-4 sm:p-6">
+                <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739] mb-4">
+                  Pemeriksa Barang
+                </h3>
+
+                <div className="space-y-4 sm:space-y-6">
+                  <div>
+                    <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
+                      Departemen Pemeriksa
+                    </label>
+                    <input
+                      type="text"
+                      value={pemeriksaBarang.departemenPemeriksa}
+                      onChange={handlePemeriksaChange}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="PT PLN PERSERO"
+                    />
                   </div>
-                  {renderSignatureSection(
-                    "pengirim",
-                    "Mengetahui 1",
-                    "Mengetahui 1",
-                    "Pengirim",
-                    formData.departemenPengirim,
-                    formData.namaPengirim,
-                    "departemenPengirim",
-                    "namaPengirim",
-                    previewPengirim,
-                    false
-                  )}
-
-                  {renderSignatureSection(
-                    "pengirim",
-                    "Mengetahui 2",
-                    "Mengetahui 2",
-                    "Pengirim",
-                    formData.departemenPengirim,
-                    formData.namaPengirim,
-                    "departemenPengirim",
-                    "namaPengirim",
-                    previewPengirim,
-                    false
-                  )}
-
-                  {renderSignatureSection(
-                    "pengirim",
-                    "Mengetahui 3",
-                    "Mengetahui 3",
-                    "Pengirim",
-                    formData.departemenPengirim,
-                    formData.namaPengirim,
-                    "departemenPengirim",
-                    "namaPengirim",
-                    previewPengirim,
-                    false
+                </div>
+                <button
+                  type="button"
+                  onClick={addMengetahui}
+                  className="plus-jakarta-sans max-sm:w-2/5 flex items-center text-base text-[#232323] font-medium gap-2 px-4 py-2 border-2 border-[#EBEBEB] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer mt-4"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tambah Mengetahui
+                </button>
+              </div>
+              {pemeriksaBarang.mengetahui.map((mengetahui, index) => (
+                <div key={mengetahui.id} className="relative">
+                  {renderSignatureSectionMengetahui(mengetahui, index)}
+                  {pemeriksaBarang.mengetahui.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeMengetahui(mengetahui.id)}
+                      className="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-white rounded-full p-1 shadow-md"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
-      </>
-    );
-  }
+      </div>
+    </div>
+  );
 }

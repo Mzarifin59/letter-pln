@@ -19,16 +19,21 @@ import {
   isVendorEmailData,
   EmailDataVendor,
   EmailDataAdmin,
+  EmailDataOther,
+  getPerihal,
+  getTanggalSurat,
+  isBeritaPemeriksaanData,
 } from "@/lib/interface";
 import qs from "qs";
 import Link from "next/link";
 import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
+import { EmailDetailBeritaPemeriksaan } from "@/components/detail-email-berita-pemeriksaan";
 import { useUserLogin } from "@/lib/user";
 
 type SearchType = "no_surat" | "material" | "vendor";
 
 interface FilterSuratJalan {
-  kategori_surat?: { $eq: string };
+  kategori_surat?: { $eq: string } | Array<{ $eq: string }>;
   no_surat_jalan?: { $containsi: string };
   no_berita_acara?: { $containsi: string };
   materials?: {
@@ -37,14 +42,35 @@ interface FilterSuratJalan {
   mengetahui?: {
     departemen_mengetahui: { $containsi: string };
   };
+  pemeriksa_barang?: {
+    departemen_pemeriksa?: { $containsi: string };
+  };
+  $or?: Array<{
+    kategori_surat?: { $eq: string };
+    no_surat_jalan?: { $containsi: string };
+    no_berita_acara?: { $containsi: string };
+    materials?: {
+      nama: { $containsi: string };
+    };
+  }>;
 }
 
 interface SearchFilters {
   surat_jalan?: FilterSuratJalan;
   $or?: Array<{
     surat_jalan: {
+      kategori_surat?: { $eq: string };
       no_surat_jalan?: { $containsi: string };
       no_berita_acara?: { $containsi: string };
+      materials?: {
+        nama: { $containsi: string };
+      };
+      mengetahui?: {
+        departemen_mengetahui: { $containsi: string };
+      };
+      pemeriksa_barang?: {
+        departemen_pemeriksa?: { $containsi: string };
+      };
     };
   }>;
 }
@@ -60,17 +86,41 @@ async function searchEmails(
   const filters: SearchFilters = {};
 
   if (userRole === "Admin") {
-    // Admin: hanya Surat Jalan, filter by no_surat_jalan atau material
-    filters.surat_jalan = {
-      kategori_surat: { $eq: "Surat Jalan" },
-    };
-
+    // Admin: Surat Jalan dan Berita Acara Pemeriksaan Tim Mutu
     if (searchType === "no_surat") {
-      filters.surat_jalan.no_surat_jalan = { $containsi: query };
+      filters.$or = [
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            no_surat_jalan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            no_berita_acara: { $containsi: query },
+          },
+        },
+      ];
     } else if (searchType === "material") {
-      filters.surat_jalan.materials = {
-        nama: { $containsi: query },
-      };
+      filters.$or = [
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+      ];
     }
   } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
     // Vendor & Gardu Induk: hanya Berita Acara Material Bongkaran
@@ -111,11 +161,22 @@ async function searchEmails(
         },
       };
     } else if (searchType === "vendor") {
-      filters.surat_jalan = {
-        mengetahui: {
-          departemen_mengetahui: { $containsi: query },
+      filters.$or = [
+        {
+          surat_jalan: {
+            mengetahui: {
+              departemen_mengetahui: { $containsi: query },
+            },
+          },
         },
-      };
+        {
+          surat_jalan: {
+            pemeriksa_barang: {
+              departemen_pemeriksa: { $containsi: query },
+            },
+          },
+        },
+      ];
     }
   }
 
@@ -146,6 +207,27 @@ async function searchEmails(
             populate: {
               ttd_mengetahui: {
                 fields: ["name", "url"],
+              },
+            },
+          },
+          penyedia_barang: {
+            fields: ["perusahaan_penyedia_barang", "nama_penanggung_jawab"],
+            populate: {
+              ttd_penerima: {
+                fields: ["name", "url"],
+              },
+            },
+          },
+          pemeriksa_barang: {
+            fields: ["departemen_pemeriksa"],
+            populate: {
+              mengetahui: {
+                fields: ["departemen_mengetahui", "nama_mengetahui"],
+                populate: {
+                  ttd_mengetahui: {
+                    fields: ["name", "url"],
+                  },
+                },
               },
             },
           },
@@ -188,17 +270,16 @@ const getNoSurat = (item: DynamicEmailData) => {
   if (kategori === "Berita Acara Material Bongkaran") {
     return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
   }
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+  }
+  
   return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
 };
 
-const getTanggalSurat = (item: DynamicEmailData) => {
-  const kategori = item.surat_jalan.kategori_surat;
-
-  if (kategori === "Berita Acara Material Bongkaran") {
-    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-  }
-
-  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+const getTanggalSuratLocal = (item: DynamicEmailData) => {
+  return getTanggalSurat(item) || item.surat_jalan.createdAt;
 };
 
 
@@ -223,7 +304,7 @@ export default function SearchResultPage() {
 
     if (userRole === "Admin") {
       return [
-        { value: "no_surat" as SearchType, label: "No. Surat Jalan" },
+        { value: "no_surat" as SearchType, label: "No. Surat" },
         { value: "material" as SearchType, label: "Nama Material" },
       ];
     } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
@@ -344,6 +425,8 @@ export default function SearchResultPage() {
       "Surat Jalan": "bg-blue-100 text-blue-700 border-blue-200",
       "Berita Acara Material Bongkaran":
         "bg-purple-100 text-purple-700 border-purple-200",
+      "Berita Acara Pemeriksaan Tim Mutu":
+        "bg-green-100 text-green-700 border-green-200",
     };
     return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
   };
@@ -566,7 +649,7 @@ export default function SearchResultPage() {
                             )}
                           </div>
                           <p className="text-gray-600">
-                            {email.surat_jalan?.perihal || "No Subject"}
+                            {getPerihal(email) || "No Subject"}
                           </p>
                         </div>
                       </div>
@@ -581,7 +664,7 @@ export default function SearchResultPage() {
                           <Calendar size={16} className="text-gray-400" />
                           <span className="text-gray-500">Tanggal:</span>
                           <span className="text-gray-900 font-medium">
-                            {formatDate(getTanggalSurat(email)) || "-"}
+                            {formatDate(getTanggalSuratLocal(email)) || "-"}
                           </span>
                         </div>
 
@@ -664,12 +747,20 @@ export default function SearchResultPage() {
                   email={openedEmail as EmailDataAdmin}
                   handleCloseDetail={handleCloseDetail}
                 />
-              ) : (
+              ) : openedEmail.surat_jalan.kategori_surat ===
+                "Berita Acara Material Bongkaran" ? (
                 <EmailDetailBeritaBongkaran
                   email={openedEmail as EmailDataVendor}
                   handleCloseDetail={handleCloseDetail}
                 />
-              )}
+              ) : openedEmail.surat_jalan.kategori_surat ===
+                "Berita Acara Pemeriksaan Tim Mutu" ? (
+                <EmailDetailBeritaPemeriksaan
+                  email={openedEmail as EmailDataOther}
+                  handleCloseDetail={handleCloseDetail}
+                  isSend={true}
+                />
+              ) : null}
             </div>
           )}
         </div>

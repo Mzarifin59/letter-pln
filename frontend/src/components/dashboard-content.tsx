@@ -6,6 +6,9 @@ import {
   DynamicEmailData,
   EmailDataAdmin,
   EmailDataVendor,
+  EmailDataOther,
+  getPerihal,
+  getTanggalSurat,
 } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { JSX } from "react";
@@ -95,15 +98,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  // Helper function untuk mendapatkan tanggal dari surat
-  const getTanggalSurat = (item: DynamicEmailData) => {
-    const kategori = item.surat_jalan.kategori_surat;
-
-    if (kategori === "Berita Acara Material Bongkaran") {
-      return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-    }
-
-    return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+  // Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+  const getTanggalSuratLocal = (item: DynamicEmailData) => {
+    return getTanggalSurat(item) || item.surat_jalan.createdAt;
   };
 
   // Helper function untuk mendapatkan nomor surat
@@ -113,6 +110,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
     if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
+    
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+      return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+    }
+    
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -132,12 +134,12 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   );
 
   const draftDataThisMonth = draftData.filter((item) => {
-    const tgl = new Date(getTanggalSurat(item));
+    const tgl = new Date(getTanggalSuratLocal(item));
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
 
   const publishedDataThisMonth = publishedData.filter((item) => {
-    const tgl = new Date(getTanggalSurat(item));
+    const tgl = new Date(getTanggalSuratLocal(item));
     return tgl.getMonth() === currentMonth && tgl.getFullYear() === currentYear;
   });
 
@@ -147,8 +149,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   // Sort and filter berdasarkan role
   const sortByDate = (a: DynamicEmailData, b: DynamicEmailData) => {
     return (
-      new Date(getTanggalSurat(b)).getTime() -
-      new Date(getTanggalSurat(a)).getTime()
+      new Date(getTanggalSuratLocal(b)).getTime() -
+      new Date(getTanggalSuratLocal(a)).getTime()
     );
   };
 
@@ -157,14 +159,16 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Surat Jalan" && "Berita Acara Pemeriksaan Tim Mutu"
+          item.surat_jalan.kategori_surat === "Surat Jalan" ||
+          item.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
       );
 
     suratData = suratData
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Surat Jalan" && "Berita Acara Pemeriksaan Tim Mutu"
+          item.surat_jalan.kategori_surat === "Surat Jalan" ||
+          item.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
       );
   } else if (user?.role?.name === "Vendor") {
     suratDataThisMonth = suratDataThisMonth
@@ -201,14 +205,26 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   } else {
     const canShow = (item: DynamicEmailData) => {
       const kategori = item.surat_jalan.kategori_surat;
+      
+      // Handle Surat Jalan
       if (kategori === "Surat Jalan") {
         return item.surat_jalan.status_surat !== "Draft";
       }
+      
+      // Handle Berita Acara Pemeriksaan Tim Mutu
+      if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+        return item.surat_jalan.status_surat !== "Draft" && 
+               item.surat_jalan.status_entry !== "Draft";
+      }
+      
+      // Handle Berita Acara Material Bongkaran
       const mengetahuiLengkap =
         hasMengetahui(item.surat_jalan) &&
         item.surat_jalan.status_surat !== "Reject" &&
         Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
-        Boolean(item.surat_jalan.penerima.ttd_penerima);
+        ("penerima" in item.surat_jalan && item.surat_jalan.penerima 
+          ? Boolean(item.surat_jalan.penerima.ttd_penerima)
+          : false);
 
       return mengetahuiLengkap;
     };
@@ -438,14 +454,14 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                         <tr key={index} className="border-b border-gray-50">
                           <td className="py-4 px-4">
                             <div className="text-sm text-[#212529]">
-                              <div>{formatDateTime(getTanggalSurat(item))}</div>
+                              <div>{formatDateTime(getTanggalSuratLocal(item))}</div>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
                             {item.recipient.name}
                           </td>
                           <td className="py-4 px-4 text-sm text-[#212529]">
-                            {item.surat_jalan.perihal}
+                            {getPerihal(item)}
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
                             {getNoSurat(item)}
@@ -502,7 +518,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               <div className="text-sm text-[#212529]">
                                 <div>
                                   <div>
-                                    {formatDateTime(getTanggalSurat(item))}
+                                    {formatDateTime(getTanggalSuratLocal(item))}
                                   </div>
                                 </div>
                               </div>
@@ -513,7 +529,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               </td>
                             )}
                             <td className="py-4 px-4 text-sm text-[#212529]">
-                              {item.surat_jalan.perihal}
+                              {getPerihal(item)}
                             </td>
                             <td className="py-4 px-4 text-sm text-[#495057]">
                               {getNoSurat(item)}

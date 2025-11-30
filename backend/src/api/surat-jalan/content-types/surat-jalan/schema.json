@@ -51,13 +51,43 @@
       }
     },
     "perihal": {
-      "type": "text"
+      "type": "text",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     },
     "lokasi_asal": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     },
     "lokasi_tujuan": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     },
     "materials": {
       "type": "component",
@@ -125,10 +155,30 @@
       }
     },
     "informasi_kendaraan": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     },
     "nama_pengemudi": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      }
     },
     "status_entry": {
       "type": "enumeration",

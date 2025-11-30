@@ -160,3 +160,58 @@ export const rejectBeritaBongkaran = async ({
 
   return resEmail;
 };
+
+// Request for approve email Berita Pemeriksaan
+export const approveBeritaPemeriksaan = async ({
+  apiUrl = "http://localhost:1337",
+  emailId,
+  token,
+  signaturePenyediaBarang,
+  signaturesMengetahui,
+}: {
+  apiUrl?: string;
+  emailId: string | number;
+  token?: string;
+  signaturePenyediaBarang?: string;
+  signaturesMengetahui?: string[];
+}) => {
+  const resEmail = await fetch(`${apiUrl}/api/emails/approveberitapemeriksaan/${emailId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      signaturePenyediaBarang: signaturePenyediaBarang,
+      signaturesMengetahui: signaturesMengetahui,
+    }),
+  });
+
+  return resEmail;
+};
+
+// Request for reject email Berita Pemeriksaan
+export const rejectBeritaPemeriksaan = async ({
+  apiUrl = "http://localhost:1337",
+  emailId,
+  token,
+  pesan,
+}: {
+  apiUrl?: string;
+  emailId: string | number;
+  token?: string;
+  pesan: string;
+}) => {
+  const resEmail = await fetch(`${apiUrl}/api/emails/rejectberitapemeriksaan/${emailId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      pesan: pesan,
+    }),
+  });
+
+  return resEmail;
+};

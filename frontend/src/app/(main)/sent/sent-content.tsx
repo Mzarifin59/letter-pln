@@ -13,11 +13,14 @@ import {
   EmailDetail,
   EmailDetailBeritaBongkaran,
 } from "@/components/detail-email";
+import { EmailDetailBeritaPemeriksaan } from "@/components/detail-email-berita-pemeriksaan";
 import {
   DynamicEmailData,
   isVendorEmailData,
   EmailDataAdmin,
   EmailDataVendor,
+  EmailDataOther,
+  getPerihal,
 } from "@/lib/interface";
 import { deleteEmail } from "@/lib/emailRequest";
 import { useUserLogin } from "@/lib/user";
@@ -150,7 +153,7 @@ export default function SentContent({ data, token }: SentContentProps) {
         );
 
         toast.success("Email berhasil dihapus", {
-          description: selectedToDelete.surat_jalan?.perihal,
+          description: getPerihal(selectedToDelete),
           position: "top-center",
         });
       }
@@ -303,9 +306,14 @@ export default function SentContent({ data, token }: SentContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu";
+
       return (
         hasAdminGudangStatus &&
-        item.surat_jalan.kategori_surat === "Surat Jalan" &&
+        isAllowedKategori &&
         (item.recipient.name === user.name ||
           (item.recipient.name === "Spv" &&
             item.surat_jalan.status_entry !== "Draft") ||
@@ -318,8 +326,15 @@ export default function SentContent({ data, token }: SentContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
+        kategori === "Berita Acara Material Bongkaran";
+
       return (
         hasSpvStatus &&
+        isAllowedKategori &&
         (item.recipient.name === user.name ||
           (item.recipient.name === "Admin Gudang" &&
             item.surat_jalan.status_entry !== "Draft") ||
@@ -532,13 +547,25 @@ export default function SentContent({ data, token }: SentContentProps) {
           </div>
 
           {/* Email Detail Panel */}
-          {openedEmail && user?.role?.name === "Admin" && (
-            <EmailDetail
-              email={openedEmail}
-              handleCloseDetail={handleCloseDetail}
-              isSend={true}
-            />
-          )}
+          {openedEmail && user?.role?.name === "Admin" && (() => {
+            const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+            if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+              return (
+                <EmailDetailBeritaPemeriksaan
+                  email={openedEmail as EmailDataOther}
+                  handleCloseDetail={handleCloseDetail}
+                  isSend={true}
+                />
+              );
+            }
+            return (
+              <EmailDetail
+                email={openedEmail}
+                handleCloseDetail={handleCloseDetail}
+                isSend={true}
+              />
+            );
+          })()}
 
           {openedEmail && user?.role?.name === "Vendor" && (
             <EmailDetailBeritaBongkaran
@@ -547,6 +574,36 @@ export default function SentContent({ data, token }: SentContentProps) {
               isSend={true}
             />
           )}
+
+          {openedEmail && user?.role?.name === "Spv" && (() => {
+            const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+            if (kategoriSurat === "Surat Jalan") {
+              return (
+                <EmailDetail
+                  email={openedEmail}
+                  handleCloseDetail={handleCloseDetail}
+                  isSend={true}
+                />
+              );
+            } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
+              return (
+                <EmailDetailBeritaBongkaran
+                  email={openedEmail as EmailDataVendor}
+                  handleCloseDetail={handleCloseDetail}
+                  isSend={true}
+                />
+              );
+            } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+              return (
+                <EmailDetailBeritaPemeriksaan
+                  email={openedEmail as EmailDataOther}
+                  handleCloseDetail={handleCloseDetail}
+                  isSend={true}
+                />
+              );
+            }
+            return null;
+          })()}
         </div>
       </div>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -568,7 +625,7 @@ export default function SentContent({ data, token }: SentContentProps) {
                 Apakah Anda yakin ingin menghapus email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
                 </span>
               </>
             )}

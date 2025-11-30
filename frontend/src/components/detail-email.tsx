@@ -19,9 +19,14 @@ import {
   DynamicEmailData,
   EmailDataAdmin,
   EmailDataVendor,
+  EmailDataOther,
   FileAttachment,
   isVendorEmailData,
+  getPerihal,
+  getPerusahaanPenerima,
+  getTanggalSurat,
 } from "@/lib/interface";
+import { EmailDetailBeritaPemeriksaan } from "./detail-email-berita-pemeriksaan";
 import { useUserLogin } from "@/lib/user";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -58,24 +63,23 @@ const formatDateWithDay = (dateString: string) => {
   });
 };
 
-// Helper function untuk mendapatkan tanggal dari surat
-const getTanggalSurat = (item: DynamicEmailData) => {
-  const kategori = item.surat_jalan.kategori_surat;
-
-  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-  }
-
-  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+// Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+const getTanggalSuratLocal = (item: DynamicEmailData) => {
+  return getTanggalSurat(item) || item.surat_jalan.createdAt;
 };
 
 // Helper function untuk mendapatkan nomor surat
 const getNoSurat = (item: DynamicEmailData) => {
   const kategori = item.surat_jalan.kategori_surat;
 
-  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+  if (kategori === "Berita Acara Material Bongkaran") {
     return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
   }
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
+  }
+  
   return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
 };
 
@@ -129,20 +133,35 @@ export const EmailDetail = ({
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // Convert email data to PreviewSection format
+  // Hanya untuk Surat Jalan (bukan Berita Pemeriksaan)
+  const kategori = email.surat_jalan.kategori_surat;
+  const isSuratJalan = kategori === "Surat Jalan";
+  const beritaPemeriksaan = kategori === "Berita Acara Pemeriksaan Tim Mutu" 
+    ? (email as EmailDataOther).surat_jalan 
+    : null;
+  
   const formData: SuratJalanFormData = {
     nomorSuratJalan: getNoSurat(email),
-    nomorSuratPermintaan: getNoSurat(email), // Sesuaikan jika ada field terpisah
-    perihal: email.surat_jalan.perihal,
-    lokasiAsal: email.surat_jalan.lokasi_asal,
-    lokasiTujuan: email.surat_jalan.lokasi_tujuan,
-    informasiKendaraan: email.surat_jalan.informasi_kendaraan,
-    namaPengemudi: email.surat_jalan.nama_pengemudi,
-    tanggalSurat: getTanggalSurat(email),
-    perusahaanPenerima: email.surat_jalan.penerima.perusahaan_penerima,
-    namaPenerima: email.surat_jalan.penerima.nama_penerima,
-    departemenPengirim: email.surat_jalan.pengirim.departemen_pengirim,
-    namaPengirim: email.surat_jalan.pengirim.nama_pengirim,
-    catatanTambahan: email.surat_jalan.perihal,
+    nomorSuratPermintaan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.no_surat_permintaan || "" : "",
+    perihal: getPerihal(email),
+    lokasiAsal: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.lokasi_asal || "" : "",
+    lokasiTujuan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.lokasi_tujuan || "" : "",
+    informasiKendaraan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.informasi_kendaraan || "" : "",
+    namaPengemudi: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.nama_pengemudi || "" : "",
+    tanggalSurat: getTanggalSuratLocal(email),
+    perusahaanPenerima: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan 
+      ? (email as EmailDataAdmin).surat_jalan.penerima.perusahaan_penerima 
+      : getPerusahaanPenerima(email),
+    namaPenerima: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
+      ? (email as EmailDataAdmin).surat_jalan.penerima.nama_penerima
+      : "",
+    departemenPengirim: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+      : "",
+    namaPengirim: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+      ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim
+      : "",
+    catatanTambahan: getPerihal(email),
   };
 
   const materials: SuratJalanMaterialForm[] = email.surat_jalan.materials.map(
@@ -157,12 +176,15 @@ export const EmailDetail = ({
   );
 
   // Fix signature structure sesuai SignatureData interface
+  // Hanya untuk Surat Jalan
   const signaturePenerima: SuratJalanSignatureData = {
     upload: null,
     signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.penerima.ttd_penerima?.url}`,
+      upload: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima?.url
+        ? `${apiUrl}${(email as EmailDataAdmin).surat_jalan.penerima.ttd_penerima.url}`
+        : null,
     },
   };
 
@@ -171,7 +193,9 @@ export const EmailDetail = ({
     signature: null,
     preview: {
       signature: null,
-      upload: `${apiUrl}${email.surat_jalan.pengirim.ttd_pengirim.url}`,
+      upload: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim?.url
+        ? `${apiUrl}${(email as EmailDataAdmin).surat_jalan.pengirim.ttd_pengirim.url}`
+        : null,
     },
   };
 
@@ -563,7 +587,7 @@ export const EmailDetail = ({
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-3 md:mb-5">
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
-                  {email.surat_jalan.perihal}
+                  {getPerihal(email)}
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   {!isCanceled ? (
@@ -592,17 +616,20 @@ export const EmailDetail = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    email.surat_jalan.pengirim.departemen_pengirim
+                    isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                      : ""
                   ) || "GA"}
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim ||
-                      "(Departmen Pengirim)"}
+                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                      : "(Departmen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
                     to:{" "}
-                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                    {getPerusahaanPenerima(email) ||
                       "(Perusahaan Penerima)"}
                   </p>
                 </div>
@@ -636,17 +663,20 @@ export const EmailDetail = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    email.surat_jalan.pengirim.departemen_pengirim
+                    isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                      : beritaPemeriksaan?.pemeriksa_barang?.departemen_pemeriksa || ""
                   )}
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {email.surat_jalan.pengirim.departemen_pengirim ||
-                      "(Departemen Pengirim)"}
+                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                      : beritaPemeriksaan?.pemeriksa_barang?.departemen_pemeriksa || "(Departemen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
                     to:{" "}
-                    {email.surat_jalan.penerima.perusahaan_penerima ||
+                    {getPerusahaanPenerima(email) ||
                       "(Perusahaan Penerima)"}
                   </p>
                 </div>
@@ -675,7 +705,7 @@ export const EmailDetail = ({
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-3 md:mb-5">
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
-                  {email.surat_jalan.perihal || "(Perihal)"}
+                  {getPerihal(email) || "(Perihal)"}
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
@@ -695,7 +725,7 @@ export const EmailDetail = ({
               {getNoSurat(email)}
             </span>
             <span className="text-[10px] sm:text-xs md:text-sm font-medium text-[#7F7F7F]">
-              {formatDateTimeEN(getTanggalSurat(email))}
+              {formatDateTimeEN(getTanggalSuratLocal(email))}
             </span>
           </div>
           <p className="text-[#181818] text-xs sm:text-sm md:text-base">
@@ -875,7 +905,7 @@ export const EmailDetail = ({
               </div>
               <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
                 <div className="mt-1 text-lg font-semibold">
-                  {email.surat_jalan.perihal || "(Perihal)"}
+                  {getPerihal(email) || "(Perihal)"}
                 </div>
               </div>
 
@@ -912,17 +942,18 @@ export const EmailDetail = ({
                 <div>
                   <div className="mb-2 text-lg">Yang Menerima,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {email.surat_jalan.penerima.perusahaan_penerima ||
-                      "(Nama Departemen Penerima)"}
+                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.penerima.perusahaan_penerima
+                      : getPerusahaanPenerima(email) || "(Nama Departemen Penerima)"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="h-20 mb-4 flex items-center justify-center">
-                    {email.surat_jalan.penerima.ttd_penerima?.url ? (
+                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima?.url ? (
                       <img
                         width={200}
                         height={200}
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.penerima.ttd_penerima?.url}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${(email as EmailDataAdmin).surat_jalan.penerima.ttd_penerima.url}`}
                         alt="TTD penerima"
                         className="max-h-full max-w-full object-contain"
                       />
@@ -934,23 +965,23 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="text-lg font-bold">
-                    {`${
-                      email.surat_jalan.penerima.nama_penerima ||
-                      "Nama Penerima"
-                    }`}
+                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.penerima.nama_penerima || "Nama Penerima"
+                      : "Nama Penerima"}
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-2 text-lg">Yang menyerahkan,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {email.surat_jalan.pengirim.departemen_pengirim ||
-                      "(Nama Departemen Pengirim)"}
+                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                      : "(Nama Departemen Pengirim)"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="relative h-20 mb-4 flex items-center justify-center">
-                    {email.surat_jalan.pengirim.ttd_pengirim.url ? (
+                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim?.url ? (
                       <>
                         <Image
                           src={`/images/ttd.png`}
@@ -962,7 +993,7 @@ export const EmailDetail = ({
                         <Image
                           width={200}
                           height={200}
-                          src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.pengirim.ttd_pengirim.url}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${(email as EmailDataAdmin).surat_jalan.pengirim.ttd_pengirim.url}`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
                         />
@@ -975,8 +1006,9 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="font-bold text-lg">
-                    {email.surat_jalan.pengirim.nama_pengirim ||
-                      "Nama Pengirim"}
+                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim || "Nama Pengirim"
+                      : "Nama Pengirim"}
                   </div>
                 </div>
               </div>
@@ -1029,49 +1061,61 @@ export const EmailDetail = ({
         </div>
 
         {/* Attachments */}
-        {email.surat_jalan.lampiran.length > 0 && (
-          <div className="mb-6 md:mb-8">
-            <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
-              <Paperclip className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Lampiran ({email.surat_jalan.lampiran.length})
-            </h4>
-            <div className="space-y-2">
-              {email.surat_jalan.lampiran.map((attachment, index) => {
-                // Ambil ekstensi file (uppercase)
-                const ext =
-                  attachment.name.split(".").pop()?.toUpperCase() || "";
+        {(() => {
+          const suratJalan = email.surat_jalan as any;
+          const hasLampiran = "lampiran" in suratJalan && 
+            suratJalan.lampiran && 
+            Array.isArray(suratJalan.lampiran) &&
+            suratJalan.lampiran.length > 0;
+          
+          if (!hasLampiran) return null;
+          
+          const lampiran = suratJalan.lampiran as FileAttachment[];
+          
+          return (
+            <div className="mb-6 md:mb-8">
+              <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
+                <Paperclip className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Lampiran ({lampiran.length})
+              </h4>
+              <div className="space-y-2">
+                {lampiran.map((attachment: FileAttachment, index: number) => {
+                  // Ambil ekstensi file (uppercase)
+                  const ext =
+                    attachment.name.split(".").pop()?.toUpperCase() || "";
 
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-[10px] sm:text-xs font-bold text-red-600">
-                          {ext}
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center">
+                          <span className="text-[10px] sm:text-xs font-bold text-red-600">
+                            {ext}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium">
+                          {attachment.name}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-medium">
-                        {attachment.name}
-                      </span>
+                      <button
+                        onClick={() =>
+                          handleDownloadAttachment(
+                            attachment.url,
+                            attachment.name
+                          )
+                        }
+                      >
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() =>
-                        handleDownloadAttachment(
-                          attachment.url,
-                          attachment.name
-                        )
-                      }
-                    >
-                      <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
         {user?.role?.name === "Admin" &&
           email.surat_jalan.status_surat === "Reject" && (
             <Link
@@ -2191,14 +2235,25 @@ export const EmailDetailBeritaBongkaran = ({
         <hr className="border-b-4 border-gray-800 mb-6" />
 
         {/* Attachments */}
-        {email.surat_jalan.lampiran.length > 0 && (
-          <div className="mb-6 md:mb-8">
-            <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
-              <Paperclip className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Lampiran ({email.surat_jalan.lampiran.length})
-            </h4>
-            <div className="space-y-2">
-              {email.surat_jalan.lampiran.map((attachment, index) => {
+        {(() => {
+          const suratJalan = email.surat_jalan as any;
+          const hasLampiran = "lampiran" in suratJalan && 
+            suratJalan.lampiran && 
+            Array.isArray(suratJalan.lampiran) &&
+            suratJalan.lampiran.length > 0;
+          
+          if (!hasLampiran) return null;
+          
+          const lampiran = suratJalan.lampiran as FileAttachment[];
+          
+          return (
+            <div className="mb-6 md:mb-8">
+              <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
+                <Paperclip className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Lampiran ({lampiran.length})
+              </h4>
+              <div className="space-y-2">
+                {lampiran.map((attachment: FileAttachment, index: number) => {
                 // Ambil ekstensi file (uppercase)
                 const ext =
                   attachment.name.split(".").pop()?.toUpperCase() || "";
@@ -2231,9 +2286,10 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
                 );
               })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
         {(user?.role?.name === "Admin" || user?.role?.name === "Vendor") &&
           email.surat_jalan.status_surat === "Reject" && (
             <Link
@@ -2398,3 +2454,4 @@ export const EmailDetailBeritaBongkaran = ({
     </>
   );
 };
+

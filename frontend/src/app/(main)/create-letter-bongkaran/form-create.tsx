@@ -992,8 +992,14 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="">Pilih Satuan</option>
-                    <option value="PCS (Pieces)">PCS (Pieces)</option>
-                    <option value="Kg (Kilogram)">Kg (Kilogram)</option>
+                    <option value="Keping">Keping</option>
+                    <option value="PCS">PCS (Pieces)</option>
+                    <option value="Kg">Kg (Kilogram)</option>
+                    <option value="Meter">Meter</option>
+                    <option value="Liter">Liter</option>
+                    <option value="Bh">Bahan</option>
+                    <option value="Set">Set</option>
+                    <option value="Unit">Unit</option>
                   </select>
                 </td>
                 <td className="px-4 py-3">
@@ -1364,7 +1370,11 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   onClick={handlePreviewPDF}
                   className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
                 >
-                  <Eye width={20} height={20} className="text-[#232323] flex-shrink-0" />
+                  <Eye
+                    width={20}
+                    height={20}
+                    className="text-[#232323] flex-shrink-0"
+                  />
                   Preview PDF
                 </button>
                 <button

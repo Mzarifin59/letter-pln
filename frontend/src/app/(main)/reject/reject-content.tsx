@@ -19,7 +19,14 @@ import {
   EmailDetail,
   EmailDetailBeritaBongkaran,
 } from "@/components/detail-email";
-import { DynamicEmailData, EmailDataVendor } from "@/lib/interface";
+import { EmailDetailBeritaPemeriksaan } from "@/components/detail-email-berita-pemeriksaan";
+import {
+  DynamicEmailData,
+  EmailDataVendor,
+  EmailDataOther,
+  EmailDataAdmin,
+  getPerihal,
+} from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
 import {
@@ -64,8 +71,15 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu";
+
       return (
         hasAdminGudangStatus &&
+        isAllowedKategori &&
+        item.surat_jalan.status_surat === "Reject" &&
         ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
@@ -77,24 +91,37 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+
       const knowsIfNotSuratJalan = (item: DynamicEmailData) => {
-        const kategori = item.surat_jalan.kategori_surat;
+        // Untuk Berita Acara Pemeriksaan Tim Mutu, tidak perlu cek mengetahui
+        if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+          return item.surat_jalan.status_surat === "Reject";
+        }
 
         if (kategori !== "Surat Jalan") {
           if (!hasMengetahui(item.surat_jalan)) return false;
           const conditionBeritaAcara =
             Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
             item.surat_jalan.status_surat === "Reject" &&
-            item.surat_jalan.penerima.ttd_penerima;
+            ("penerima" in item.surat_jalan && item.surat_jalan.penerima
+              ? Boolean(item.surat_jalan.penerima.ttd_penerima)
+              : false);
 
           return conditionBeritaAcara;
         }
 
-        return true;
+        return item.surat_jalan.status_surat === "Reject";
       };
+
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
+        kategori === "Berita Acara Material Bongkaran";
 
       return (
         hasSpvStatus &&
+        isAllowedKategori &&
         knowsIfNotSuratJalan(item) &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true)
@@ -225,7 +252,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         );
 
         toast.success("Email berhasil dihapus", {
-          description: selectedToDelete.surat_jalan?.perihal,
+          description: getPerihal(selectedToDelete),
           position: "top-center",
         });
       }
@@ -409,6 +436,16 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
     const userRole = user?.role?.name;
 
     if (userRole === "Admin") {
+      if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+        return (
+          <EmailDetailBeritaPemeriksaan
+            email={openedEmail as EmailDataOther}
+            handleCloseDetail={handleCloseDetail}
+            isSend={false}
+            isCanceled={true}
+          />
+        );
+      }
       return (
         <EmailDetail
           email={openedEmail}
@@ -438,11 +475,20 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
             isCanceled={true}
           />
         );
-      } else {
+      } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
         return (
           <EmailDetailBeritaBongkaran
             email={openedEmail as EmailDataVendor}
             handleCloseDetail={handleCloseDetail}
+            isCanceled={true}
+          />
+        );
+      } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+        return (
+          <EmailDetailBeritaPemeriksaan
+            email={openedEmail as EmailDataOther}
+            handleCloseDetail={handleCloseDetail}
+            isSend={false}
             isCanceled={true}
           />
         );
@@ -621,7 +667,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
                 </span>
               </>
             )}

@@ -26,12 +26,16 @@ import {
   EmailDetail,
   EmailDetailBeritaBongkaran,
 } from "@/components/detail-email";
+import { EmailDetailBeritaPemeriksaan } from "@/components/detail-email-berita-pemeriksaan";
 import { EmailRowInbox } from "@/components/email-row";
 import {
   DynamicEmailData,
   EmailDataAdmin,
   EmailDataVendor,
+  EmailDataOther,
   isVendorEmailData,
+  getPerihal,
+  getTanggalSurat,
 } from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,15 +63,9 @@ interface SectionHeaderProps {
   onSelectSection: (emailIds: string[]) => void;
 }
 
-// Helper function untuk mendapatkan tanggal dari surat
-const getTanggalSurat = (item: DynamicEmailData) => {
-  const kategori = item.surat_jalan.kategori_surat;
-
-  if (kategori === "Berita Acara Material Bongkaran") {
-    return (item as EmailDataVendor).surat_jalan.tanggal_kontrak ?? null;
-  }
-
-  return (item as EmailDataAdmin).surat_jalan.tanggal ?? null;
+// Helper function untuk mendapatkan tanggal dari surat (menggunakan helper dari interface)
+const getTanggalSuratLocal = (item: DynamicEmailData) => {
+  return getTanggalSurat(item) || item.surat_jalan.createdAt;
 };
 
 // Fungsi helper untuk mengelompokkan email berdasarkan tanggal
@@ -79,15 +77,15 @@ const groupEmailsByDate = (emails: DynamicEmailData[]): GroupedEmails => {
 
   return {
     today: emails.filter((email) => {
-      const emailDate = new Date(getTanggalSurat(email));
+      const emailDate = new Date(getTanggalSuratLocal(email));
       return emailDate >= today;
     }),
     yesterday: emails.filter((email) => {
-      const emailDate = new Date(getTanggalSurat(email));
+      const emailDate = new Date(getTanggalSuratLocal(email));
       return emailDate >= yesterday && emailDate < today;
     }),
     older: emails.filter((email) => {
-      const emailDate = new Date(getTanggalSurat(email));
+      const emailDate = new Date(getTanggalSuratLocal(email));
       return emailDate < yesterday;
     }),
   };
@@ -212,7 +210,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         );
 
         toast.success("Email berhasil dihapus", {
-          description: selectedToDelete.surat_jalan?.perihal,
+          description: getPerihal(selectedToDelete),
           position: "top-center",
         });
       }
@@ -238,8 +236,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const sortedInitialData = useMemo(() => {
     return [...data].sort(
       (a, b) =>
-        new Date(getTanggalSurat(b)).getTime() -
-        new Date(getTanggalSurat(a)).getTime()
+        new Date(getTanggalSuratLocal(b)).getTime() -
+        new Date(getTanggalSuratLocal(a)).getTime()
     );
   }, [data]);
 
@@ -253,8 +251,14 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu";
+
       return (
         hasAdminGudangStatus &&
+        isAllowedKategori &&
         ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
           item.isHaveStatus === true)
@@ -266,8 +270,13 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         (status) => status.user.name === user.name && status.isDelete == false
       );
 
+      const kategori = item.surat_jalan.kategori_surat;
+
       const knowsIfNotSuratJalan = (item: DynamicEmailData) => {
-        const kategori = item.surat_jalan.kategori_surat;
+        // Untuk Berita Acara Pemeriksaan Tim Mutu, tidak perlu cek mengetahui
+        if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+          return true;
+        }
 
         if (kategori !== "Surat Jalan") {
           if (!hasMengetahui(item.surat_jalan)) return false;
@@ -277,8 +286,14 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         return true;
       };
 
+      const isAllowedKategori = 
+        kategori === "Surat Jalan" || 
+        kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
+        kategori === "Berita Acara Material Bongkaran";
+
       return (
         hasSpvStatus &&
+        isAllowedKategori &&
         ((knowsIfNotSuratJalan(item) &&
           item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
@@ -521,7 +536,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       end.setHours(23, 59, 59, 999);
 
       const filtered = sortedInitialData.filter((email) => {
-        const emailDate = new Date(getTanggalSurat(email));
+        const emailDate = new Date(getTanggalSuratLocal(email));
         return emailDate >= start && emailDate <= end;
       });
 
@@ -593,6 +608,16 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     const userRole = user?.role?.name;
 
     if (userRole === "Admin") {
+      // Admin bisa melihat Surat Jalan dan Berita Pemeriksaan
+      if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+        return (
+          <EmailDetailBeritaPemeriksaan
+            email={openedEmail as EmailDataOther}
+            handleCloseDetail={handleCloseDetail}
+            isSend={true}
+          />
+        );
+      }
       return (
         <EmailDetail
           email={openedEmail}
@@ -621,13 +646,18 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             isSend={true}
           />
         );
-      }
-      else if (
-        kategoriSurat === "Berita Acara Material Bongkaran"
-      ) {
+      } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
         return (
           <EmailDetailBeritaBongkaran
             email={openedEmail as EmailDataVendor}
+            handleCloseDetail={handleCloseDetail}
+            isSend={true}
+          />
+        );
+      } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+        return (
+          <EmailDetailBeritaPemeriksaan
+            email={openedEmail as EmailDataOther}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
           />
@@ -964,7 +994,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete?.surat_jalan.perihal || "Tanpa perihal"}
+                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
                 </span>
               </>
             )}

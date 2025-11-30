@@ -40,5 +40,15 @@ export default {
       path: "/emails/rejectberitabongkaran/:documentId",
       handler: "email.rejectBeritaBongkaran",
     },
+    {
+      method: "PUT",
+      path: "/emails/approveberitapemeriksaan/:documentId",
+      handler: "email.approveBeritaPemeriksaan",
+    },
+    {
+      method: "PUT",
+      path: "/emails/rejectberitapemeriksaan/:documentId",
+      handler: "email.rejectBeritaPemeriksaan",
+    },
   ],
 };

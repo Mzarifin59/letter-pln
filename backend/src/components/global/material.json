@@ -28,7 +28,59 @@
       "type": "integer"
     },
     "keterangan": {
-      "type": "string"
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "isPemeriksaan"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "tipe": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "isPemeriksaan"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "serial_number": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "isPemeriksaan"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "lokasi": {
+      "type": "string",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "isPemeriksaan"
+            },
+            true
+          ]
+        }
+      }
+    },
+    "isPemeriksaan": {
+      "type": "boolean"
     }
   },
   "config": {}
