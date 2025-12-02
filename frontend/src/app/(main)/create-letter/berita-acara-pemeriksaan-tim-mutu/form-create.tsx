@@ -660,72 +660,10 @@ export default function FormCreatePemeriksaanPage({
     setShowPreview(true);
   };
 
-  const handleDownloadPDF = async () => {
-    const pages = document.querySelectorAll(".surat");
-    if (!pages.length) return alert("Preview tidak ditemukan!");
-
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-      compress: true,
-    });
-
-    let isFirstPage = true;
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i] as HTMLElement;
-
-      // Render canvas dengan scale optimal
-      const canvas = await html2canvas(page, {
-        scale: 2, // Scale lebih tinggi untuk kualitas
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: page.scrollWidth,
-        windowHeight: page.scrollHeight,
-        width: page.scrollWidth,
-        height: page.scrollHeight,
-        logging: false,
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          const clonedPage = clonedDoc.querySelector(
-            `[data-lembar="${page.getAttribute(
-              "data-lembar"
-            )}"][data-page="${page.getAttribute("data-page")}"]`
-          ) as HTMLElement;
-          if (clonedPage) {
-            // Pastikan tinggi tetap 297mm
-            clonedPage.style.height = "297mm";
-            clonedPage.style.maxHeight = "297mm";
-            clonedPage.style.overflow = "hidden";
-          }
-        },
-      });
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      // Add new page jika bukan halaman pertama
-      if (!isFirstPage) {
-        pdf.addPage();
-      }
-      isFirstPage = false;
-
-      // Tambahkan image dengan ukuran exact A4
-      pdf.addImage(
-        imgData,
-        "PNG",
-        0,
-        0,
-        pageWidth,
-        pageHeight,
-        undefined,
-        "FAST"
-      );
-    }
-
-    pdf.save(`${formData.nomorBeritaAcara || "berita-acara-pemeriksaan"}.pdf`);
+  // Download PDF sekarang dihandle oleh PreviewBeritaPemeriksaan component
+  const handleDownloadPDF = () => {
+    // Function ini tidak digunakan lagi karena download dihandle di PreviewBeritaPemeriksaan
+    // Tetapi tetap diperlukan untuk prop interface
   };
 
   // SIGNATURE HANDLERS - Penyedia Barang

@@ -9,7 +9,7 @@ import {
   SignatureData,
   MengetahuiForm,
 } from "@/lib/surat-pemeriksaan/berita-pemeriksaan.type";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 
@@ -49,6 +49,8 @@ export default function PreviewBeritaPemeriksaan({
   calculateTotal,
   autoDownload = false,
 }: PreviewSectionProps) {
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
   useEffect(() => {
     if (autoDownload) {
       const timer = setTimeout(() => {
@@ -128,71 +130,69 @@ export default function PreviewBeritaPemeriksaan({
     }
   };
 
-  const handleDownloadPDF = async () => {
-    const pages = document.querySelectorAll(".surat");
-    if (!pages.length) return alert("Preview tidak ditemukan!");
+  useEffect(() => {
+    if (!isGeneratingPDF) return;
 
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-      compress: true,
-    });
+    const generatePDF = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    let isFirstPage = true;
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i] as HTMLElement;
-
-      // Render canvas dengan scale optimal
-      const canvas = await html2canvas(page, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: page.scrollWidth,
-        windowHeight: page.scrollHeight,
-        width: page.scrollWidth,
-        height: page.scrollHeight,
-        logging: false,
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          const clonedPage = clonedDoc.querySelector(
-            `[data-lembar="${page.getAttribute(
-              "data-lembar"
-            )}"][data-page="${page.getAttribute("data-page")}"]`
-          ) as HTMLElement;
-          if (clonedPage) {
-            clonedPage.style.height = "297mm";
-            clonedPage.style.maxHeight = "297mm";
-            clonedPage.style.overflow = "hidden";
-          }
-        },
-      });
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      // Add new page jika bukan halaman pertama
-      if (!isFirstPage) {
-        pdf.addPage();
+      const pages = document.querySelectorAll(".surat-berita-pemeriksaan");
+      if (!pages.length) {
+        console.error("Preview element tidak ditemukan!");
+        setIsGeneratingPDF(false);
+        return;
       }
-      isFirstPage = false;
 
-      // Tambahkan image dengan ukuran exact A4
-      pdf.addImage(
-        imgData,
-        "PNG",
-        0,
-        0,
-        pageWidth,
-        pageHeight,
-        undefined,
-        "FAST"
-      );
-    }
+      try {
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+          compress: true,
+        });
 
-    pdf.save(`${formData.nomorBeritaAcara || "berita-acara-pemeriksaan"}.pdf`);
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i] as HTMLElement;
+
+          scaleToFit(page);
+
+          const canvas = await html2canvas(page, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            logging: false,
+            imageTimeout: 0,
+          });
+
+          page.style.transform = "";
+
+          const imgData = canvas.toDataURL("image/png");
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+        }
+
+        pdf.save(
+          `${formData.nomorBeritaAcara || "berita-acara-pemeriksaan"}.pdf`
+        );
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("Gagal generate PDF. Silakan coba lagi.");
+      } finally {
+        setIsGeneratingPDF(false);
+      }
+    };
+
+    generatePDF();
+  }, [isGeneratingPDF, formData.nomorBeritaAcara]);
+
+  const handleDownloadPDF = () => {
+    setIsGeneratingPDF(true);
   };
 
   const splitMaterialsIntoPages = () => {
@@ -321,13 +321,13 @@ export default function PreviewBeritaPemeriksaan({
 
                 {/* Title */}
                 <div className="text-center mb-8">
-                  <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
                     BERITA ACARA
                   </h1>
-                  <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
                     HASIL PEMERIKSAAN MUTU BARANG
                   </h1>
-                  <div className="text-blue-600 font-semibold text-2xl">
+                  <div className="text-gray-900 font-bold text-2xl">
                     {formData.nomorBeritaAcara || "(No Berita Acara)"}
                   </div>
                 </div>
@@ -447,7 +447,7 @@ export default function PreviewBeritaPemeriksaan({
                               <td className="border-2 border-gray-800 px-2 py-2 text-center">
                                 {material.satuan || "-"}
                               </td>
-                              <td className="border-2 border-gray-800 px-2 py-2 text-red-400">
+                              <td className="border-2 border-gray-800 px-2 py-2 text-red-600">
                                 {material.serial_number || "-"}
                               </td>
                             </tr>
@@ -498,7 +498,7 @@ export default function PreviewBeritaPemeriksaan({
                           )}
                         </div>
 
-                        <div className={`font-bold text-red-500 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div className={`font-bold text-red-600 ${isCompactMode ? "text-base" : "text-lg"}`}>
                           {formData.namaPenanggungJawab ||
                             "(Nama Penanggung Jawab)"}
                         </div>
@@ -568,6 +568,297 @@ export default function PreviewBeritaPemeriksaan({
           })}
         </div>
       </div>
+
+      {/* Hidden PDF Preview */}
+      {isGeneratingPDF && (
+        <div
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            backgroundColor: "#ffffff",
+            zIndex: -1,
+          }}
+        >
+          {materialPages.map((pageMaterials, pageIndex) => {
+            const isCompactMode = pageMaterials.length <= 3;
+            const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
+
+            return (
+              <div
+                key={pageIndex}
+                className="surat-berita-pemeriksaan w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                style={{
+                  padding: "15mm 15mm 15mm 15mm",
+                  boxSizing: "border-box",
+                }}
+              >
+                {/* Company Header */}
+                <div className={`flex items-center gap-4 ${isCompactMode ? "mb-4" : "mb-6"}`}>
+                  <div className="flex items-center justify-center">
+                    <Image
+                      src={`/images/PLN-logo.png`}
+                      alt="PLN Logo"
+                      width={104}
+                      height={104}
+                      className="w-[104px] h-[104px] object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                    </div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      UNIT PELAKSANA TRANSMISI BANDUNG
+                    </div>
+                  </div>
+                </div>
+
+                <hr className={`border-t-2 border-gray-800 ${isCompactMode ? "mb-3" : "mb-4"}`} />
+
+                {/* Title */}
+                <div className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}>
+                  <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+                    BERITA ACARA
+                  </h1>
+                  <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+                    HASIL PEMERIKSAAN MUTU BARANG
+                  </h1>
+                  <div className={`${isCompactMode ? "text-xl" : "text-2xl"} text-gray-900 font-bold`}>
+                    {formData.nomorBeritaAcara || "(No Berita Acara)"}
+                  </div>
+                </div>
+
+                {/* Introduction */}
+                <div className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"}`}>
+                  <p className="mb-2">
+                    Pada hari{" "}
+                    <span className="font-semibold">
+                      {formatDateWithDay(
+                        formData.tanggalPelaksanaan ||
+                          formData.tanggalKontrak ||
+                          new Date().toISOString()
+                      )}
+                    </span>{" "}
+                    kami yang bertanda tangan di bawah ini telah bersama - sama
+                    melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
+                    Rinci{" "}
+                    <span className="font-semibold">
+                      {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
+                    </span>{" "}
+                    tanggal{" "}
+                    <span className="font-semibold">
+                      {formatDate(formData.tanggalKontrak)}
+                    </span>{" "}
+                    perihal{" "}
+                    <span className="font-semibold">
+                      {formData.perihalKontrak || "(Perihal Kontrak)"}
+                    </span>
+                    .
+                  </p>
+                  <p className="">
+                    Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
+                    mutu barang. Adapun hasil dari pemeriksaan{" "}
+                    <span className="font-semibold">
+                      {formData.perihalKontrak || "(Perihal Kontrak)"}
+                    </span>{" "}
+                    dapat diterima /{" "}
+                    <span className="line-through">tidak diterima</span> dengan
+                    kelengkapan dokumen sebagai berikut:
+                  </p>
+                </div>
+
+                {/* Kelengkapan Dokumen */}
+                {kelengkapanDokumen.length > 0 && (
+                  <div className={isCompactMode ? "mb-3" : "mb-4"}>
+                    <ul className={`space-y-1 ${isCompactMode ? "text-base" : "text-lg"} ml-4`}>
+                      {kelengkapanDokumen.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Materials Table */}
+                {pageMaterials.length > 0 && (
+                  <div className={`${isCompactMode ? "mb-3" : "mb-4"} min-w-[300px] overflow-x-auto`} style={{ display: "block" }}>
+                    <p className={`${isCompactMode ? "text-base mb-1" : "text-lg mb-2"}`}>
+                      Adapun hasil pemeriksaan sebagai berikut:
+                    </p>
+                    <table className="border-t border-b border-gray-300 text-sm w-full" style={{ display: "table", width: "100%", borderCollapse: "collapse" }}>
+                      <thead className="bg-gray-100">
+                        <tr className={`${isCompactMode ? "text-base" : "text-lg"} text-center`}>
+                          <th className="border-2 border-gray-800 px-2 py-2">
+                            No.
+                          </th>
+                          <th className="border-2 border-gray-800 px-2 py-2">
+                            Material Description
+                          </th>
+                          <th className="border-2 border-gray-800 px-2 py-2">
+                            QTY
+                          </th>
+                          <th className="border-2 border-gray-800 px-2 py-2">
+                            SAT
+                          </th>
+                          <th className="border-2 border-gray-800 px-2 py-2">
+                            Serial Number
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className={isCompactMode ? "text-base" : "text-lg"}>
+                        {pageMaterials.map((material, index) => {
+                          const globalIndex = pageIndex * 3 + index;
+                          return (
+                            <tr key={material.id}>
+                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                                {globalIndex + 1}
+                              </td>
+                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"}`}>
+                                <div className="text-center">
+                                  <div className="font-semibold">
+                                    {material.namaMaterial || "-"}
+                                  </div>
+                                  {material.katalog && (
+                                    <div className="">
+                                      <span className="font-bold">MERK:</span>{" "}
+                                      {material.katalog}
+                                    </div>
+                                  )}
+                                  {material.tipe && (
+                                    <div className="">
+                                      <span className="font-bold">TYPE:</span>{" "}
+                                      {material.tipe}
+                                    </div>
+                                  )}
+                                  {material.lokasi && (
+                                    <div className="">
+                                      LOKASI: {material.lokasi}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                                {material.jumlah || "0"}
+                              </td>
+                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                                {material.satuan || "-"}
+                              </td>
+                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-red-600`}>
+                                {material.serial_number || "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Closing Statement */}
+                {pageIndex === materialPages.length - 1 && (
+                  <>
+                    <div className={`${isCompactMode ? "mb-3" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                      <p>
+                        Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
+                        dengan sesungguhnya untuk dapat dipergunakan sebagai mana
+                        mestinya.
+                      </p>
+                    </div>
+
+                    {/* Signatures */}
+                    <div className={`flex ${isCompactMode ? "gap-4 mb-2" : "gap-8 mb-4"}`}>
+                      {/* Penyedia Barang */}
+                      <div className="text-center">
+                        <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                          Penyedia Barang
+                        </div>
+                        <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                          {formData.perusahaanPenyediaBarang ||
+                            "(Perusahaan Penyedia Barang)"}
+                        </div>
+
+                        {/* Signature Preview */}
+                        <div className={`${isCompactMode ? "h-16 mb-2" : "h-20 mb-4"} flex items-center`}>
+                          {getPenyediaBarangSignature() ? (
+                            <img
+                              width={200}
+                              height={200}
+                              src={getPenyediaBarangSignature()!}
+                              alt="TTD Penyedia Barang"
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <div className="text-gray-400 text-sm">
+                              (Tanda Tangan)
+                            </div>
+                          )}
+                        </div>
+
+                        <div className={`${isCompactMode ? "text-base" : "text-lg"} font-bold text-red-600`}>
+                          {formData.namaPenanggungJawab ||
+                            "(Nama Penanggung Jawab)"}
+                        </div>
+                      </div>
+
+                      {/* Pemeriksa Barang */}
+                      <div className="text-left">
+                        <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                          Pemeriksa Barang
+                        </div>
+                        <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                          {pemeriksaBarang.departemenPemeriksa ||
+                            "(Departemen Pemeriksa)"}
+                        </div>
+
+                        {/* List Mengetahui */}
+                        {pemeriksaBarang.mengetahui &&
+                          pemeriksaBarang.mengetahui.length > 0 && (
+                            <div className={isCompactMode ? "space-y-2" : "space-y-3"}>
+                              {pemeriksaBarang.mengetahui.map(
+                                (mengetahui, index) => (
+                                  <div
+                                    key={mengetahui.id}
+                                    className={`flex items-center ${isCompactMode ? "pb-1" : "pb-2"}`}
+                                  >
+                                    <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold min-w-[200px]`}>
+                                      {index + 1}{" "}
+                                      {mengetahui.namaMengetahui ||
+                                        "(Nama Mengetahui)"}
+                                    </div>
+                                    <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold`}>
+                                      :
+                                    </div>
+                                    <div className="flex items-center ml-2">
+                                      <div className={`${isCompactMode ? "w-28 h-10" : "w-32 h-12"} flex items-center justify-center border-b-2 border-gray-800`}>
+                                        {getMengetahuiSignature(mengetahui) ? (
+                                          <img
+                                            width={120}
+                                            height={60}
+                                            src={getMengetahuiSignature(mengetahui)!}
+                                            alt={`TTD Mengetahui ${index + 1}`}
+                                            className="max-h-full max-w-full object-contain"
+                                          />
+                                        ) : (
+                                          <div className="text-gray-400 text-xs">
+                                            (Tanda Tangan)
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

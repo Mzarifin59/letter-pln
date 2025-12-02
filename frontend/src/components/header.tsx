@@ -22,7 +22,7 @@ import {
 import { useUserLogin } from "@/lib/user";
 import qs from "qs";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { EmailData } from "@/lib/interface";
+import { EmailData, getPerihal, DynamicEmailData } from "@/lib/interface";
 import { useRouter } from "next/navigation";
 
 async function getEmail() {
@@ -276,6 +276,23 @@ export default function Header() {
     return colors[status] || "bg-blue-100 text-blue-700";
   };
 
+  // Helper function untuk mendapatkan nomor surat berdasarkan kategori
+  const getNoSurat = (email: EmailData) => {
+    const dynamicEmail = email as DynamicEmailData;
+    const kategori = dynamicEmail.surat_jalan?.kategori_surat;
+    
+    if (kategori === "Berita Acara Material Bongkaran") {
+      return (dynamicEmail.surat_jalan as any).no_berita_acara ?? null;
+    }
+    
+    if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+      return (dynamicEmail.surat_jalan as any).no_berita_acara ?? null;
+    }
+    
+    // Untuk Surat Jalan
+    return (dynamicEmail.surat_jalan as any).no_surat_jalan ?? null;
+  };
+
   return (
     <div className="lg:ml-72 flex-1 flex flex-col">
       {/* Navbar */}
@@ -442,8 +459,7 @@ export default function Header() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
                               <p className="font-semibold text-sm text-gray-900 line-clamp-1">
-                                {email.surat_jalan?.no_surat_jalan ||
-                                  "No Number"}
+                                {getNoSurat(email) || "No Number"}
                               </p>
                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                                 <Clock size={12} />
@@ -463,15 +479,8 @@ export default function Header() {
 
                           {/* Description */}
                           <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                            {email.surat_jalan?.perihal || "No description"}
+                            {getPerihal(email as DynamicEmailData) || "No description"}
                           </p>
-
-                          {/* From/To Info */}
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>From: {email.sender?.name || "Unknown"}</span>
-                            <span>•</span>
-                            <span>To: {email.to_company || "Unknown"}</span>
-                          </div>
                         </div>
                       </DropdownMenuItem>
                     ))

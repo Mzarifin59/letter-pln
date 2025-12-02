@@ -54,7 +54,13 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  const [emailList, setEmailList] = useState<DynamicEmailData[]>(data);
+  // Sort data by createdAt descending (terbaru) by default
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA; // Descending order (terbaru)
+  });
+  const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedData);
   const { user } = useUserLogin();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

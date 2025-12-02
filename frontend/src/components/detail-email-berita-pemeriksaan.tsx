@@ -18,6 +18,8 @@ import {
 import { useUserLogin } from "@/lib/user";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+import { Button } from "./ui/button";
+import Link from "next/link";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "31 Januari 2025";
@@ -384,13 +386,13 @@ export const EmailDetailBeritaPemeriksaan = ({
 
               {/* Title */}
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   BERITA ACARA
                 </h1>
-                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   HASIL PEMERIKSAAN MUTU BARANG
                 </h1>
-                <div className="text-blue-600 font-semibold text-2xl">
+                <div className="text-gray-900 font-bold text-2xl">
                   {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
                 </div>
               </div>
@@ -511,7 +513,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                           <td className="border-2 border-gray-800 px-2 py-2 text-center">
                             {item.satuan}
                           </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-red-400">
+                          <td className="border-2 border-gray-800 px-2 py-2 text-red-600">
                             {material.serial_number || "-"}
                           </td>
                           <td className="border-2 border-gray-800 px-2 py-2 text-center">
@@ -566,7 +568,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                     )}
                   </div>
 
-                  <div className="text-lg font-bold text-red-500">
+                  <div className="text-lg font-bold text-red-600">
                     {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
                       "(Nama Penanggung Jawab)"}
                   </div>
@@ -631,6 +633,18 @@ export const EmailDetailBeritaPemeriksaan = ({
             </div>
           </div>
         </div>
+        
+        {/* Ubah Surat Button for Reject Status */}
+        {user?.role?.name === "Admin" &&
+          beritaPemeriksaan.status_surat === "Reject" && (
+            <Link
+              href={`/create-letter/berita-acara-pemeriksaan-tim-mutu?mode=edit&id=${beritaPemeriksaan.documentId}`}
+            >
+              <Button variant="default" size="lg">
+                Ubah Surat
+              </Button>
+            </Link>
+          )}
       </div>
 
       {/* Hidden PDF Preview */}
@@ -676,13 +690,13 @@ export const EmailDetailBeritaPemeriksaan = ({
 
             {/* Title */}
             <div className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}>
-              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-extrabold text-gray-900`}>
+              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
                 BERITA ACARA
               </h1>
-              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-extrabold text-gray-900`}>
+              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
                 HASIL PEMERIKSAAN MUTU BARANG
               </h1>
-              <div className={`${isCompactMode ? "text-xl" : "text-2xl"} text-blue-600 font-semibold`}>
+              <div className={`${isCompactMode ? "text-xl" : "text-2xl"} text-gray-900 font-bold`}>
                 {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
               </div>
             </div>
@@ -803,7 +817,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                         <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
                           {item.satuan}
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-red-400`}>
+                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-red-600`}>
                           {material.serial_number || "-"}
                         </td>
                         <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
@@ -858,7 +872,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   )}
                 </div>
 
-                <div className={`${isCompactMode ? "text-base" : "text-lg"} font-bold text-red-500`}>
+                <div className={`${isCompactMode ? "text-base" : "text-lg"} font-bold text-red-600`}>
                   {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
                     "(Nama Penanggung Jawab)"}
                 </div>
