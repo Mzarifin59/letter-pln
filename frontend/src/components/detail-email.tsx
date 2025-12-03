@@ -1492,11 +1492,9 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="flex-shrink-0">
             {copSuratUrl ? (
               <div className="cop-surat-container mb-4">
-                <Image
+                <img
                   src={copSuratUrl}
                   alt="Cop Surat"
-                  width={500}
-                  height={300}
                   className="w-[500px] h-full object-cover"
                 />
               </div>
@@ -1927,11 +1925,9 @@ export const EmailDetailBeritaBongkaran = ({
                 <div className="flex items-center justify-center">
                   {copSuratUrl ? (
                     <div className="cop-surat-container mb-4">
-                      <Image
+                      <img
                         src={copSuratUrl}
                         alt="Cop Surat"
-                        width={600}
-                        height={300}
                         className="w-[600px] h-full object-cover"
                       />
                     </div>
@@ -2174,9 +2170,7 @@ export const EmailDetailBeritaBongkaran = ({
                           height={100}
                           className="absolute z-0"
                         />
-                        <Image
-                          width={200}
-                          height={200}
+                        <img
                           src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.pengirim.ttd_pengirim.url}`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
@@ -2207,11 +2201,9 @@ export const EmailDetailBeritaBongkaran = ({
                   <div className="relative h-20 mb-4 flex items-center justify-center">
                     {email.surat_jalan.mengetahui?.ttd_mengetahui?.url ? (
                       <>
-                        <Image
-                          width={200}
-                          height={200}
+                        <img
                           src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.mengetahui?.ttd_mengetahui.url}`}
-                          alt="TTD pengirim"
+                          alt="TTD mengetahui"
                           className="max-h-full max-w-full object-contain z-10"
                         />
                       </>
