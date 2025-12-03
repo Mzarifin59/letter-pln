@@ -91,7 +91,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         ): string => {
           if (!fileAttachment?.url) return "";
           if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
-          return `http://localhost:1337${fileAttachment.url}`;
+          return `${process.env.NEXT_PUBLIC_API_URL}${fileAttachment.url}`;
         };
 
         if (suratJalan.penerima.ttd_penerima) {
