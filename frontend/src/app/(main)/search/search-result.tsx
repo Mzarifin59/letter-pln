@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   X,
   Filter,
+  SlidersVertical,
 } from "lucide-react";
 import {
   DynamicEmailData,
@@ -29,6 +30,15 @@ import Link from "next/link";
 import { EmailDetail, EmailDetailBeritaBongkaran } from "@/components/detail-email";
 import { EmailDetailBeritaPemeriksaan } from "@/components/detail-email-berita-pemeriksaan";
 import { useUserLogin } from "@/lib/user";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 type SearchType = "no_surat" | "material" | "vendor";
 
@@ -326,6 +336,47 @@ export default function SearchResultPage() {
 
   const availableSearchTypes = getAvailableSearchTypes();
 
+  // Get available categories based on user role (same logic as header)
+  const getAvailableCategories = () => {
+    const userRole = user?.role?.name;
+
+    if (userRole === "Admin") {
+      return [
+        { value: "Surat Jalan", label: "Surat Jalan" },
+        {
+          value: "Berita Acara Pemeriksaan Tim Mutu",
+          label: "Berita Acara Pemeriksaan Tim Mutu",
+        },
+      ];
+    } else if (userRole === "Spv") {
+      return [
+        { value: "Surat Jalan", label: "Surat Jalan" },
+        {
+          value: "Berita Acara Material Bongkaran",
+          label: "Berita Acara Material Bongkaran",
+        },
+        {
+          value: "Berita Acara Pemeriksaan Tim Mutu",
+          label: "Berita Acara Pemeriksaan Tim Mutu",
+        },
+      ];
+    } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
+      // Vendor dan Gardu Induk tidak memerlukan filter (otomatis Berita Acara Material Bongkaran)
+      return [];
+    }
+
+    return [];
+  };
+
+  const availableCategories = getAvailableCategories();
+  const showFilter = availableCategories.length > 0;
+
+  // Sync state with URL params when they change
+  useEffect(() => {
+    setSearchInput(query);
+    setSearchType(searchTypeParam);
+  }, [query, searchTypeParam]);
+
   console.log("Data:", results)
 
   useEffect(() => {
@@ -376,11 +427,40 @@ export default function SearchResultPage() {
       const params = new URLSearchParams();
       params.set("q", searchInput.trim());
       params.set("type", searchType);
-      if (categoriesParam) {
+      // Include selected categories if any
+      if (selectedCategories.length > 0) {
+        params.set("categories", selectedCategories.join(","));
+      } else if (categoriesParam) {
         params.set("categories", categoriesParam);
       }
       window.location.href = `/search?${params.toString()}`;
     }
+  };
+
+  // Handle search type change (preserve filters)
+  const handleSearchTypeChange = (newSearchType: SearchType) => {
+    const params = new URLSearchParams();
+    params.set("q", query || searchInput.trim());
+    params.set("type", newSearchType);
+    if (selectedCategories.length > 0) {
+      params.set("categories", selectedCategories.join(","));
+    }
+    window.location.href = `/search?${params.toString()}`;
+  };
+
+  // Handle category toggle
+  const handleCategoryToggle = (category: string) => {
+    const newCategories = selectedCategories.includes(category)
+      ? selectedCategories.filter((c) => c !== category)
+      : [...selectedCategories, category];
+    
+    const params = new URLSearchParams();
+    params.set("q", query || searchInput.trim());
+    params.set("type", searchType);
+    if (newCategories.length > 0) {
+      params.set("categories", newCategories.join(","));
+    }
+    window.location.href = `/search?${params.toString()}`;
   };
 
   const handleRemoveCategory = (category: string) => {
@@ -470,7 +550,7 @@ export default function SearchResultPage() {
                 <button
                   key={type.value}
                   type="button"
-                  onClick={() => setSearchType(type.value)}
+                  onClick={() => handleSearchTypeChange(type.value)}
                   className={`text-sm px-4 py-1.5 rounded-lg font-medium transition-colors ${
                     searchType === type.value
                       ? "bg-[#0056B0] text-white"
@@ -493,6 +573,64 @@ export default function SearchResultPage() {
                 className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500 text-lg"
                 autoFocus
               />
+
+              {/* Filter Dropdown - Only show if user has available categories */}
+              {showFilter && (
+                <>
+                  <div className="h-8 w-px bg-[#0056B0] mx-2"></div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
+                      >
+                        <SlidersVertical size={24} />
+                        {/* Badge untuk active filters */}
+                        {selectedCategories.length > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                            {selectedCategories.length}
+                          </span>
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        Filter berdasarkan Kategori
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+
+                      {availableCategories.map((category) => (
+                        <DropdownMenuCheckboxItem
+                          key={category.value}
+                          checked={selectedCategories.includes(
+                            category.value
+                          )}
+                          onCheckedChange={() =>
+                            handleCategoryToggle(category.value)
+                          }
+                          className="cursor-pointer"
+                        >
+                          {category.label}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+
+                      {selectedCategories.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={handleClearAllFilters}
+                            className="text-red-500 hover:text-red-600 cursor-pointer justify-center font-medium"
+                          >
+                            Hapus Filter
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+
               <button
                 type="submit"
                 className="bg-[#0056B0] text-white px-6 py-2 rounded-lg hover:bg-[#004494] transition-colors font-medium"
@@ -575,35 +713,35 @@ export default function SearchResultPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0]"></div>
-                <p className="mt-4 text-gray-600">Searching...</p>
+                <p className="mt-4 text-gray-600">Mencari...</p>
               </div>
             ) : !query ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Search size={64} className="text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  Start Your Search
+                  Mulai Pencarian
                 </h3>
                 <p className="text-gray-500 text-center max-w-md">
-                  Enter search criteria above to find documents
+                  Masukkan kriteria pencarian di atas untuk menemukan dokumen
                 </p>
               </div>
             ) : results?.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <FileText size={64} className="text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  No Results Found
+                  Tidak Ada Hasil Ditemukan
                 </h3>
                 <p className="text-gray-500 text-center max-w-md">
                   {selectedCategories.length > 0 ? (
                     <>
-                      We couldn't find any documents matching "{query}" in{" "}
-                      {selectedCategories.join(", ")}. Try removing filters or
-                      searching with different criteria.
+                      Tidak dapat menemukan dokumen yang cocok dengan "{query}" di{" "}
+                      {selectedCategories.join(", ")}. Coba hapus filter atau
+                      gunakan kriteria pencarian yang berbeda.
                     </>
                   ) : (
                     <>
-                      We couldn't find any documents matching "{query}". Try
-                      searching with different criteria.
+                      Tidak dapat menemukan dokumen yang cocok dengan "{query}". Coba
+                      gunakan kriteria pencarian yang berbeda.
                     </>
                   )}
                 </p>
