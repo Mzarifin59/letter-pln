@@ -207,8 +207,19 @@ export default function SentContent({ data, token }: SentContentProps) {
         throw new Error("Failed to mark email as read");
       }
 
-      setEmailList((prevEmails) =>
-        prevEmails.map((email) => {
+      let emailIdToDispatch: number | null = null;
+
+      setEmailList((prevEmails) => {
+        // Find email before updating to get email.id for event
+        const updatedEmail = prevEmails.find(
+          (email) => email.documentId === emailDocumentId
+        );
+        
+        if (updatedEmail?.id) {
+          emailIdToDispatch = updatedEmail.id;
+        }
+
+        return prevEmails.map((email) => {
           if (email.documentId === emailDocumentId) {
             return {
               ...email,
@@ -225,8 +236,19 @@ export default function SentContent({ data, token }: SentContentProps) {
             };
           }
           return email;
-        })
-      );
+        });
+      });
+
+      // Dispatch event setelah render cycle selesai untuk update Header dan Sidebar
+      if (emailIdToDispatch) {
+        queueMicrotask(() => {
+          window.dispatchEvent(
+            new CustomEvent("emailRead", {
+              detail: { emailId: emailIdToDispatch },
+            })
+          );
+        });
+      }
     } catch (error) {
       console.error("Error marking email as read:", error);
     }

@@ -552,6 +552,9 @@ export default function FormCreatePemeriksaanPage({
         duration: 3000,
       });
 
+      // Dispatch event untuk update Header dan Sidebar secara real-time
+      window.dispatchEvent(new CustomEvent("emailCreated"));
+
       router.push("/draft");
     } catch (error: unknown) {
       const message =

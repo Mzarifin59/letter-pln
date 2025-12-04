@@ -557,6 +557,11 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         }
       );
 
+      // Dispatch event untuk update Header dan Sidebar secara real-time
+      if (!isEditMode) {
+        window.dispatchEvent(new CustomEvent("emailCreated"));
+      }
+
       sessionStorage.removeItem("draftData");
     } catch (error: unknown) {
       const message =

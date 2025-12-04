@@ -135,7 +135,7 @@ export default function Sidebar({ data: initialData, token }: SidebarProps) {
   }, [initialData]);
 
   // Function untuk update email status (local optimistic update)
-  const updateEmailStatus = (emailId: number) => {
+  const updateEmailStatus = useCallback((emailId: number) => {
     setEmailData((prevData) =>
       prevData.map((email) => {
         if (email.id === emailId) {
@@ -151,11 +151,11 @@ export default function Sidebar({ data: initialData, token }: SidebarProps) {
       })
     );
 
-    // Fetch ulang untuk sync dengan server
+    // Fetch ulang untuk sync dengan server (delay kecil untuk menghindari race condition)
     setTimeout(() => {
       fetchEmails();
-    }, 500);
-  };
+    }, 0.5);
+  }, [fetchEmails]);
 
   // Listen untuk event custom dari detail email
   useEffect(() => {
@@ -163,12 +163,19 @@ export default function Sidebar({ data: initialData, token }: SidebarProps) {
       updateEmailStatus(event.detail.emailId);
     };
 
+    const handleEmailCreated = () => {
+      // Refresh data ketika surat baru dibuat
+      fetchEmails();
+    };
+
     window.addEventListener("emailRead", handleEmailRead as EventListener);
+    window.addEventListener("emailCreated", handleEmailCreated as EventListener);
 
     return () => {
       window.removeEventListener("emailRead", handleEmailRead as EventListener);
+      window.removeEventListener("emailCreated", handleEmailCreated as EventListener);
     };
-  }, []);
+  }, [fetchEmails, updateEmailStatus]);
 
   return (
     <>

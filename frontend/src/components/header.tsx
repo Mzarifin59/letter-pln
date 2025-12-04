@@ -185,6 +185,53 @@ export default function Header() {
     };
   }, [fetchEmails]);
 
+  // Listen untuk event custom dari detail email (optimistic update)
+  useEffect(() => {
+    const handleEmailRead = (event: CustomEvent) => {
+      const emailId = event.detail.emailId;
+      
+      // Optimistic update: langsung update state tanpa menunggu polling
+      setEmails((prevEmails) =>
+        prevEmails.map((email) => {
+          if (email.id === emailId) {
+            return {
+              ...email,
+              email_statuses: email.email_statuses?.map((status) => {
+                if (status.user.email === user?.email) {
+                  return {
+                    ...status,
+                    is_read: true,
+                    read_at: new Date().toISOString(),
+                  };
+                }
+                return status;
+              }),
+            };
+          }
+          return email;
+        })
+      );
+
+      // Fetch ulang untuk sync dengan server (delay kecil untuk menghindari race condition)
+      setTimeout(() => {
+        fetchEmails(false);
+      }, 0.5);
+    };
+
+    const handleEmailCreated = () => {
+      // Refresh data ketika surat baru dibuat
+      fetchEmails(false);
+    };
+
+    window.addEventListener("emailRead", handleEmailRead as EventListener);
+    window.addEventListener("emailCreated", handleEmailCreated as EventListener);
+
+    return () => {
+      window.removeEventListener("emailRead", handleEmailRead as EventListener);
+      window.removeEventListener("emailCreated", handleEmailCreated as EventListener);
+    };
+  }, [fetchEmails, user?.email]);
+
   const unReadEmail = emails.filter((email) => {
     if (!email.email_statuses || email.email_statuses.length === 0) {
       return true;
