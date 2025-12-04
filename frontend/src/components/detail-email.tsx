@@ -122,15 +122,45 @@ export const EmailDetail = ({
   isSend,
   isCanceled,
   handleCloseDetail,
+  markEmailAsBookmarked,
 }: {
   email: DynamicEmailData;
   isSend?: boolean;
   isCanceled?: boolean;
   handleCloseDetail: MouseEventHandler;
+  markEmailAsBookmarked?: (id: string) => void;
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [localEmail, setLocalEmail] = useState<DynamicEmailData>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  // Sync localEmail dengan prop email saat email berubah
+  useEffect(() => {
+    setLocalEmail(email);
+  }, [email]);
+
+  // Handler untuk bookmark dengan optimistic update
+  const handleBookmark = () => {
+    if (!markEmailAsBookmarked) return;
+
+    // Optimistic update: langsung update localEmail
+    setLocalEmail((prevEmail) => ({
+      ...prevEmail,
+      email_statuses: prevEmail.email_statuses?.map((status) => {
+        if (status.user.name === user?.name) {
+          return {
+            ...status,
+            is_bookmarked: !status.is_bookmarked,
+          };
+        }
+        return status;
+      }),
+    }));
+
+    // Panggil fungsi dari parent untuk update backend dan emailList
+    markEmailAsBookmarked(email.documentId);
+  };
 
   // Convert email data to PreviewSection format
   // Hanya untuk Surat Jalan (bukan Berita Pemeriksaan)
@@ -636,15 +666,21 @@ export const EmailDetail = ({
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
                 <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                <Star
-                  className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer ${
-                    email.email_statuses.find(
-                      (item) => item.user.name === user?.name
-                    )?.is_bookmarked
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-400"
-                  }`}
-                />
+                <button
+                  onClick={handleBookmark}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle bookmark"
+                >
+                  <Star
+                    className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
+                      localEmail.email_statuses?.find(
+                        (item) => item.user.name === user?.name
+                      )?.is_bookmarked
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  />
+                </button>
                 <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleCloseDetail}
@@ -683,15 +719,21 @@ export const EmailDetail = ({
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
                 <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                <Star
-                  className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer ${
-                    email.email_statuses.find(
-                      (item) => item.user.name === user?.name
-                    )?.is_bookmarked
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-400"
-                  }`}
-                />
+                <button
+                  onClick={handleBookmark}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle bookmark"
+                >
+                  <Star
+                    className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
+                      localEmail.email_statuses?.find(
+                        (item) => item.user.name === user?.name
+                      )?.is_bookmarked
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  />
+                </button>
                 <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleCloseDetail}
@@ -1290,15 +1332,45 @@ export const EmailDetailBeritaBongkaran = ({
   isSend,
   isCanceled,
   handleCloseDetail,
+  markEmailAsBookmarked,
 }: {
   email: EmailDataVendor;
   isSend?: boolean;
   isCanceled?: boolean;
   handleCloseDetail: MouseEventHandler;
+  markEmailAsBookmarked?: (id: string) => void;
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [localEmail, setLocalEmail] = useState<EmailDataVendor>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  // Sync localEmail dengan prop email saat email berubah
+  useEffect(() => {
+    setLocalEmail(email);
+  }, [email]);
+
+  // Handler untuk bookmark dengan optimistic update
+  const handleBookmark = () => {
+    if (!markEmailAsBookmarked) return;
+
+    // Optimistic update: langsung update localEmail
+    setLocalEmail((prevEmail) => ({
+      ...prevEmail,
+      email_statuses: prevEmail.email_statuses?.map((status) => {
+        if (status.user.name === user?.name) {
+          return {
+            ...status,
+            is_bookmarked: !status.is_bookmarked,
+          };
+        }
+        return status;
+      }),
+    }));
+
+    // Panggil fungsi dari parent untuk update backend dan emailList
+    markEmailAsBookmarked(email.documentId);
+  };
 
   // Helper function untuk get file URL
   const getFileUrl = (
@@ -1820,15 +1892,21 @@ export const EmailDetailBeritaBongkaran = ({
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
                 <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                <Star
-                  className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer ${
-                    email.email_statuses.find(
-                      (item) => item.user.name === user?.name
-                    )?.is_bookmarked
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-400"
-                  }`}
-                />
+                <button
+                  onClick={handleBookmark}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle bookmark"
+                >
+                  <Star
+                    className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
+                      localEmail.email_statuses?.find(
+                        (item) => item.user.name === user?.name
+                      )?.is_bookmarked
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  />
+                </button>
                 <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleCloseDetail}
@@ -1864,15 +1942,21 @@ export const EmailDetailBeritaBongkaran = ({
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
                 <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                <Star
-                  className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer ${
-                    email.email_statuses.find(
-                      (item) => item.user.name === user?.name
-                    )?.is_bookmarked
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-400"
-                  }`}
-                />
+                <button
+                  onClick={handleBookmark}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle bookmark"
+                >
+                  <Star
+                    className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
+                      localEmail.email_statuses?.find(
+                        (item) => item.user.name === user?.name
+                      )?.is_bookmarked
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  />
+                </button>
                 <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleCloseDetail}

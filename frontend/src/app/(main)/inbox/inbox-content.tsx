@@ -519,6 +519,25 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           return email;
         })
       );
+
+      // Update openedEmail juga jika sedang dibuka
+      if (openedEmail?.documentId === emailDocumentId) {
+        setOpenedEmail((prevEmail) => {
+          if (!prevEmail) return prevEmail;
+          return {
+            ...prevEmail,
+            email_statuses: prevEmail.email_statuses.map((status) => {
+              if (status.user.name === user?.name) {
+                return {
+                  ...status,
+                  is_bookmarked: !status.is_bookmarked,
+                };
+              }
+              return status;
+            }),
+          };
+        });
+      }
     } catch (error) {
       console.error("Error marking email as bookmarked:", error);
     }
@@ -637,6 +656,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             email={openedEmail as EmailDataOther}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
+            markEmailAsBookmarked={markEmailAsBookmarked}
           />
         );
       }
@@ -645,6 +665,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           email={openedEmail}
           handleCloseDetail={handleCloseDetail}
           isSend={true}
+          markEmailAsBookmarked={markEmailAsBookmarked}
         />
       );
     }
@@ -655,6 +676,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
           email={openedEmail as EmailDataVendor}
           handleCloseDetail={handleCloseDetail}
           isSend={true}
+          markEmailAsBookmarked={markEmailAsBookmarked}
         />
       );
     }
@@ -666,6 +688,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             email={openedEmail}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
+            markEmailAsBookmarked={markEmailAsBookmarked}
           />
         );
       } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
@@ -674,6 +697,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             email={openedEmail as EmailDataVendor}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
+            markEmailAsBookmarked={markEmailAsBookmarked}
           />
         );
       } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
@@ -682,6 +706,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             email={openedEmail as EmailDataOther}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
+            markEmailAsBookmarked={markEmailAsBookmarked}
           />
         );
       }
