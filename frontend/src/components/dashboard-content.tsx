@@ -50,22 +50,6 @@ function timeAgo(dateString: string) {
   return `${years} tahun lalu`;
 }
 
-// function mergeDraftAndPublished(drafts: SuratJalan[], published: SuratJalan[]) {
-//   const map = new Map<string, SuratJalan>();
-
-//   // masukkan semua draft dulu
-//   drafts.forEach((sj) => {
-//     map.set(sj.documentId, sj);
-//   });
-
-//   // kalau ada published dengan documentId sama, replace draft
-//   published.forEach((sj) => {
-//     map.set(sj.documentId, sj);
-//   });
-
-//   return Array.from(map.values());
-// }
-
 const statusIcons: Record<string, { icon: JSX.Element }> = {
   Draft: {
     icon: <StickyNote width={15} height={15} className="text-[#4263EB]" />,
@@ -110,11 +94,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
     if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-    
+
     if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
       return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
     }
-    
+
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -160,7 +144,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .filter(
         (item) =>
           item.surat_jalan.kategori_surat === "Surat Jalan" ||
-          item.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Pemeriksaan Tim Mutu"
       );
 
     suratData = suratData
@@ -168,7 +153,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .filter(
         (item) =>
           item.surat_jalan.kategori_surat === "Surat Jalan" ||
-          item.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Pemeriksaan Tim Mutu"
       );
   } else if (user?.role?.name === "Vendor") {
     suratDataThisMonth = suratDataThisMonth
@@ -205,24 +191,26 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   } else {
     const canShow = (item: DynamicEmailData) => {
       const kategori = item.surat_jalan.kategori_surat;
-      
+
       // Handle Surat Jalan
       if (kategori === "Surat Jalan") {
         return item.surat_jalan.status_surat !== "Draft";
       }
-      
+
       // Handle Berita Acara Pemeriksaan Tim Mutu
       if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-        return item.surat_jalan.status_surat !== "Draft" && 
-               item.surat_jalan.status_entry !== "Draft";
+        return (
+          item.surat_jalan.status_surat !== "Draft" &&
+          item.surat_jalan.status_entry !== "Draft"
+        );
       }
-      
+
       // Handle Berita Acara Material Bongkaran
       const mengetahuiLengkap =
         hasMengetahui(item.surat_jalan) &&
         item.surat_jalan.status_surat !== "Reject" &&
         Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
-        ("penerima" in item.surat_jalan && item.surat_jalan.penerima 
+        ("penerima" in item.surat_jalan && item.surat_jalan.penerima
           ? Boolean(item.surat_jalan.penerima.ttd_penerima)
           : false);
 
@@ -399,7 +387,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           {/* Cards Row */}
           <div
             className={`${
-              user?.role?.name === "Spv" ? "xl:grid-cols-2" : "xl:grid-cols-3"
+              user?.role?.name === "Spv" || user?.role?.name === "Gardu Induk" ? "xl:grid-cols-2" : "xl:grid-cols-3"
             } grid grid-cols-1 gap-6`}
           >
             {/* Tabel Riwayat Card */}
@@ -454,7 +442,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                         <tr key={index} className="border-b border-gray-50">
                           <td className="py-4 px-4">
                             <div className="text-sm text-[#212529]">
-                              <div>{formatDateTime(getTanggalSuratLocal(item))}</div>
+                              <div>
+                                {formatDateTime(getTanggalSuratLocal(item))}
+                              </div>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-[#495057]">
@@ -580,7 +570,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
             </div>
 
             {/* New Activity Card */}
-            {user?.role?.name !== "Spv" && (
+            {user?.role?.name !== "Spv" && user?.role?.name !== "Gardu Induk" && (
               <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
                 <div className="mb-8">
                   <div className="flex items-center justify-between">
