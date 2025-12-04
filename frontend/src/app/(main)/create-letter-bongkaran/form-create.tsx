@@ -78,6 +78,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         if (beritaBongkaran.cop_surat) {
           const copSuratUrl = getFileUrl(beritaBongkaran.cop_surat);
           setCopSuratPreview(copSuratUrl);
+          
+          // Set formData.copSurat dengan URL agar preview component bisa menampilkannya
+          setFormData((prev) => ({ ...prev, copSurat: copSuratUrl }));
 
           setExistingCopSuratId(beritaBongkaran.cop_surat.id);
         }

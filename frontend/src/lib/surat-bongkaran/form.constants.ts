@@ -27,10 +27,10 @@ export const INITIAL_MATERIAL: Omit<MaterialForm, "id"> = {
 };
 
 export const FILE_VALIDATION = {
-  validTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif"],
+  validTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"],
   maxSize: 5 * 1024 * 1024, // 5MB
   errorMessages: {
-    invalidType: "Hanya file gambar (JPEG, PNG, GIF) yang diizinkan",
+    invalidType: "Hanya file gambar (JPEG, PNG, GIF, WEBP) yang diizinkan",
     tooLarge: "Ukuran file tidak boleh lebih dari 5MB",
   },
 };

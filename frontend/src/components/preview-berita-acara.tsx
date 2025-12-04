@@ -231,12 +231,14 @@ export default function PreviewSectionBeritaBongkaran({
           <div className="flex-shrink-0">
             {copSuratUrl ? (
               <div className="cop-surat-container mb-4">
-                <Image
+                <img
                   src={copSuratUrl}
                   alt="Cop Surat"
-                  width={500}
-                  height={300}
                   className="w-[500px] h-full object-cover"
+                  onError={(e) => {
+                    console.error("Error loading cop surat image:", copSuratUrl);
+                    e.currentTarget.style.display = "none";
+                  }}
                 />
               </div>
             ) : (
