@@ -928,7 +928,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             ))}
                             {groupedEmailsCurrent.today.length === 0 && (
                               <div className="px-4 py-2 text-sm text-gray-400 italic">
-                                No emails on this page
+                                Tidak ada email pada halaman ini
                               </div>
                             )}
                           </>
@@ -966,7 +966,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             ))}
                             {groupedEmailsCurrent.yesterday.length === 0 && (
                               <div className="px-4 py-2 text-sm text-gray-400 italic">
-                                No emails on this page
+                                Tidak ada email pada halaman ini
                               </div>
                             )}
                           </>
@@ -1004,7 +1004,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                             ))}
                             {groupedEmailsCurrent.older.length === 0 && (
                               <div className="px-4 py-2 text-sm text-gray-400 italic">
-                                No emails on this page
+                                Tidak ada email pada halaman ini
                               </div>
                             )}
                           </>

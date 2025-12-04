@@ -787,7 +787,7 @@ export default function SearchResultPage() {
                             )}
                           </div>
                           <p className="text-gray-600">
-                            {getPerihal(email) || "No Subject"}
+                            {getPerihal(email) || "Tidak ada subjek"}
                           </p>
                         </div>
                       </div>

@@ -684,10 +684,10 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <p className="text-lg font-medium">
-                      Tidak ada email rejected
+                      Tidak ada email yang ditolak
                     </p>
                     <p className="text-sm mt-2">
-                      Email rejected anda akan muncul di sini
+                      Email yang ditolak akan muncul di sini
                     </p>
                   </div>
                 )}

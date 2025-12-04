@@ -211,7 +211,7 @@ export const EmailRowInbox = ({
                       {/* Indicator untuk attachment tambahan */}
                       {lampiran.length > 2 && (
                         <span className="text-xs text-gray-500">
-                          +{lampiran.length - 2} more
+                          +{lampiran.length - 2} lainnya
                         </span>
                       )}
                     </div>
@@ -337,7 +337,7 @@ export const EmailRowInbox = ({
 
               {lampiran.length > 2 && (
                 <span className="text-xs text-gray-500">
-                  +{lampiran.length - 2} more
+                  +{lampiran.length - 2} lainnya
                 </span>
               )}
             </div>
