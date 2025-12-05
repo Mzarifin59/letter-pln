@@ -581,7 +581,7 @@ export default function TrackingContentPage({
 
   return (
     <>
-      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
+      <div className=" bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
         <div className="flex flex-col bg-white rounded-xl shadow-md">
           {/* Header */}
           <div className="border-b border-[#7F7F7F4D]">

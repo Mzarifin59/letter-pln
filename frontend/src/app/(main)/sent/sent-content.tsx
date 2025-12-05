@@ -436,7 +436,7 @@ export default function SentContent({ data, token }: SentContentProps) {
 
   return (
     <>
-      <div className="lg:ml-72 bg-[#F6F9FF] p-4  overflow-hidden">
+      <div className=" bg-[#F6F9FF] p-4  overflow-hidden">
         <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
           {/* Inbox Panel */}
           <div

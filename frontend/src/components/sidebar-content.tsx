@@ -170,10 +170,10 @@ export default function SidebarContent({
             className="w-[62px] h-[62px] object-cover flex-shrink-0"
           />
           <div className="flex flex-col">
-            <h2 className="text-[#003367] text-lg font-extrabold leading-tight">
+            <h2 className="text-[#003367] text-2xl font-extrabold leading-tight">
               SIGASPOL
             </h2>
-            <p className="text-[#003367] text-[8px] leading-tight mt-1">
+            <p className="text-[#003367] text-[10px] leading-tight mt-1">
               Aplikasi Gudang Surat jalan dan Pengelolaan Bongkaran Logistik
             </p>
           </div>

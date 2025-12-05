@@ -717,7 +717,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   return (
     <>
-      <div className="lg:ml-72 bg-[#F6F9FF] p-4">
+      <div className=" bg-[#F6F9FF] p-4">
         <div className="flex flex-col xl:flex-row gap-6 lg:gap-6">
           {/* Inbox Panel */}
           <div

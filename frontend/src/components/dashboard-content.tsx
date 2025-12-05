@@ -227,7 +227,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   return (
     <>
       {/* Main Content */}
-      <main className="lg:ml-72 flex-1 p-8 overflow-hidden bg-[#F6F9FF] min-h-screen">
+      <main className=" flex-1 p-8 overflow-hidden bg-[#F6F9FF] min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Card Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -594,18 +594,18 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                           ? statusIcons[item.surat_jalan.status_surat]?.icon
                           : statusIcons["Draft"].icon}
                       </div>
-                      <div className="flex items-center max-xl:gap-6 min-w-0">
+                      <div className="flex items-center justify-between max-xl:gap-6 min-w-0 flex-1">
                         <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
                           <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                            Permohonan Surat Jalan
+                            {item.surat_jalan.kategori_surat}
                           </p>
                           <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                            oleh Admin Gudang UPT · {timeAgo(item.createdAt)}
+                            oleh {item.sender.name} · {timeAgo(item.createdAt)}
                           </p>
                         </div>
                         {item.surat_jalan.status_entry !== "Draft" ? (
                           <span
-                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ${
                               item.surat_jalan.status_surat === "In Progress"
                                 ? "bg-blue-100 text-blue-700"
                                 : item.surat_jalan.status_surat === "Approve"
@@ -623,7 +623,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                           </span>
                         ) : (
                           <span
-                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ml-2 bg-gray-100 text-gray-600`}
+                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600`}
                           >
                             Draft
                           </span>

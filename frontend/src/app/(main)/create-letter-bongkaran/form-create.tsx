@@ -899,7 +899,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
   if (isLoading) {
     return (
-      <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
+      <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056B0] mx-auto mb-4"></div>
           <p className="text-gray-600">Memuat Form...</p>
@@ -1344,7 +1344,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
   if (showPreview) {
     return (
-      <div className="lg:ml-72">
+      <div className="">
         <PreviewSectionBeritaBongkaran
           formData={formData}
           materials={materials}
@@ -1362,7 +1362,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   if (!showPreview) {
     return (
       <>
-        <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
+        <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
           <div className="flex flex-col bg-white rounded-xl shadow-md">
             {/* Header */}
             <div className="flex flex-col xl:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4">

@@ -14,7 +14,7 @@ export default async function CategoryLayout({
   const dataEmail: EmailData[] = await getAllEmails();
   const token = await (await cookies()).get('token')?.value;
   return (
-    <div className="flex">
+    <div className="max-w-[1440px] mx-auto relative flex">
       <Sidebar data={dataEmail} token={`${token}`}/>
       <div className="flex-1">
         <Header />

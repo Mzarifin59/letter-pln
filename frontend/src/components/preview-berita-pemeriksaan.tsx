@@ -231,7 +231,7 @@ export default function PreviewBeritaPemeriksaan({
   };
 
   return (
-    <div className="lg:ml-72 bg-[#F6F9FF] p-4 sm:p-6 lg:p-9">
+    <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9">
       <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6">

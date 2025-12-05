@@ -180,7 +180,7 @@ export default function Sidebar({ data: initialData, token }: SidebarProps) {
   return (
     <>
       {/* ✅ Sidebar versi desktop */}
-      <div className="hidden lg:fixed left-0 top-0 max-w-2xs h-screen bg-white border-r border-gray-200 lg:flex flex-col z-10">
+      <div className="hidden lg:sticky lg:top-0 lg:self-start w-72 h-screen bg-white border-r border-gray-200 lg:flex flex-col z-10 flex-shrink-0">
         <SidebarContent data={emailData} token={token} />
       </div>
 

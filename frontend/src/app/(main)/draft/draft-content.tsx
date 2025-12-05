@@ -335,7 +335,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
   return (
     <>
-      <div className="lg:ml-72 bg-[#F6F9FF] p-9">
+      <div className=" bg-[#F6F9FF] p-9">
         <div className="flex flex-col bg-white rounded-xl shadow-md">
           {/* Header */}
           <div className="px-[43px] pt-[25px]">

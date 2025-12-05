@@ -341,7 +341,7 @@ export default function Header() {
   };
 
   return (
-    <div className="lg:ml-72 flex-1 flex flex-col">
+    <div className=" flex-1 flex flex-col">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-200 px-4 lg:px-8 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
