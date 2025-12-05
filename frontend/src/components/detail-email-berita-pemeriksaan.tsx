@@ -422,13 +422,13 @@ export const EmailDetailBeritaPemeriksaan = ({
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   HASIL PEMERIKSAAN MUTU BARANG
                 </h1>
-                <div className="text-gray-900 font-bold text-2xl">
+                <div className="text-blue-600 font-bold text-2xl">
                   {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
                 </div>
               </div>
 
               {/* Introduction */}
-              <div className="mb-6 text-lg">
+              <div className="mb-6 text-lg text-justify">
                 <p className="mb-2">
                   Pada hari{" "}
                   <span className="font-semibold">
@@ -468,7 +468,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
               {/* Kelengkapan Dokumen */}
               {kelengkapanDokumen.length > 0 && (
-                <div className="mb-6">
+                <div className="mb-6 text-justify">
                   <ul className="space-y-1 text-lg ml-4">
                     {kelengkapanDokumen.map((item, index) => (
                       <li key={index}>{item}</li>
@@ -514,7 +514,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                             {index + 1}
                           </td>
                           <td className="border-2 border-gray-800 px-2 py-2">
-                            <div className="text-center">
+                            <div className="text-left">
                               <div className="font-semibold">
                                 {material.nama}
                               </div>
@@ -543,7 +543,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                           <td className="border-2 border-gray-800 px-2 py-2 text-center">
                             {item.satuan}
                           </td>
-                          <td className="border-2 border-gray-800 px-2 py-2 text-red-600">
+                          <td className="border-2 border-gray-800 px-2 py-2">
                             {material.serial_number || "-"}
                           </td>
                           <td className="border-2 border-gray-800 px-2 py-2 text-center">
@@ -566,7 +566,7 @@ export const EmailDetailBeritaPemeriksaan = ({
               </div>
 
               {/* Signatures */}
-              <div className="flex gap-4 mb-8">
+              <div className="flex justify-between mb-8 pr-4">
                 {/* Penyedia Barang */}
                 <div className="text-center items-center flex flex-col">
                   <div className="mb-2 text-lg font-semibold">
@@ -598,7 +598,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                     )}
                   </div>
 
-                  <div className="text-lg font-bold text-red-600">
+                  <div className="text-lg font-bold">
                     {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
                       "(Nama Penanggung Jawab)"}
                   </div>
@@ -740,7 +740,7 @@ export const EmailDetailBeritaPemeriksaan = ({
               <div
                 className={`${
                   isCompactMode ? "text-xl" : "text-2xl"
-                } text-gray-900 font-bold`}
+                } text-blue-600 font-bold`}
               >
                 {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
               </div>
@@ -748,7 +748,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
             {/* Introduction */}
             <div
-              className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"}`}
+              className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"} text-justify`}
             >
               <p className="mb-2">
                 Pada hari{" "}
@@ -789,7 +789,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
             {/* Kelengkapan Dokumen */}
             {kelengkapanDokumen.length > 0 && (
-              <div className={isCompactMode ? "mb-3" : "mb-4"}>
+              <div className={`${isCompactMode ? "mb-3" : "mb-4"} text-justify`}>
                 <ul
                   className={`space-y-1 ${
                     isCompactMode ? "text-base" : "text-lg"
@@ -861,7 +861,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                             isCompactMode ? "py-1" : "py-2"
                           }`}
                         >
-                          <div className="text-center">
+                          <div className="text-left">
                             <div className="font-semibold">{material.nama}</div>
                             {material.katalog && (
                               <div className="">
@@ -897,7 +897,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                         <td
                           className={`border-2 border-gray-800 px-2 ${
                             isCompactMode ? "py-1" : "py-2"
-                          } text-red-600`}
+                          } `}
                         >
                           {material.serial_number || "-"}
                         </td>
@@ -929,7 +929,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
             {/* Signatures */}
             <div
-              className={`flex ${isCompactMode ? "gap-4 mb-2" : "gap-8 mb-4"}`}
+              className={`flex justify-between ${isCompactMode ? "mb-2" : "mb-4"}`}
             >
               {/* Penyedia Barang */}
               <div className="text-center">
@@ -975,7 +975,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                 <div
                   className={`${
                     isCompactMode ? "text-base" : "text-lg"
-                  } font-bold text-red-600`}
+                  } font-bold `}
                 >
                   {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
                     "(Nama Penanggung Jawab)"}

@@ -55,7 +55,7 @@ const KELENGKAPAN_DOKUMEN_LIST = [
   {
     id: 13,
     label:
-      "Surat Pernyataan dari penyedia /Pabrikan yang menyatakan bertanggung jawab bahwa barang yang disupply tersebut dalam keadan baik bisa di gunakan oleh pihak PLN.",
+      "Surat Pernyataan dari penyedia /Pabrikan yang menyatakan bertanggung jawab bahwa barang yang disupply tersebut dalam keadaan baik dan bisa di gunakan oleh pihak PLN.",
   },
 ];
 

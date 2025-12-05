@@ -210,7 +210,10 @@ export default function PreviewBeritaPemeriksaan({
 
   // Fungsi helper untuk menghitung lebar maksimum berdasarkan nama terpanjang
   const calculateMaxNamaWidth = (isCompact: boolean) => {
-    if (!pemeriksaBarang.mengetahui || pemeriksaBarang.mengetahui.length === 0) {
+    if (
+      !pemeriksaBarang.mengetahui ||
+      pemeriksaBarang.mengetahui.length === 0
+    ) {
       return 200; // Default width
     }
 
@@ -277,9 +280,10 @@ export default function PreviewBeritaPemeriksaan({
         <div className="space-y-6">
           {materialPages.map((pageMaterials, pageIndex) => {
             const isCompactMode = pageMaterials.length <= 3;
-            const lembarLabels = materialPages.length > 1
-              ? [`Lembar ${pageIndex + 1}`, `Lembar ${pageIndex + 1}`]
-              : ["Lembar 1", "Lembar 1"];
+            const lembarLabels =
+              materialPages.length > 1
+                ? [`Lembar ${pageIndex + 1}`, `Lembar ${pageIndex + 1}`]
+                : ["Lembar 1", "Lembar 1"];
 
             // Hitung lebar maksimum untuk container nama mengetahui berdasarkan nama terpanjang
             const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
@@ -327,13 +331,17 @@ export default function PreviewBeritaPemeriksaan({
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
                     HASIL PEMERIKSAAN MUTU BARANG
                   </h1>
-                  <div className="text-gray-900 font-bold text-2xl">
+                  <div className="text-blue-600 font-bold text-2xl">
                     {formData.nomorBeritaAcara || "(No Berita Acara)"}
                   </div>
                 </div>
 
                 {/* Introduction */}
-                <div className={`mb-6 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                <div
+                  className={`mb-6 ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  } text-justify`}
+                >
                   <p className="mb-2">
                     Pada hari{" "}
                     <span className="font-semibold">
@@ -344,8 +352,8 @@ export default function PreviewBeritaPemeriksaan({
                       )}
                     </span>{" "}
                     kami yang bertanda tangan di bawah ini telah bersama - sama
-                    melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
-                    Rinci{" "}
+                    melaksanakan pemeriksaan terhadap barang sesuai dengan
+                    Kontrak Rinci{" "}
                     <span className="font-semibold">
                       {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
                     </span>{" "}
@@ -373,7 +381,11 @@ export default function PreviewBeritaPemeriksaan({
 
                 {/* Kelengkapan Dokumen */}
                 {kelengkapanDokumen.length > 0 && (
-                  <div className={`mb-6 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                  <div
+                    className={`mb-6 ${
+                      isCompactMode ? "text-base" : "text-lg"
+                    }`}
+                  >
                     <ul className="space-y-1 ml-4">
                       {kelengkapanDokumen.map((item, index) => (
                         <li key={index}>{item}</li>
@@ -384,13 +396,25 @@ export default function PreviewBeritaPemeriksaan({
 
                 {/* Materials Table */}
                 {pageMaterials.length > 0 && (
-                  <div className={`mb-6 min-w-[300px] overflow-x-auto ${isCompactMode ? "text-sm" : "text-base"}`}>
-                    <p className={`mb-3 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                  <div
+                    className={`mb-6 min-w-[300px] overflow-x-auto ${
+                      isCompactMode ? "text-sm" : "text-base"
+                    }`}
+                  >
+                    <p
+                      className={`mb-3 ${
+                        isCompactMode ? "text-base" : "text-lg"
+                      }`}
+                    >
                       Adapun hasil pemeriksaan sebagai berikut:
                     </p>
                     <table className="border-t border-b border-gray-300 w-full">
                       <thead className="bg-gray-100">
-                        <tr className={`text-center ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <tr
+                          className={`text-center ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           <th className="border-2 border-gray-800 px-2 py-2">
                             No.
                           </th>
@@ -408,17 +432,18 @@ export default function PreviewBeritaPemeriksaan({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className={isCompactMode ? "text-base" : "text-lg"}>
+                      <tbody
+                        className={isCompactMode ? "text-base" : "text-lg"}
+                      >
                         {pageMaterials.map((material, index) => {
-                          const globalIndex =
-                            pageIndex * 3 + index;
+                          const globalIndex = pageIndex * 3 + index;
                           return (
                             <tr key={material.id}>
                               <td className="border-2 border-gray-800 px-2 py-2 text-center">
                                 {globalIndex + 1}
                               </td>
                               <td className="border-2 border-gray-800 px-2 py-2">
-                                <div className="text-center">
+                                <div className="text-left">
                                   <div className="font-semibold">
                                     {material.namaMaterial || "-"}
                                   </div>
@@ -447,7 +472,7 @@ export default function PreviewBeritaPemeriksaan({
                               <td className="border-2 border-gray-800 px-2 py-2 text-center">
                                 {material.satuan || "-"}
                               </td>
-                              <td className="border-2 border-gray-800 px-2 py-2 text-red-600">
+                              <td className="border-2 border-gray-800 px-2 py-2 ">
                                 {material.serial_number || "-"}
                               </td>
                             </tr>
@@ -461,28 +486,44 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Closing Statement */}
                 {pageIndex === materialPages.length - 1 && (
                   <>
-                    <div className={`mb-6 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                    <div
+                      className={`mb-6 ${
+                        isCompactMode ? "text-base" : "text-lg"
+                      }`}
+                    >
                       <p>
                         Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
-                        dengan sesungguhnya untuk dapat dipergunakan sebagai mana
-                        mestinya.
+                        dengan sesungguhnya untuk dapat dipergunakan sebagai
+                        mana mestinya.
                       </p>
                     </div>
 
                     {/* Signatures */}
-                    <div className="flex gap-4 mb-8">
+                    <div className="flex justify-between mb-8">
                       {/* Penyedia Barang */}
                       <div className="text-left items-center flex flex-col">
-                        <div className={`mb-2 font-semibold ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`mb-2 font-semibold ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           Penyedia Barang
                         </div>
-                        <div className={`font-bold mb-4 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`font-bold mb-4 ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           {formData.perusahaanPenyediaBarang ||
                             "(Perusahaan Penyedia Barang)"}
                         </div>
 
                         {/* Signature Preview */}
-                        <div className={`${isCompactMode ? "h-16 mb-4" : "h-20 mb-4"} flex items-center`}>
+                        <div
+                          className={`${
+                            isCompactMode ? "h-16 mb-4" : "h-20 mb-4"
+                          } flex items-center`}
+                        >
                           {getPenyediaBarangSignature() ? (
                             <img
                               width={200}
@@ -498,7 +539,11 @@ export default function PreviewBeritaPemeriksaan({
                           )}
                         </div>
 
-                        <div className={`font-bold text-red-600 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`font-bold  ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           {formData.namaPenanggungJawab ||
                             "(Nama Penanggung Jawab)"}
                         </div>
@@ -506,10 +551,18 @@ export default function PreviewBeritaPemeriksaan({
 
                       {/* Pemeriksa Barang */}
                       <div className="text-left items-center flex flex-col">
-                        <div className={`mb-2 font-semibold ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`mb-2 font-semibold ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           Pemeriksa Barang
                         </div>
-                        <div className={`font-bold mb-4 ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`font-bold mb-4 ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          }`}
+                        >
                           {pemeriksaBarang.departemenPemeriksa ||
                             "(Departemen Pemeriksa)"}
                         </div>
@@ -517,15 +570,23 @@ export default function PreviewBeritaPemeriksaan({
                         {/* List Mengetahui */}
                         {pemeriksaBarang.mengetahui &&
                           pemeriksaBarang.mengetahui.length > 0 && (
-                            <div className={isCompactMode ? "space-y-2" : "space-y-3"}>
+                            <div
+                              className={
+                                isCompactMode ? "space-y-2" : "space-y-3"
+                              }
+                            >
                               {pemeriksaBarang.mengetahui.map(
                                 (mengetahui, index) => (
                                   <div
                                     key={mengetahui.id}
-                                    className={`flex items-center ${isCompactMode ? "pb-1" : "pb-2"}`}
+                                    className={`flex items-center ${
+                                      isCompactMode ? "pb-1" : "pb-2"
+                                    }`}
                                   >
                                     <div
-                                      className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold flex items-center`}
+                                      className={`${
+                                        isCompactMode ? "text-sm" : "text-base"
+                                      } font-semibold flex items-center`}
                                       style={{ width: `${maxNamaWidthPage}px` }}
                                     >
                                       <span className="mr-2">{index + 1}</span>
@@ -537,13 +598,21 @@ export default function PreviewBeritaPemeriksaan({
                                     </div>
                                     <div className="flex items-center ml-2">
                                       <div
-                                        className={`${isCompactMode ? "w-28 h-10" : "w-32 h-12"} flex items-center justify-center border-b-2 border-gray-800`}
+                                        className={`${
+                                          isCompactMode
+                                            ? "w-28 h-10"
+                                            : "w-32 h-12"
+                                        } flex items-center justify-center border-b-2 border-gray-800`}
                                       >
                                         {getMengetahuiSignature(mengetahui) ? (
                                           <img
                                             width={120}
                                             height={60}
-                                            src={getMengetahuiSignature(mengetahui)!}
+                                            src={
+                                              getMengetahuiSignature(
+                                                mengetahui
+                                              )!
+                                            }
                                             alt={`TTD Mengetahui ${index + 1}`}
                                             className="max-h-full max-w-full object-contain"
                                           />
@@ -594,7 +663,11 @@ export default function PreviewBeritaPemeriksaan({
                 }}
               >
                 {/* Company Header */}
-                <div className={`flex items-center gap-4 ${isCompactMode ? "mb-4" : "mb-6"}`}>
+                <div
+                  className={`flex items-center gap-4 ${
+                    isCompactMode ? "mb-4" : "mb-6"
+                  }`}
+                >
                   <div className="flex items-center justify-center">
                     <Image
                       src={`/images/PLN-logo.png`}
@@ -614,23 +687,45 @@ export default function PreviewBeritaPemeriksaan({
                   </div>
                 </div>
 
-                <hr className={`border-t-2 border-gray-800 ${isCompactMode ? "mb-3" : "mb-4"}`} />
+                <hr
+                  className={`border-t-2 border-gray-800 ${
+                    isCompactMode ? "mb-3" : "mb-4"
+                  }`}
+                />
 
                 {/* Title */}
-                <div className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}>
-                  <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+                <div
+                  className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}
+                >
+                  <h1
+                    className={`${
+                      isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                    } font-bold text-gray-900`}
+                  >
                     BERITA ACARA
                   </h1>
-                  <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+                  <h1
+                    className={`${
+                      isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                    } font-bold text-gray-900`}
+                  >
                     HASIL PEMERIKSAAN MUTU BARANG
                   </h1>
-                  <div className={`${isCompactMode ? "text-xl" : "text-2xl"} text-gray-900 font-bold`}>
+                  <div
+                    className={`${
+                      isCompactMode ? "text-xl" : "text-2xl"
+                    } text-blue-600 font-bold`}
+                  >
                     {formData.nomorBeritaAcara || "(No Berita Acara)"}
                   </div>
                 </div>
 
                 {/* Introduction */}
-                <div className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"}`}>
+                <div
+                  className={`${
+                    isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"
+                  } text-justify`}
+                >
                   <p className="mb-2">
                     Pada hari{" "}
                     <span className="font-semibold">
@@ -641,8 +736,8 @@ export default function PreviewBeritaPemeriksaan({
                       )}
                     </span>{" "}
                     kami yang bertanda tangan di bawah ini telah bersama - sama
-                    melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
-                    Rinci{" "}
+                    melaksanakan pemeriksaan terhadap barang sesuai dengan
+                    Kontrak Rinci{" "}
                     <span className="font-semibold">
                       {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
                     </span>{" "}
@@ -670,8 +765,16 @@ export default function PreviewBeritaPemeriksaan({
 
                 {/* Kelengkapan Dokumen */}
                 {kelengkapanDokumen.length > 0 && (
-                  <div className={isCompactMode ? "mb-3" : "mb-4"}>
-                    <ul className={`space-y-1 ${isCompactMode ? "text-base" : "text-lg"} ml-4`}>
+                  <div
+                    className={`${
+                      isCompactMode ? "mb-3" : "mb-4"
+                    } text-justify`}
+                  >
+                    <ul
+                      className={`space-y-1 ${
+                        isCompactMode ? "text-base" : "text-lg"
+                      } ml-4`}
+                    >
                       {kelengkapanDokumen.map((item, index) => (
                         <li key={index}>{item}</li>
                       ))}
@@ -681,13 +784,33 @@ export default function PreviewBeritaPemeriksaan({
 
                 {/* Materials Table */}
                 {pageMaterials.length > 0 && (
-                  <div className={`${isCompactMode ? "mb-3" : "mb-4"} min-w-[300px] overflow-x-auto`} style={{ display: "block" }}>
-                    <p className={`${isCompactMode ? "text-base mb-1" : "text-lg mb-2"}`}>
+                  <div
+                    className={`${
+                      isCompactMode ? "mb-3" : "mb-4"
+                    } min-w-[300px] overflow-x-auto`}
+                    style={{ display: "block" }}
+                  >
+                    <p
+                      className={`${
+                        isCompactMode ? "text-base mb-1" : "text-lg mb-2"
+                      }`}
+                    >
                       Adapun hasil pemeriksaan sebagai berikut:
                     </p>
-                    <table className="border-t border-b border-gray-300 text-sm w-full" style={{ display: "table", width: "100%", borderCollapse: "collapse" }}>
+                    <table
+                      className="border-t border-b border-gray-300 text-sm w-full"
+                      style={{
+                        display: "table",
+                        width: "100%",
+                        borderCollapse: "collapse",
+                      }}
+                    >
                       <thead className="bg-gray-100">
-                        <tr className={`${isCompactMode ? "text-base" : "text-lg"} text-center`}>
+                        <tr
+                          className={`${
+                            isCompactMode ? "text-base" : "text-lg"
+                          } text-center`}
+                        >
                           <th className="border-2 border-gray-800 px-2 py-2">
                             No.
                           </th>
@@ -705,16 +828,26 @@ export default function PreviewBeritaPemeriksaan({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className={isCompactMode ? "text-base" : "text-lg"}>
+                      <tbody
+                        className={isCompactMode ? "text-base" : "text-lg"}
+                      >
                         {pageMaterials.map((material, index) => {
                           const globalIndex = pageIndex * 3 + index;
                           return (
                             <tr key={material.id}>
-                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactMode ? "py-1" : "py-2"
+                                } text-center`}
+                              >
                                 {globalIndex + 1}
                               </td>
-                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"}`}>
-                                <div className="text-center">
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactMode ? "py-1" : "py-2"
+                                }`}
+                              >
+                                <div className="text-left">
                                   <div className="font-semibold">
                                     {material.namaMaterial || "-"}
                                   </div>
@@ -737,13 +870,25 @@ export default function PreviewBeritaPemeriksaan({
                                   )}
                                 </div>
                               </td>
-                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactMode ? "py-1" : "py-2"
+                                } text-center`}
+                              >
                                 {material.jumlah || "0"}
                               </td>
-                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactMode ? "py-1" : "py-2"
+                                } text-center`}
+                              >
                                 {material.satuan || "-"}
                               </td>
-                              <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-red-600`}>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactMode ? "py-1" : "py-2"
+                                } `}
+                              >
                                 {material.serial_number || "-"}
                               </td>
                             </tr>
@@ -757,28 +902,48 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Closing Statement */}
                 {pageIndex === materialPages.length - 1 && (
                   <>
-                    <div className={`${isCompactMode ? "mb-3" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                    <div
+                      className={`${isCompactMode ? "mb-3" : "mb-4"} ${
+                        isCompactMode ? "text-base" : "text-lg"
+                      }`}
+                    >
                       <p>
                         Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
-                        dengan sesungguhnya untuk dapat dipergunakan sebagai mana
-                        mestinya.
+                        dengan sesungguhnya untuk dapat dipergunakan sebagai
+                        mana mestinya.
                       </p>
                     </div>
 
                     {/* Signatures */}
-                    <div className={`flex ${isCompactMode ? "gap-4 mb-2" : "gap-8 mb-4"}`}>
+                    <div
+                      className={`flex justify-between ${
+                        isCompactMode ? "mb-2" : "mb-4"
+                      }`}
+                    >
                       {/* Penyedia Barang */}
                       <div className="text-center">
-                        <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                        <div
+                          className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          } font-semibold`}
+                        >
                           Penyedia Barang
                         </div>
-                        <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`font-bold ${
+                            isCompactMode ? "mb-2" : "mb-4"
+                          } ${isCompactMode ? "text-base" : "text-lg"}`}
+                        >
                           {formData.perusahaanPenyediaBarang ||
                             "(Perusahaan Penyedia Barang)"}
                         </div>
 
                         {/* Signature Preview */}
-                        <div className={`${isCompactMode ? "h-16 mb-2" : "h-20 mb-4"} flex items-center`}>
+                        <div
+                          className={`${
+                            isCompactMode ? "h-16 mb-2" : "h-20 mb-4"
+                          } flex items-center`}
+                        >
                           {getPenyediaBarangSignature() ? (
                             <img
                               width={200}
@@ -794,7 +959,11 @@ export default function PreviewBeritaPemeriksaan({
                           )}
                         </div>
 
-                        <div className={`${isCompactMode ? "text-base" : "text-lg"} font-bold text-red-600`}>
+                        <div
+                          className={`${
+                            isCompactMode ? "text-base" : "text-lg"
+                          } font-bold `}
+                        >
                           {formData.namaPenanggungJawab ||
                             "(Nama Penanggung Jawab)"}
                         </div>
@@ -802,10 +971,18 @@ export default function PreviewBeritaPemeriksaan({
 
                       {/* Pemeriksa Barang */}
                       <div className="text-left">
-                        <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                        <div
+                          className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                            isCompactMode ? "text-base" : "text-lg"
+                          } font-semibold`}
+                        >
                           Pemeriksa Barang
                         </div>
-                        <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                        <div
+                          className={`font-bold ${
+                            isCompactMode ? "mb-2" : "mb-4"
+                          } ${isCompactMode ? "text-base" : "text-lg"}`}
+                        >
                           {pemeriksaBarang.departemenPemeriksa ||
                             "(Departemen Pemeriksa)"}
                         </div>
@@ -813,28 +990,52 @@ export default function PreviewBeritaPemeriksaan({
                         {/* List Mengetahui */}
                         {pemeriksaBarang.mengetahui &&
                           pemeriksaBarang.mengetahui.length > 0 && (
-                            <div className={isCompactMode ? "space-y-2" : "space-y-3"}>
+                            <div
+                              className={
+                                isCompactMode ? "space-y-2" : "space-y-3"
+                              }
+                            >
                               {pemeriksaBarang.mengetahui.map(
                                 (mengetahui, index) => (
                                   <div
                                     key={mengetahui.id}
-                                    className={`flex items-center ${isCompactMode ? "pb-1" : "pb-2"}`}
+                                    className={`flex items-center ${
+                                      isCompactMode ? "pb-1" : "pb-2"
+                                    }`}
                                   >
-                                    <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold min-w-[200px]`}>
+                                    <div
+                                      className={`${
+                                        isCompactMode ? "text-sm" : "text-base"
+                                      } font-semibold min-w-[200px]`}
+                                    >
                                       {index + 1}{" "}
                                       {mengetahui.namaMengetahui ||
                                         "(Nama Mengetahui)"}
                                     </div>
-                                    <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold`}>
+                                    <div
+                                      className={`${
+                                        isCompactMode ? "text-sm" : "text-base"
+                                      } font-semibold`}
+                                    >
                                       :
                                     </div>
                                     <div className="flex items-center ml-2">
-                                      <div className={`${isCompactMode ? "w-28 h-10" : "w-32 h-12"} flex items-center justify-center border-b-2 border-gray-800`}>
+                                      <div
+                                        className={`${
+                                          isCompactMode
+                                            ? "w-28 h-10"
+                                            : "w-32 h-12"
+                                        } flex items-center justify-center border-b-2 border-gray-800`}
+                                      >
                                         {getMengetahuiSignature(mengetahui) ? (
                                           <img
                                             width={120}
                                             height={60}
-                                            src={getMengetahuiSignature(mengetahui)!}
+                                            src={
+                                              getMengetahuiSignature(
+                                                mengetahui
+                                              )!
+                                            }
                                             alt={`TTD Mengetahui ${index + 1}`}
                                             className="max-h-full max-w-full object-contain"
                                           />
@@ -862,4 +1063,3 @@ export default function PreviewBeritaPemeriksaan({
     </div>
   );
 }
-
