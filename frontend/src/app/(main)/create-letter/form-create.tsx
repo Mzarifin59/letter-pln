@@ -217,7 +217,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const calculateTotal = () => {
-    return materials.reduce((sum, m) => sum + (parseFloat(m.jumlah) || 0), 0);
+    return materials.reduce((sum, m) => sum + (parseInt(m.jumlah) || 0), 0);
   };
 
   // SIGNATURE HANDLERS
@@ -898,7 +898,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                     <option value="Kg">Kg (Kilogram)</option>
                     <option value="Meter">Meter</option>
                     <option value="Liter">Liter</option>
-                    <option value="Bh">Bahan</option>
+                    <option value="Bh">Buah</option>
                     <option value="Set">Set</option>
                     <option value="Unit">Unit</option>
                   </select>
@@ -952,7 +952,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
               <td colSpan={3}></td>
               <td className="px-4 py-3 font-semibold text-gray-700">TOTAL:</td>
               <td className="px-4 py-3 font-bold text-lg text-gray-900">
-                {calculateTotal().toFixed(1)}
+                {calculateTotal()}
               </td>
               <td colSpan={2}></td>
             </tr>

@@ -1228,7 +1228,7 @@ export default function FormCreatePemeriksaanPage({
                     <option value="Kg">Kg (Kilogram)</option>
                     <option value="Meter">Meter</option>
                     <option value="Liter">Liter</option>
-                    <option value="Bh">Bahan</option>
+                    <option value="Bh">Buah</option>
                     <option value="Set">Set</option>
                     <option value="Unit">Unit</option>
                   </select>
@@ -1282,7 +1282,7 @@ export default function FormCreatePemeriksaanPage({
               <td colSpan={5}></td>
               <td className="px-4 py-3 font-semibold text-gray-700">TOTAL:</td>
               <td className="px-4 py-3 font-bold text-lg text-gray-900">
-                {calculateTotal().toFixed(1)}
+                {calculateTotal()}
               </td>
               <td colSpan={2}></td>
             </tr>

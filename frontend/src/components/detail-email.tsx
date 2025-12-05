@@ -1069,7 +1069,7 @@ export const EmailDetail = ({
                           height={100}
                           className="absolute z-0"
                         />
-                        <Image
+                        <img
                           width={200}
                           height={200}
                           src={`${process.env.NEXT_PUBLIC_API_URL}${

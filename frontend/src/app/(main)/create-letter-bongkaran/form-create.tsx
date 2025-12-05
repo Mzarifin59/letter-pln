@@ -78,7 +78,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         if (beritaBongkaran.cop_surat) {
           const copSuratUrl = getFileUrl(beritaBongkaran.cop_surat);
           setCopSuratPreview(copSuratUrl);
-          
+
           // Set formData.copSurat dengan URL agar preview component bisa menampilkannya
           setFormData((prev) => ({ ...prev, copSurat: copSuratUrl }));
 
@@ -404,7 +404,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
         return {
           isValid: false,
           error:
-            "Minimal harus ada 1 material dengan data lengkap (Nama, Katalog, Satuan, dan Jumlah)",
+            "Minimal harus ada 1 material dengan data lengkap (Nama, Merk, Satuan, dan Jumlah)",
           field: "materials",
         };
       }
@@ -935,7 +935,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                 Nama Material
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
-                Katalog
+                Merk
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
                 Satuan
@@ -1059,7 +1059,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
               <td colSpan={3}></td>
               <td className="px-4 py-3 font-semibold text-gray-700">TOTAL:</td>
               <td className="px-4 py-3 font-bold text-lg text-gray-900">
-                {calculateTotal().toFixed(1)}
+                {calculateTotal()}
               </td>
               <td colSpan={2}></td>
             </tr>
