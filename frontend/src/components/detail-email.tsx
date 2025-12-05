@@ -3,14 +3,11 @@
 import { MouseEventHandler, useEffect, useState } from "react";
 import Image from "next/image";
 import {
-  MoreHorizontal,
   Star,
   X,
-  Reply,
   Download,
   Paperclip,
   Printer,
-  ArrowUpRight,
   Eye,
   ExternalLink,
   FileText,
@@ -75,11 +72,11 @@ const getNoSurat = (item: DynamicEmailData) => {
   if (kategori === "Berita Acara Material Bongkaran") {
     return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
   }
-  
+
   if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
     return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
   }
-  
+
   return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
 };
 
@@ -166,31 +163,46 @@ export const EmailDetail = ({
   // Hanya untuk Surat Jalan (bukan Berita Pemeriksaan)
   const kategori = email.surat_jalan.kategori_surat;
   const isSuratJalan = kategori === "Surat Jalan";
-  const beritaPemeriksaan = kategori === "Berita Acara Pemeriksaan Tim Mutu" 
-    ? (email as EmailDataOther).surat_jalan 
-    : null;
-  
+  const beritaPemeriksaan =
+    kategori === "Berita Acara Pemeriksaan Tim Mutu"
+      ? (email as EmailDataOther).surat_jalan
+      : null;
+
   const formData: SuratJalanFormData = {
     nomorSuratJalan: getNoSurat(email),
-    nomorSuratPermintaan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.no_surat_permintaan || "" : "",
+    nomorSuratPermintaan: isSuratJalan
+      ? (email as EmailDataAdmin).surat_jalan.no_surat_permintaan || ""
+      : "",
     perihal: getPerihal(email),
-    lokasiAsal: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.lokasi_asal || "" : "",
-    lokasiTujuan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.lokasi_tujuan || "" : "",
-    informasiKendaraan: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.informasi_kendaraan || "" : "",
-    namaPengemudi: isSuratJalan ? (email as EmailDataAdmin).surat_jalan.nama_pengemudi || "" : "",
+    lokasiAsal: isSuratJalan
+      ? (email as EmailDataAdmin).surat_jalan.lokasi_asal || ""
+      : "",
+    lokasiTujuan: isSuratJalan
+      ? (email as EmailDataAdmin).surat_jalan.lokasi_tujuan || ""
+      : "",
+    informasiKendaraan: isSuratJalan
+      ? (email as EmailDataAdmin).surat_jalan.informasi_kendaraan || ""
+      : "",
+    namaPengemudi: isSuratJalan
+      ? (email as EmailDataAdmin).surat_jalan.nama_pengemudi || ""
+      : "",
     tanggalSurat: getTanggalSuratLocal(email),
-    perusahaanPenerima: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan 
-      ? (email as EmailDataAdmin).surat_jalan.penerima.perusahaan_penerima 
-      : getPerusahaanPenerima(email),
-    namaPenerima: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
-      ? (email as EmailDataAdmin).surat_jalan.penerima.nama_penerima
-      : "",
-    departemenPengirim: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
-      : "",
-    namaPengirim: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-      ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim
-      : "",
+    perusahaanPenerima:
+      isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
+        ? (email as EmailDataAdmin).surat_jalan.penerima.perusahaan_penerima
+        : getPerusahaanPenerima(email),
+    namaPenerima:
+      isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
+        ? (email as EmailDataAdmin).surat_jalan.penerima.nama_penerima
+        : "",
+    departemenPengirim:
+      isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+        ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+        : "",
+    namaPengirim:
+      isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
+        ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim
+        : "",
     catatanTambahan: getPerihal(email),
   };
 
@@ -212,9 +224,14 @@ export const EmailDetail = ({
     signature: null,
     preview: {
       signature: null,
-      upload: isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima?.url
-        ? `${apiUrl}${(email as EmailDataAdmin).surat_jalan.penerima.ttd_penerima.url}`
-        : null,
+      upload:
+        isSuratJalan &&
+        "penerima" in (email as EmailDataAdmin).surat_jalan &&
+        (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima?.url
+          ? `${apiUrl}${
+              (email as EmailDataAdmin).surat_jalan.penerima.ttd_penerima.url
+            }`
+          : null,
     },
   };
 
@@ -223,9 +240,14 @@ export const EmailDetail = ({
     signature: null,
     preview: {
       signature: null,
-      upload: isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim?.url
-        ? `${apiUrl}${(email as EmailDataAdmin).surat_jalan.pengirim.ttd_pengirim.url}`
-        : null,
+      upload:
+        isSuratJalan &&
+        "pengirim" in (email as EmailDataAdmin).surat_jalan &&
+        (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim?.url
+          ? `${apiUrl}${
+              (email as EmailDataAdmin).surat_jalan.pengirim.ttd_pengirim.url
+            }`
+          : null,
     },
   };
 
@@ -621,12 +643,7 @@ export const EmailDetail = ({
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   {!isCanceled ? (
-                    <>
-                      <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      <button onClick={handlePrintClick}>
-                        <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      </button>
-                    </>
+                    <></>
                   ) : (
                     <div className="px-2 py-1 bg-[#A6234433] rounded-2xl">
                       <p className="text-[#A62344] text-xs sm:text-sm font-medium">
@@ -646,26 +663,28 @@ export const EmailDetail = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                    isSuratJalan &&
+                      "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .departemen_pengirim
                       : ""
                   ) || "GA"}
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                    {isSuratJalan &&
+                    "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .departemen_pengirim
                       : "(Departmen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
                     to:{" "}
-                    {getPerusahaanPenerima(email) ||
-                      "(Perusahaan Penerima)"}
+                    {getPerusahaanPenerima(email) || "(Perusahaan Penerima)"}
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -681,7 +700,9 @@ export const EmailDetail = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -699,26 +720,30 @@ export const EmailDetail = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
-                      : beritaPemeriksaan?.pemeriksa_barang?.departemen_pemeriksa || ""
+                    isSuratJalan &&
+                      "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .departemen_pengirim
+                      : beritaPemeriksaan?.pemeriksa_barang
+                          ?.departemen_pemeriksa || ""
                   )}
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#191919]">
-                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
-                      : beritaPemeriksaan?.pemeriksa_barang?.departemen_pemeriksa || "(Departemen Pengirim)"}
+                    {isSuratJalan &&
+                    "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .departemen_pengirim
+                      : beritaPemeriksaan?.pemeriksa_barang
+                          ?.departemen_pemeriksa || "(Departemen Pengirim)"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#7F7F7F]">
                     to:{" "}
-                    {getPerusahaanPenerima(email) ||
-                      "(Perusahaan Penerima)"}
+                    {getPerusahaanPenerima(email) || "(Perusahaan Penerima)"}
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -734,7 +759,9 @@ export const EmailDetail = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -749,12 +776,6 @@ export const EmailDetail = ({
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
                   {getPerihal(email) || "(Perihal)"}
                 </h2>
-                <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                  <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  <button onClick={handlePrintClick}>
-                    <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  </button>
-                </div>
               </div>
             </div>
           </>
@@ -984,18 +1005,27 @@ export const EmailDetail = ({
                 <div>
                   <div className="mb-2 text-lg">Yang Menerima,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.penerima.perusahaan_penerima
-                      : getPerusahaanPenerima(email) || "(Nama Departemen Penerima)"}
+                    {isSuratJalan &&
+                    "penerima" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.penerima
+                          .perusahaan_penerima
+                      : getPerusahaanPenerima(email) ||
+                        "(Nama Departemen Penerima)"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="h-20 mb-4 flex items-center justify-center">
-                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima?.url ? (
+                    {isSuratJalan &&
+                    "penerima" in (email as EmailDataAdmin).surat_jalan &&
+                    (email as EmailDataAdmin).surat_jalan.penerima?.ttd_penerima
+                      ?.url ? (
                       <img
                         width={200}
                         height={200}
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${(email as EmailDataAdmin).surat_jalan.penerima.ttd_penerima.url}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${
+                          (email as EmailDataAdmin).surat_jalan.penerima
+                            .ttd_penerima.url
+                        }`}
                         alt="TTD penerima"
                         className="max-h-full max-w-full object-contain"
                       />
@@ -1007,8 +1037,10 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="text-lg font-bold">
-                    {isSuratJalan && "penerima" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.penerima.nama_penerima || "Nama Penerima"
+                    {isSuratJalan &&
+                    "penerima" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.penerima
+                          .nama_penerima || "Nama Penerima"
                       : "Nama Penerima"}
                   </div>
                 </div>
@@ -1016,14 +1048,19 @@ export const EmailDetail = ({
                 <div>
                   <div className="mb-2 text-lg">Yang menyerahkan,</div>
                   <div className="font-bold mb-4 text-lg">
-                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.departemen_pengirim
+                    {isSuratJalan &&
+                    "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .departemen_pengirim
                       : "(Nama Departemen Pengirim)"}
                   </div>
 
                   {/* Signature Preview */}
                   <div className="relative h-20 mb-4 flex items-center justify-center">
-                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan && (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim?.url ? (
+                    {isSuratJalan &&
+                    "pengirim" in (email as EmailDataAdmin).surat_jalan &&
+                    (email as EmailDataAdmin).surat_jalan.pengirim?.ttd_pengirim
+                      ?.url ? (
                       <>
                         <Image
                           src={`/images/ttd.png`}
@@ -1035,7 +1072,10 @@ export const EmailDetail = ({
                         <Image
                           width={200}
                           height={200}
-                          src={`${process.env.NEXT_PUBLIC_API_URL}${(email as EmailDataAdmin).surat_jalan.pengirim.ttd_pengirim.url}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${
+                            (email as EmailDataAdmin).surat_jalan.pengirim
+                              .ttd_pengirim.url
+                          }`}
                           alt="TTD pengirim"
                           className="max-h-full max-w-full object-contain z-10"
                         />
@@ -1048,8 +1088,10 @@ export const EmailDetail = ({
                   </div>
 
                   <div className="font-bold text-lg">
-                    {isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
-                      ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim || "Nama Pengirim"
+                    {isSuratJalan &&
+                    "pengirim" in (email as EmailDataAdmin).surat_jalan
+                      ? (email as EmailDataAdmin).surat_jalan.pengirim
+                          .nama_pengirim || "Nama Pengirim"
                       : "Nama Pengirim"}
                   </div>
                 </div>
@@ -1105,15 +1147,16 @@ export const EmailDetail = ({
         {/* Attachments */}
         {(() => {
           const suratJalan = email.surat_jalan as any;
-          const hasLampiran = "lampiran" in suratJalan && 
-            suratJalan.lampiran && 
+          const hasLampiran =
+            "lampiran" in suratJalan &&
+            suratJalan.lampiran &&
             Array.isArray(suratJalan.lampiran) &&
             suratJalan.lampiran.length > 0;
-          
+
           if (!hasLampiran) return null;
-          
+
           const lampiran = suratJalan.lampiran as FileAttachment[];
-          
+
           return (
             <div className="mb-6 md:mb-8">
               <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
@@ -1850,12 +1893,7 @@ export const EmailDetailBeritaBongkaran = ({
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   {!isCanceled ? (
-                    <>
-                      <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      <button onClick={handlePrintClick}>
-                        <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      </button>
-                    </>
+                    <></>
                   ) : (
                     <div className="px-2 py-1 bg-[#A6234433] rounded-2xl">
                       <p className="text-[#A62344] text-xs sm:text-sm font-medium">
@@ -1891,7 +1929,6 @@ export const EmailDetailBeritaBongkaran = ({
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -1907,7 +1944,9 @@ export const EmailDetailBeritaBongkaran = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -1941,7 +1980,6 @@ export const EmailDetailBeritaBongkaran = ({
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -1957,7 +1995,9 @@ export const EmailDetailBeritaBongkaran = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -1972,12 +2012,6 @@ export const EmailDetailBeritaBongkaran = ({
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
                   {email.surat_jalan.perihal || ""}
                 </h2>
-                <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                  <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  <button onClick={handlePrintClick}>
-                    <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  </button>
-                </div>
               </div>
             </div>
           </>
@@ -2313,15 +2347,16 @@ export const EmailDetailBeritaBongkaran = ({
         {/* Attachments */}
         {(() => {
           const suratJalan = email.surat_jalan as any;
-          const hasLampiran = "lampiran" in suratJalan && 
-            suratJalan.lampiran && 
+          const hasLampiran =
+            "lampiran" in suratJalan &&
+            suratJalan.lampiran &&
             Array.isArray(suratJalan.lampiran) &&
             suratJalan.lampiran.length > 0;
-          
+
           if (!hasLampiran) return null;
-          
+
           const lampiran = suratJalan.lampiran as FileAttachment[];
-          
+
           return (
             <div className="mb-6 md:mb-8">
               <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
@@ -2330,38 +2365,38 @@ export const EmailDetailBeritaBongkaran = ({
               </h4>
               <div className="space-y-2">
                 {lampiran.map((attachment: FileAttachment, index: number) => {
-                // Ambil ekstensi file (uppercase)
-                const ext =
-                  attachment.name.split(".").pop()?.toUpperCase() || "";
+                  // Ambil ekstensi file (uppercase)
+                  const ext =
+                    attachment.name.split(".").pop()?.toUpperCase() || "";
 
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-[10px] sm:text-xs font-bold text-red-600">
-                          {ext}
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center">
+                          <span className="text-[10px] sm:text-xs font-bold text-red-600">
+                            {ext}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium">
+                          {attachment.name}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-medium">
-                        {attachment.name}
-                      </span>
+                      <button
+                        onClick={() =>
+                          handleDownloadAttachment(
+                            attachment.url,
+                            attachment.name
+                          )
+                        }
+                      >
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() =>
-                        handleDownloadAttachment(
-                          attachment.url,
-                          attachment.name
-                        )
-                      }
-                    >
-                      <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           );
@@ -2530,4 +2565,3 @@ export const EmailDetailBeritaBongkaran = ({
     </>
   );
 };
-

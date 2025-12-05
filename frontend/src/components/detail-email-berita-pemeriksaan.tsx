@@ -3,12 +3,9 @@
 import { MouseEventHandler, useEffect, useState } from "react";
 import Image from "next/image";
 import {
-  MoreHorizontal,
   Star,
   X,
-  Reply,
   Printer,
-  ArrowUpRight,
 } from "lucide-react";
 import {
   EmailDataOther,
@@ -243,12 +240,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   {!isCanceled ? (
-                    <>
-                      <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      <button onClick={handlePrintClick}>
-                        <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                      </button>
-                    </>
+                    <></>
                   ) : (
                     <div className="px-2 py-1 bg-[#A6234433] rounded-2xl">
                       <p className="text-[#A62344] text-xs sm:text-sm font-medium">
@@ -284,7 +276,6 @@ export const EmailDetailBeritaPemeriksaan = ({
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -300,7 +291,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -336,7 +329,6 @@ export const EmailDetailBeritaPemeriksaan = ({
                 </div>
               </div>
               <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-5">
-                <Reply className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
                 <button
                   onClick={handleBookmark}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
@@ -352,7 +344,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                     }`}
                   />
                 </button>
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                <button onClick={handlePrintClick}>
+                  <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
+                </button>
                 <button
                   onClick={handleCloseDetail}
                   className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -367,12 +361,6 @@ export const EmailDetailBeritaPemeriksaan = ({
                 <h2 className="font-bold text-[#191919] text-base sm:text-lg md:text-2xl">
                   {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
                 </h2>
-                <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                  <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  <button onClick={handlePrintClick}>
-                    <Printer className="w-4 h-4 md:w-5 md:h-5 cursor-pointer hover:text-gray-600" />
-                  </button>
-                </div>
               </div>
             </div>
           </>
@@ -633,18 +621,13 @@ export const EmailDetailBeritaPemeriksaan = ({
                       <div className="space-y-3">
                         {beritaPemeriksaan.pemeriksa_barang.mengetahui.map(
                           (mengetahui, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center pb-2"
-                            >
+                            <div key={index} className="flex items-center pb-2">
                               <div className="text-base font-semibold min-w-[200px]">
                                 {index + 1}{" "}
                                 {mengetahui.nama_mengetahui ||
                                   "(Nama Mengetahui)"}
                               </div>
-                              <div className="text-base font-semibold">
-                                :
-                              </div>
+                              <div className="text-base font-semibold">:</div>
                               <div className="flex items-center ml-2">
                                 <div className="w-32 h-12 flex items-center justify-center border-b-2 border-gray-800">
                                   {mengetahui.ttd_mengetahui ? (
@@ -675,7 +658,7 @@ export const EmailDetailBeritaPemeriksaan = ({
             </div>
           </div>
         </div>
-        
+
         {/* Ubah Surat Button for Reject Status */}
         {user?.role?.name === "Admin" &&
           beritaPemeriksaan.status_surat === "Reject" && (
@@ -708,7 +691,11 @@ export const EmailDetailBeritaPemeriksaan = ({
             }}
           >
             {/* Company Header */}
-            <div className={`flex items-center gap-4 ${isCompactMode ? "mb-4" : "mb-6"}`}>
+            <div
+              className={`flex items-center gap-4 ${
+                isCompactMode ? "mb-4" : "mb-6"
+              }`}
+            >
               <div className="flex items-center justify-center">
                 <Image
                   src={`/images/PLN-logo.png`}
@@ -728,23 +715,41 @@ export const EmailDetailBeritaPemeriksaan = ({
               </div>
             </div>
 
-            <hr className={`border-t-2 border-gray-800 ${isCompactMode ? "mb-3" : "mb-4"}`} />
+            <hr
+              className={`border-t-2 border-gray-800 ${
+                isCompactMode ? "mb-3" : "mb-4"
+              }`}
+            />
 
             {/* Title */}
             <div className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}>
-              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+              <h1
+                className={`${
+                  isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                } font-bold text-gray-900`}
+              >
                 BERITA ACARA
               </h1>
-              <h1 className={`${isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"} font-bold text-gray-900`}>
+              <h1
+                className={`${
+                  isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                } font-bold text-gray-900`}
+              >
                 HASIL PEMERIKSAAN MUTU BARANG
               </h1>
-              <div className={`${isCompactMode ? "text-xl" : "text-2xl"} text-gray-900 font-bold`}>
+              <div
+                className={`${
+                  isCompactMode ? "text-xl" : "text-2xl"
+                } text-gray-900 font-bold`}
+              >
                 {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
               </div>
             </div>
 
             {/* Introduction */}
-            <div className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"}`}>
+            <div
+              className={`${isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"}`}
+            >
               <p className="mb-2">
                 Pada hari{" "}
                 <span className="font-semibold">
@@ -785,7 +790,11 @@ export const EmailDetailBeritaPemeriksaan = ({
             {/* Kelengkapan Dokumen */}
             {kelengkapanDokumen.length > 0 && (
               <div className={isCompactMode ? "mb-3" : "mb-4"}>
-                <ul className={`space-y-1 ${isCompactMode ? "text-base" : "text-lg"} ml-4`}>
+                <ul
+                  className={`space-y-1 ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  } ml-4`}
+                >
                   {kelengkapanDokumen.map((item, index) => (
                     <li key={index}>{item}</li>
                   ))}
@@ -794,25 +803,39 @@ export const EmailDetailBeritaPemeriksaan = ({
             )}
 
             {/* Materials Table */}
-            <div className={`${isCompactMode ? "mb-3" : "mb-4"} min-w-[300px] overflow-x-auto`} style={{ display: "block" }}>
-              <p className={`${isCompactMode ? "text-base mb-1" : "text-lg mb-2"}`}>
+            <div
+              className={`${
+                isCompactMode ? "mb-3" : "mb-4"
+              } min-w-[300px] overflow-x-auto`}
+              style={{ display: "block" }}
+            >
+              <p
+                className={`${
+                  isCompactMode ? "text-base mb-1" : "text-lg mb-2"
+                }`}
+              >
                 Adapun hasil pemeriksaan sebagai berikut:
               </p>
-              <table className="border-t border-b border-gray-300 text-sm w-full" style={{ display: "table", width: "100%", borderCollapse: "collapse" }}>
+              <table
+                className="border-t border-b border-gray-300 text-sm w-full"
+                style={{
+                  display: "table",
+                  width: "100%",
+                  borderCollapse: "collapse",
+                }}
+              >
                 <thead className="bg-gray-100">
-                  <tr className={`${isCompactMode ? "text-base" : "text-lg"} text-center`}>
-                    <th className="border-2 border-gray-800 px-2 py-2">
-                      No.
-                    </th>
+                  <tr
+                    className={`${
+                      isCompactMode ? "text-base" : "text-lg"
+                    } text-center`}
+                  >
+                    <th className="border-2 border-gray-800 px-2 py-2">No.</th>
                     <th className="border-2 border-gray-800 px-2 py-2">
                       Material Description
                     </th>
-                    <th className="border-2 border-gray-800 px-2 py-2">
-                      QTY
-                    </th>
-                    <th className="border-2 border-gray-800 px-2 py-2">
-                      SAT
-                    </th>
+                    <th className="border-2 border-gray-800 px-2 py-2">QTY</th>
+                    <th className="border-2 border-gray-800 px-2 py-2">SAT</th>
                     <th className="border-2 border-gray-800 px-2 py-2">
                       Serial Number
                     </th>
@@ -826,14 +849,20 @@ export const EmailDetailBeritaPemeriksaan = ({
                     const material = item as any; // Type assertion untuk akses tipe, serial_number, lokasi
                     return (
                       <tr key={index}>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          } text-center`}
+                        >
                           {index + 1}
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"}`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          }`}
+                        >
                           <div className="text-center">
-                            <div className="font-semibold">
-                              {material.nama}
-                            </div>
+                            <div className="font-semibold">{material.nama}</div>
                             {material.katalog && (
                               <div className="">
                                 <span className="font-bold">MERK:</span>{" "}
@@ -847,22 +876,36 @@ export const EmailDetailBeritaPemeriksaan = ({
                               </div>
                             )}
                             {material.lokasi && (
-                              <div className="">
-                                LOKASI: {material.lokasi}
-                              </div>
+                              <div className="">LOKASI: {material.lokasi}</div>
                             )}
                           </div>
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          } text-center`}
+                        >
                           {item.jumlah}
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          } text-center`}
+                        >
                           {item.satuan}
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-red-600`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          } text-red-600`}
+                        >
                           {material.serial_number || "-"}
                         </td>
-                        <td className={`border-2 border-gray-800 px-2 ${isCompactMode ? "py-1" : "py-2"} text-center`}>
+                        <td
+                          className={`border-2 border-gray-800 px-2 ${
+                            isCompactMode ? "py-1" : "py-2"
+                          } text-center`}
+                        >
                           {material.keterangan || "-"}
                         </td>
                       </tr>
@@ -873,29 +916,46 @@ export const EmailDetailBeritaPemeriksaan = ({
             </div>
 
             {/* Closing Statement */}
-            <div className={`${isCompactMode ? "mb-3" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+            <div
+              className={`${isCompactMode ? "mb-3" : "mb-4"} ${
+                isCompactMode ? "text-base" : "text-lg"
+              }`}
+            >
               <p>
-                Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
-                dengan sesungguhnya untuk dapat dipergunakan sebagai mana
-                mestinya.
+                Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat dengan
+                sesungguhnya untuk dapat dipergunakan sebagai mana mestinya.
               </p>
             </div>
 
             {/* Signatures */}
-            <div className={`flex ${isCompactMode ? "gap-4 mb-2" : "gap-8 mb-4"}`}>
+            <div
+              className={`flex ${isCompactMode ? "gap-4 mb-2" : "gap-8 mb-4"}`}
+            >
               {/* Penyedia Barang */}
               <div className="text-center">
-                <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                <div
+                  className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  } font-semibold`}
+                >
                   Penyedia Barang
                 </div>
-                <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                <div
+                  className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  }`}
+                >
                   {beritaPemeriksaan.penyedia_barang
                     ?.perusahaan_penyedia_barang ||
                     "(Perusahaan Penyedia Barang)"}
                 </div>
 
                 {/* Signature Preview */}
-                <div className={`${isCompactMode ? "h-16 mb-2" : "h-20 mb-4"} flex items-center`}>
+                <div
+                  className={`${
+                    isCompactMode ? "h-16 mb-2" : "h-20 mb-4"
+                  } flex items-center`}
+                >
                   {beritaPemeriksaan.penyedia_barang?.ttd_penerima ? (
                     <img
                       width={200}
@@ -908,13 +968,15 @@ export const EmailDetailBeritaPemeriksaan = ({
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <div className="text-gray-400 text-sm">
-                      (Tanda Tangan)
-                    </div>
+                    <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
                   )}
                 </div>
 
-                <div className={`${isCompactMode ? "text-base" : "text-lg"} font-bold text-red-600`}>
+                <div
+                  className={`${
+                    isCompactMode ? "text-base" : "text-lg"
+                  } font-bold text-red-600`}
+                >
                   {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
                     "(Nama Penanggung Jawab)"}
                 </div>
@@ -922,35 +984,56 @@ export const EmailDetailBeritaPemeriksaan = ({
 
               {/* Pemeriksa Barang */}
               <div className="text-left">
-                <div className={`${isCompactMode ? "mb-1" : "mb-2"} ${isCompactMode ? "text-base" : "text-lg"} font-semibold`}>
+                <div
+                  className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  } font-semibold`}
+                >
                   Pemeriksa Barang
                 </div>
-                <div className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${isCompactMode ? "text-base" : "text-lg"}`}>
+                <div
+                  className={`font-bold ${isCompactMode ? "mb-2" : "mb-4"} ${
+                    isCompactMode ? "text-base" : "text-lg"
+                  }`}
+                >
                   {beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
                     "(Departemen Pemeriksa)"}
                 </div>
 
                 {/* List Mengetahui */}
                 {beritaPemeriksaan.pemeriksa_barang?.mengetahui &&
-                  beritaPemeriksaan.pemeriksa_barang.mengetahui.length >
-                    0 && (
+                  beritaPemeriksaan.pemeriksa_barang.mengetahui.length > 0 && (
                     <div className={isCompactMode ? "space-y-2" : "space-y-3"}>
                       {beritaPemeriksaan.pemeriksa_barang.mengetahui.map(
                         (mengetahui, index) => (
                           <div
                             key={index}
-                            className={`flex items-center ${isCompactMode ? "pb-1" : "pb-2"}`}
+                            className={`flex items-center ${
+                              isCompactMode ? "pb-1" : "pb-2"
+                            }`}
                           >
-                            <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold min-w-[200px]`}>
+                            <div
+                              className={`${
+                                isCompactMode ? "text-sm" : "text-base"
+                              } font-semibold min-w-[200px]`}
+                            >
                               {index + 1}{" "}
                               {mengetahui.nama_mengetahui ||
                                 "(Nama Mengetahui)"}
                             </div>
-                            <div className={`${isCompactMode ? "text-sm" : "text-base"} font-semibold`}>
+                            <div
+                              className={`${
+                                isCompactMode ? "text-sm" : "text-base"
+                              } font-semibold`}
+                            >
                               :
                             </div>
                             <div className="flex items-center ml-2">
-                              <div className={`${isCompactMode ? "w-28 h-10" : "w-32 h-12"} flex items-center justify-center border-b-2 border-gray-800`}>
+                              <div
+                                className={`${
+                                  isCompactMode ? "w-28 h-10" : "w-32 h-12"
+                                } flex items-center justify-center border-b-2 border-gray-800`}
+                              >
                                 {mengetahui.ttd_mengetahui ? (
                                   <img
                                     width={120}

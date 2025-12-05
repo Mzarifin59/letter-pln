@@ -99,15 +99,15 @@ export default function LoginContentPage() {
           <Image
             src="/images/PLN-logo.png"
             alt="Logo"
-            width={60}
-            height={60}
-            className="w-[60px] h-[60px] object-contain"
+            width={80}
+            height={80}
+            className="w-[80px] h-[80px] object-contain"
           />
           <div className="flex flex-col">
-            <h2 className="text-[#003367] text-lg font-extrabold leading-tight">
+            <h2 className="text-[#003367] text-2xl font-extrabold leading-tight">
               SIGASPOL
             </h2>
-            <p className="text-[#003367] text-[8px] leading-tight mt-1 w-3/4">
+            <p className="text-[#003367] text-[10px] leading-tight mt-1 w-3/4">
               Aplikasi Gudang Surat jalan dan Pengelolaan Bongkaran Logistik
             </p>
           </div>
