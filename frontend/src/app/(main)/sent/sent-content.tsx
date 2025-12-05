@@ -7,6 +7,7 @@ import {
   RotateCw,
   ArrowLeft,
   ArrowRight,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -479,6 +480,21 @@ export default function SentContent({ data, token }: SentContentProps) {
                       height={20}
                       className="text-gray-500 hover:text-gray-700 cursor-pointer"
                     />
+                    <Trash2
+                      width={20}
+                      height={20}
+                      onClick={() => {
+                        if (selectedEmails.length > 0) {
+                          setIsMultipleDelete(true);
+                          setShowDeleteDialog(true);
+                        }
+                      }}
+                      className={`${
+                        selectedEmails.length > 0
+                          ? "text-gray-500 hover:text-red-600 cursor-pointer"
+                          : "text-gray-300 cursor-not-allowed opacity-50"
+                      }`}
+                    />
                     <Popover>
                       <PopoverTrigger asChild>
                         <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 hover:text-gray-700 cursor-pointer" />
@@ -497,22 +513,6 @@ export default function SentContent({ data, token }: SentContentProps) {
                           >
                             Terlama
                           </button>
-
-                          {/* 🔥 New: Hapus Email Terpilih */}
-                          {selectedEmails.length > 0 && (
-                            <>
-                              <div className="border-t my-2" />
-                              <button
-                                onClick={() => {
-                                  setIsMultipleDelete(true);
-                                  setShowDeleteDialog(true);
-                                }}
-                                className="text-left px-2 py-1 text-red-600 rounded-md hover:bg-red-50"
-                              >
-                                Hapus Email Terpilih ({selectedEmails.length})
-                              </button>
-                            </>
-                          )}
                         </div>
                       </PopoverContent>
                     </Popover>
