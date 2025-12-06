@@ -40,7 +40,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
-type SearchType = "no_surat" | "material" | "vendor";
+type SearchType = "semua" | "no_surat" | "material" | "vendor";
 
 interface FilterSuratJalan {
   kategori_surat?: { $eq: string } | Array<{ $eq: string }>;
@@ -71,12 +71,35 @@ interface SearchFilters {
     surat_jalan: {
       kategori_surat?: { $eq: string };
       no_surat_jalan?: { $containsi: string };
+      no_surat_permintaan?: { $containsi: string };
       no_berita_acara?: { $containsi: string };
+      no_perjanjian_kontrak?: { $containsi: string };
+      perihal?: { $containsi: string };
+      perihal_kontrak?: { $containsi: string };
+      lokasi_asal?: { $containsi: string };
+      lokasi_tujuan?: { $containsi: string };
+      catatan_tambahan?: { $containsi: string };
+      informasi_kendaraan?: { $containsi: string };
+      nama_pengemudi?: { $containsi: string };
+      hasil_pemeriksaan?: { $containsi: string };
       materials?: {
         nama: { $containsi: string };
       };
+      penerima?: {
+        perusahaan_penerima?: { $containsi: string };
+        nama_penerima?: { $containsi: string };
+      };
+      pengirim?: {
+        departemen_pengirim?: { $containsi: string };
+        nama_pengirim?: { $containsi: string };
+      };
       mengetahui?: {
-        departemen_mengetahui: { $containsi: string };
+        departemen_mengetahui?: { $containsi: string };
+        nama_mengetahui?: { $containsi: string };
+      };
+      penyedia_barang?: {
+        perusahaan_penyedia_barang?: { $containsi: string };
+        nama_penanggung_jawab?: { $containsi: string };
       };
       pemeriksa_barang?: {
         departemen_pemeriksa?: { $containsi: string };
@@ -97,7 +120,158 @@ async function searchEmails(
 
   if (userRole === "Admin") {
     // Admin: Surat Jalan dan Berita Acara Pemeriksaan Tim Mutu
-    if (searchType === "no_surat") {
+    if (searchType === "semua") {
+      filters.$or = [
+        // Surat Jalan - No. Surat
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            no_surat_jalan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            no_surat_permintaan: { $containsi: query },
+          },
+        },
+        // Berita Acara Pemeriksaan Tim Mutu - No. Berita Acara
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            no_berita_acara: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            no_perjanjian_kontrak: { $containsi: query },
+          },
+        },
+        // Perihal
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            perihal: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            perihal_kontrak: { $containsi: query },
+          },
+        },
+        // Lokasi
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            lokasi_asal: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            lokasi_tujuan: { $containsi: query },
+          },
+        },
+        // Material
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+        // Penerima
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            penerima: {
+              perusahaan_penerima: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            penerima: {
+              nama_penerima: { $containsi: query },
+            },
+          },
+        },
+        // Pengirim
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            pengirim: {
+              departemen_pengirim: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            pengirim: {
+              nama_pengirim: { $containsi: query },
+            },
+          },
+        },
+        // Penyedia Barang (Berita Acara Pemeriksaan)
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            penyedia_barang: {
+              perusahaan_penyedia_barang: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            penyedia_barang: {
+              nama_penanggung_jawab: { $containsi: query },
+            },
+          },
+        },
+        // Pemeriksa Barang
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Pemeriksaan Tim Mutu" },
+            pemeriksa_barang: {
+              departemen_pemeriksa: { $containsi: query },
+            },
+          },
+        },
+        // Field lainnya
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            catatan_tambahan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            informasi_kendaraan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Surat Jalan" },
+            nama_pengemudi: { $containsi: query },
+          },
+        },
+      ];
+    } else if (searchType === "no_surat") {
       filters.$or = [
         {
           surat_jalan: {
@@ -134,24 +308,278 @@ async function searchEmails(
     }
   } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
     // Vendor & Gardu Induk: hanya Berita Acara Material Bongkaran
-    filters.surat_jalan = {
-      kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
-    };
+    if (searchType === "semua") {
+      filters.$or = [
+        // No. Berita Acara & No. Perjanjian Kontrak
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            no_berita_acara: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            no_perjanjian_kontrak: { $containsi: query },
+          },
+        },
+        // Perihal
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            perihal: { $containsi: query },
+          },
+        },
+        // Lokasi
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            lokasi_asal: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            lokasi_tujuan: { $containsi: query },
+          },
+        },
+        // Material
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+        // Mengetahui (Vendor)
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            mengetahui: {
+              departemen_mengetahui: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            mengetahui: {
+              nama_mengetahui: { $containsi: query },
+            },
+          },
+        },
+        // Penerima
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            penerima: {
+              perusahaan_penerima: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            penerima: {
+              nama_penerima: { $containsi: query },
+            },
+          },
+        },
+        // Pengirim
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            pengirim: {
+              departemen_pengirim: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            pengirim: {
+              nama_pengirim: { $containsi: query },
+            },
+          },
+        },
+        // Field lainnya
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            informasi_kendaraan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+            nama_pengemudi: { $containsi: query },
+          },
+        },
+      ];
+    } else {
+      filters.surat_jalan = {
+        kategori_surat: { $eq: "Berita Acara Material Bongkaran" },
+      };
 
-    if (searchType === "no_surat") {
-      filters.surat_jalan.no_berita_acara = { $containsi: query };
-    } else if (searchType === "material") {
-      filters.surat_jalan.materials = {
-        nama: { $containsi: query },
-      };
-    } else if (searchType === "vendor") {
-      filters.surat_jalan.mengetahui = {
-        departemen_mengetahui: { $containsi: query },
-      };
+      if (searchType === "no_surat") {
+        filters.surat_jalan.no_berita_acara = { $containsi: query };
+      } else if (searchType === "material") {
+        filters.surat_jalan.materials = {
+          nama: { $containsi: query },
+        };
+      } else if (searchType === "vendor") {
+        filters.surat_jalan.mengetahui = {
+          departemen_mengetahui: { $containsi: query },
+        };
+      }
     }
   } else if (userRole === "Spv") {
     // Spv: semua kategori, semua filter
-    if (searchType === "no_surat") {
+    if (searchType === "semua") {
+      filters.$or = [
+        // No. Surat
+        {
+          surat_jalan: {
+            no_surat_jalan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            no_surat_permintaan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            no_berita_acara: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            no_perjanjian_kontrak: { $containsi: query },
+          },
+        },
+        // Perihal
+        {
+          surat_jalan: {
+            perihal: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            perihal_kontrak: { $containsi: query },
+          },
+        },
+        // Lokasi
+        {
+          surat_jalan: {
+            lokasi_asal: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            lokasi_tujuan: { $containsi: query },
+          },
+        },
+        // Material
+        {
+          surat_jalan: {
+            materials: {
+              nama: { $containsi: query },
+            },
+          },
+        },
+        // Penerima
+        {
+          surat_jalan: {
+            penerima: {
+              perusahaan_penerima: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            penerima: {
+              nama_penerima: { $containsi: query },
+            },
+          },
+        },
+        // Pengirim
+        {
+          surat_jalan: {
+            pengirim: {
+              departemen_pengirim: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            pengirim: {
+              nama_pengirim: { $containsi: query },
+            },
+          },
+        },
+        // Mengetahui (Vendor)
+        {
+          surat_jalan: {
+            mengetahui: {
+              departemen_mengetahui: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            mengetahui: {
+              nama_mengetahui: { $containsi: query },
+            },
+          },
+        },
+        // Penyedia Barang
+        {
+          surat_jalan: {
+            penyedia_barang: {
+              perusahaan_penyedia_barang: { $containsi: query },
+            },
+          },
+        },
+        {
+          surat_jalan: {
+            penyedia_barang: {
+              nama_penanggung_jawab: { $containsi: query },
+            },
+          },
+        },
+        // Pemeriksa Barang
+        {
+          surat_jalan: {
+            pemeriksa_barang: {
+              departemen_pemeriksa: { $containsi: query },
+            },
+          },
+        },
+        // Field lainnya
+        {
+          surat_jalan: {
+            catatan_tambahan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            informasi_kendaraan: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            nama_pengemudi: { $containsi: query },
+          },
+        },
+        {
+          surat_jalan: {
+            hasil_pemeriksaan: { $containsi: query },
+          },
+        },
+      ];
+    } else if (searchType === "no_surat") {
       filters.$or = [
         {
           surat_jalan: {
@@ -297,7 +725,7 @@ export default function SearchResultPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const searchTypeParam =
-    (searchParams.get("type") as SearchType) || "no_surat";
+    (searchParams.get("type") as SearchType) || "semua";
   const categoriesParam = searchParams.get("categories") || "";
   const selectedCategories = categoriesParam ? categoriesParam.split(",") : [];
 
@@ -314,24 +742,30 @@ export default function SearchResultPage() {
 
     if (userRole === "Admin") {
       return [
+        { value: "semua" as SearchType, label: "Semua" },
         { value: "no_surat" as SearchType, label: "No. Surat" },
         { value: "material" as SearchType, label: "Nama Material" },
       ];
     } else if (userRole === "Vendor" || userRole === "Gardu Induk") {
       return [
+        { value: "semua" as SearchType, label: "Semua" },
         { value: "no_surat" as SearchType, label: "No. Berita Acara" },
         { value: "material" as SearchType, label: "Nama Material" },
         { value: "vendor" as SearchType, label: "Nama Vendor" },
       ];
     } else if (userRole === "Spv") {
       return [
+        { value: "semua" as SearchType, label: "Semua" },
         { value: "no_surat" as SearchType, label: "No. Surat" },
         { value: "material" as SearchType, label: "Nama Material" },
         { value: "vendor" as SearchType, label: "Nama Vendor" },
       ];
     }
 
-    return [{ value: "no_surat" as SearchType, label: "No. Surat" }];
+    return [
+      { value: "semua" as SearchType, label: "Semua" },
+      { value: "no_surat" as SearchType, label: "No. Surat" },
+    ];
   };
 
   const availableSearchTypes = getAvailableSearchTypes();
@@ -521,7 +955,10 @@ export default function SearchResultPage() {
 
   const getSearchPlaceholder = () => {
     const selected = availableSearchTypes.find((t) => t.value === searchType);
-    return `Search by ${selected?.label || "No. Surat"}...`;
+    if (searchType === "semua") {
+      return "Cari di semua field...";
+    }
+    return `Cari berdasarkan ${selected?.label || "No. Surat"}...`;
   };
 
   return (
