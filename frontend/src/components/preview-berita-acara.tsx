@@ -227,24 +227,22 @@ export default function PreviewSectionBeritaBongkaran({
   const renderHeader = (isFirstPage: boolean) => (
     <>
       {isFirstPage && (
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-shrink-0">
-            {copSuratUrl ? (
-              <div className="cop-surat-container mb-4">
-                <img
-                  src={copSuratUrl}
-                  alt="Cop Surat"
-                  className="w-[500px] h-full object-cover"
-                  onError={(e) => {
-                    console.error("Error loading cop surat image:", copSuratUrl);
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="font-bold text-2xl">(Cop Surat)</div>
-            )}
-          </div>
+        <div className="w-full mb-3">
+          {copSuratUrl ? (
+            <div className="cop-surat-container flex justify-center items-center w-full">
+              <img
+                src={copSuratUrl}
+                alt="Cop Surat"
+                className="w-full object-contain"
+                onError={(e) => {
+                  console.error("Error loading cop surat image:", copSuratUrl);
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            </div>
+          ) : (
+            <div className="font-bold text-2xl text-center">(Cop Surat)</div>
+          )}
         </div>
       )}
       <hr className="border-t-2 border-gray-800 mb-3" />
@@ -352,12 +350,18 @@ export default function PreviewSectionBeritaBongkaran({
       </div>
 
       <div className="grid grid-cols-2 gap-8 text-center mb-4">
-        <div>
+        <div className="relative">
           <div className="mb-1 text-sm">Yang Menerima,</div>
           <div className="font-bold mb-2 text-sm">
             {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
-
+          <Image
+            src={`/images/ttd.png`}
+            alt="TTD"
+            width={100}
+            height={100}
+            className="absolute z-0 left-24 bottom-3"
+          />
           <div className="h-16 mb-2 flex items-center justify-center">
             {getPenerimaSignature() ? (
               <img
@@ -380,13 +384,6 @@ export default function PreviewSectionBeritaBongkaran({
           <div className="font-bold mb-2 text-sm">
             {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
-          <Image
-            src={`/images/ttd.png`}
-            alt="TTD"
-            width={100}
-            height={100}
-            className="absolute z-0 left-24 bottom-3"
-          />
           <div className="h-16 mb-2 flex items-center justify-center">
             {getPengirimSignature() ? (
               <img

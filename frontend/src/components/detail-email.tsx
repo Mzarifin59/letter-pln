@@ -1603,20 +1603,18 @@ export const EmailDetailBeritaBongkaran = ({
   const renderHeaderPDF = (isFirstPage: boolean) => (
     <>
       {isFirstPage && (
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-shrink-0">
-            {copSuratUrl ? (
-              <div className="cop-surat-container mb-4">
-                <img
-                  src={copSuratUrl}
-                  alt="Cop Surat"
-                  className="w-[500px] h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="font-bold text-2xl">(Cop Surat)</div>
-            )}
-          </div>
+        <div className="w-full mb-3">
+          {copSuratUrl ? (
+            <div className="cop-surat-container flex justify-center items-center w-full mb-4">
+              <img
+                src={copSuratUrl}
+                alt="Cop Surat"
+                className="w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="font-bold text-2xl text-center">(Cop Surat)</div>
+          )}
         </div>
       )}
       <hr className="border-t-2 border-gray-800 mb-3" />
@@ -1722,12 +1720,18 @@ export const EmailDetailBeritaBongkaran = ({
       </div>
 
       <div className="grid grid-cols-2 gap-8 text-center mb-4">
-        <div>
+        <div className="relative">
           <div className="mb-1 text-sm">Yang Menerima,</div>
           <div className="font-bold mb-2 text-sm">
             {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
           </div>
-
+          <Image
+            src={`/images/ttd.png`}
+            alt="TTD"
+            width={100}
+            height={100}
+            className="absolute z-0 left-16 bottom-3"
+          />
           <div className="h-16 mb-2 flex items-center justify-center">
             {signaturePenerima.preview.upload ? (
               <img
@@ -1750,13 +1754,6 @@ export const EmailDetailBeritaBongkaran = ({
           <div className="font-bold mb-2 text-sm">
             {formData.departemenPengirim || "(Departemen Pengirim)"}
           </div>
-          <Image
-            src={`/images/ttd.png`}
-            alt="TTD"
-            width={100}
-            height={100}
-            className="absolute z-0 left-16 bottom-3"
-          />
           <div className="h-16 mb-2 flex items-center justify-center">
             {signaturePengirim.preview.upload ? (
               <img
@@ -2039,29 +2036,29 @@ export const EmailDetailBeritaBongkaran = ({
             {/* Fixed width document preview */}
             <div className="bg-white py-4">
               {/* Company Header */}
-              <div className="flex items-center gap-4 mb-8">
-                <div className="flex items-center justify-center">
-                  {copSuratUrl ? (
-                    <div className="cop-surat-container mb-4">
-                      <img
-                        src={copSuratUrl}
-                        alt="Cop Surat"
-                        className="w-[600px] h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-2xl">(Cop Surat)</div>
-                  )}
-                </div>
-                {/* <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
-                  <div className="plus-jakarta-sans text-[22px] font-bold text-[#A62344]">
-                    LEMBAR I
+              <div className="w-full mb-8">
+                {copSuratUrl ? (
+                  <div className="cop-surat-container flex justify-center items-center w-full mb-4">
+                    <img
+                      src={copSuratUrl}
+                      alt="Cop Surat"
+                      className="w-full object-contain"
+                    />
                   </div>
-                  <div className="plus-jakarta-sans text-xl text-[#A62344]">
-                    Pengirim Barang
+                ) : (
+                  <div className="font-bold text-2xl text-center">
+                    (Cop Surat)
                   </div>
-                </div> */}
+                )}
               </div>
+              {/* <div className="ml-auto bg-[#A623441A] px-6 py-2 rounded-lg border border-[#A62344]">
+                <div className="plus-jakarta-sans text-[22px] font-bold text-[#A62344]">
+                  LEMBAR I
+                </div>
+                <div className="plus-jakarta-sans text-xl text-[#A62344]">
+                  Pengirim Barang
+                </div>
+              </div> */}
 
               <hr className="border-t-2 border-gray-800 mb-4" />
 
@@ -2246,15 +2243,24 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
 
                   {/* Signature Preview */}
-                  <div className="h-20 mb-4 flex items-center justify-center">
+                  <div className="relative h-20 mb-4 flex items-center justify-center">
                     {email.surat_jalan.penerima.ttd_penerima?.url ? (
-                      <img
-                        width={200}
-                        height={200}
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.penerima.ttd_penerima?.url}`}
-                        alt="TTD penerima"
-                        className="max-h-full max-w-full object-contain"
-                      />
+                      <>
+                        <Image
+                          src={`/images/ttd.png`}
+                          alt="TTD"
+                          width={100}
+                          height={100}
+                          className="absolute z-0"
+                        />
+                        <img
+                          width={200}
+                          height={200}
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.penerima.ttd_penerima?.url}`}
+                          alt="TTD penerima"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </>
                     ) : (
                       <div className="text-gray-400 text-sm">
                         (Tanda Tangan)
@@ -2281,13 +2287,6 @@ export const EmailDetailBeritaBongkaran = ({
                   <div className="relative h-20 mb-4 flex items-center justify-center">
                     {email.surat_jalan.pengirim.ttd_pengirim.url ? (
                       <>
-                        <Image
-                          src={`/images/ttd.png`}
-                          alt="TTD"
-                          width={100}
-                          height={100}
-                          className="absolute z-0"
-                        />
                         <img
                           src={`${process.env.NEXT_PUBLIC_API_URL}${email.surat_jalan.pengirim.ttd_pengirim.url}`}
                           alt="TTD pengirim"

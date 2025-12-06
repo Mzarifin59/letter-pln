@@ -838,10 +838,6 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             <input
               type="date"
               name="tanggalSurat"
-              value={
-                formData.tanggalKontrak ||
-                new Date().toISOString().split("T")[0]
-              }
               onChange={handleInputChange}
               required
               className="w-full px-3 py-2 pr-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -875,7 +871,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             onChange={handleInputChange}
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="STORAGE POU EK HATI 00"
+            placeholder="GI CIGERELENG "
           />
         </div>
 
@@ -890,7 +886,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             onChange={handleInputChange}
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="TK PERMATA 17 UTARA"
+            placeholder="GUDANG CIGERELENG"
           />
         </div>
       </div>
