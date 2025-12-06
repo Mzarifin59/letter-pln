@@ -120,6 +120,28 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
   }
 
+  // Helper function untuk mengecek apakah Berita Acara Material Bongkaran sudah lengkap signature dan approve
+  const isBeritaBongkaranComplete = (item: DynamicEmailData): boolean => {
+    if (item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran") {
+      return false;
+    }
+
+    // Cek status harus Approve
+    if (item.surat_jalan.status_surat !== "Approve") {
+      return false;
+    }
+
+    // Cek semua signature sudah terisi
+    const mengetahuiLengkap =
+      hasMengetahui(item.surat_jalan) &&
+      Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+      ("penerima" in item.surat_jalan && item.surat_jalan.penerima
+        ? Boolean(item.surat_jalan.penerima.ttd_penerima)
+        : false);
+
+    return mengetahuiLengkap;
+  };
+
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
@@ -255,7 +277,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       const kategori = item.surat_jalan.kategori_surat;
       const isAllowedKategori = 
         kategori === "Surat Jalan" || 
-        kategori === "Berita Acara Pemeriksaan Tim Mutu";
+        kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
+        isBeritaBongkaranComplete(item);
 
       return (
         hasAdminGudangStatus &&
@@ -650,11 +673,21 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     const userRole = user?.role?.name;
 
     if (userRole === "Admin") {
-      // Admin bisa melihat Surat Jalan dan Berita Pemeriksaan
+      // Admin bisa melihat Surat Jalan, Berita Pemeriksaan, dan Berita Acara Material Bongkaran (jika lengkap dan approve)
       if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
         return (
           <EmailDetailBeritaPemeriksaan
             email={openedEmail as EmailDataOther}
+            handleCloseDetail={handleCloseDetail}
+            isSend={true}
+            markEmailAsBookmarked={markEmailAsBookmarked}
+          />
+        );
+      }
+      if (kategoriSurat === "Berita Acara Material Bongkaran") {
+        return (
+          <EmailDetailBeritaBongkaran
+            email={openedEmail as EmailDataVendor}
             handleCloseDetail={handleCloseDetail}
             isSend={true}
             markEmailAsBookmarked={markEmailAsBookmarked}

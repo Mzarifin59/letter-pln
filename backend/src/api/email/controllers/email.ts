@@ -437,6 +437,16 @@ export default factories.createCoreController(
           });
         }
 
+        if(existingMengetahui){
+          await strapi.documents("api::email-status.email-status").create({
+            data: {
+              email: email.documentId,
+              user: process.env.ADMIN_ID,
+            },
+            status: "published",
+          });
+        }
+
         return ctx.send({
           message: "Request Approve Berhasil ✅",
           data: {

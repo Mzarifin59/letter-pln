@@ -108,6 +108,28 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
     return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
   }
 
+  // Helper function untuk mengecek apakah Berita Acara Material Bongkaran sudah lengkap signature dan approve
+  const isBeritaBongkaranComplete = (item: DynamicEmailData): boolean => {
+    if (item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran") {
+      return false;
+    }
+
+    // Cek status harus Approve
+    if (item.surat_jalan.status_surat !== "Approve") {
+      return false;
+    }
+
+    // Cek semua signature sudah terisi
+    const mengetahuiLengkap =
+      hasMengetahui(item.surat_jalan) &&
+      Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+      ("penerima" in item.surat_jalan && item.surat_jalan.penerima
+        ? Boolean(item.surat_jalan.penerima.ttd_penerima)
+        : false);
+
+    return mengetahuiLengkap;
+  };
+
   // Filter data
   const draftData = allData.filter(
     (item) => item.surat_jalan.status_entry === "Draft"
@@ -145,7 +167,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         (item) =>
           item.surat_jalan.kategori_surat === "Surat Jalan" ||
           item.surat_jalan.kategori_surat ===
-            "Berita Acara Pemeriksaan Tim Mutu"
+            "Berita Acara Pemeriksaan Tim Mutu" ||
+          isBeritaBongkaranComplete(item)
       );
 
     suratData = suratData
@@ -154,7 +177,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         (item) =>
           item.surat_jalan.kategori_surat === "Surat Jalan" ||
           item.surat_jalan.kategori_surat ===
-            "Berita Acara Pemeriksaan Tim Mutu"
+            "Berita Acara Pemeriksaan Tim Mutu" ||
+          isBeritaBongkaranComplete(item)
       );
   } else if (user?.role?.name === "Vendor") {
     suratDataThisMonth = suratDataThisMonth
