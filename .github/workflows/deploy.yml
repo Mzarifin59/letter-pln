@@ -110,11 +110,11 @@ jobs:
           SSH_PORT: ${{ vars.SSH_PORT }}
         run: |
           ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -p $SSH_PORT $SSH_USER@$SSH_HOST "
-          cd /home/sigaspol/backend &&
-          yarn &&
-          yarn build &&
-          pm2 restart sigaspol-admin
-        "
+            cd /home/sigaspol/backend &&
+            yarn &&
+            yarn build &&
+            pm2 restart sigaspol-admin
+          "
 
 
       - name: Sync Frontend Env
