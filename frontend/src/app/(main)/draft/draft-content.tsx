@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   MoreHorizontal,
-  Star,
   Trash2,
   RotateCw,
   ArrowLeft,
@@ -25,41 +24,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DynamicEmailData, getPerihal, getPerusahaanPenerima, getTanggalSurat} from "@/lib/interface";
+import { DynamicEmailData, getPerihal } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { deleteEmailReal } from "@/lib/emailRequest";
-
-function formatDate(dateString: string, type: "long" | "short" = "long") {
-  const date = new Date(dateString);
-
-  if (type === "long") {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  }
-
-  if (type === "short") {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "short",
-    }).format(date);
-  }
-
-  return dateString;
-}
+import { EmailRow } from "@/components/email-row";
 
 interface DraftContentProps {
   data: DynamicEmailData[];
   token: string | undefined;
-}
-
-interface EmailRowProps {
-  isSelected: boolean;
-  onSelect: (emailId: string) => void;
-  onRowClick: (email: DynamicEmailData) => void;
-  email: DynamicEmailData;
 }
 
 export default function DraftPageContent({ data, token }: DraftContentProps) {
@@ -247,90 +219,9 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
     setCurrentPage(1);
   };
 
-  const EmailRow = ({
-    email,
-    isSelected,
-    onSelect,
-    onRowClick,
-  }: EmailRowProps): JSX.Element => {
-    const handleCheckboxClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-    };
-
-    return (
-      <div
-        onClick={() => onRowClick(email)}
-        className={`
-            px-4 py-3 border-b border-[#ADB5BD] cursor-pointer group
-            hover:bg-[#EDF1FF] transition-colors
-            ${isSelected ? "bg-blue-50" : ""}
-            flex flex-wrap items-center gap-2
-          `}
-      >
-        {/* Checkbox & Star - hidden in mobile when detail open */}
-        <div className="flex items-center gap-2" onClick={handleCheckboxClick}>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={() => onSelect(email.documentId)}
-            className="rounded border-gray-300"
-          />
-          <Star
-            className={`w-4 h-4 fill-current ${
-              email.email_statuses.find((item) => item.user.name === user?.name)
-                ?.is_bookmarked
-                ? "text-yellow-400"
-                : "text-[#E9E9E9]"
-            }`}
-          />
-        </div>
-
-        {/* Status */}
-        <div className="text-[#A62344] text-xs sm:text-sm font-semibold">
-          Draft
-        </div>
-
-        {/* Sender & Preview */}
-        <div className="flex-1 min-w-0">
-          <div className="flex max-lg:justify-between lg:gap-12 items-center">
-            <span className="text-sm font-medium text-gray-900 truncate">
-              {getPerusahaanPenerima(email)}
-            </span>
-            <>
-              <span
-                className={`max-xl:hidden text-sm text-[#545454] block whitespace-normal break-words`}
-              >
-                {getPerihal(email)}
-              </span>
-              <span className="max-sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
-                {formatDate(email.surat_jalan.createdAt, "long")}
-              </span>
-              <span className="sm:hidden text-[10px] sm:text-xs text-gray-500 ml-2 flex-shrink-0">
-                {formatDate(email.surat_jalan.createdAt, "short")}
-              </span>
-            </>
-          </div>
-          <span
-            className={`text-sm text-[#545454] block whitespace-normal break-words truncate xl:hidden`}
-          >
-            {getPerihal(email)}
-          </span>
-        </div>
-
-        {/* Unread Indicator & Actions */}
-        <div className="flex items-center space-x-2 ml-auto">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedToDelete(email);
-              setShowDeleteDialog(true);
-            }}
-          >
-            <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-        </div>
-      </div>
-    );
+  const handleDeleteEmail = (email: DynamicEmailData) => {
+    setSelectedToDelete(email);
+    setShowDeleteDialog(true);
   };
 
   return (
@@ -452,7 +343,10 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
                       email={email}
                       isSelected={selectedEmails.includes(email.documentId)}
                       onSelect={handleSelectEmail}
-                      onRowClick={handleRowClick}
+                      onClick={handleRowClick}
+                      openedEmail={null}
+                      pageRow="Draft"
+                      onDelete={handleDeleteEmail}
                     />
                   ))
               ) : (

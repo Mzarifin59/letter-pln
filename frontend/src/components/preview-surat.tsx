@@ -21,6 +21,7 @@ interface PreviewSectionProps {
   onDownloadPDF: () => void;
   calculateTotal: () => number;
   autoDownload?: boolean;
+  lampiran?: File[];
 }
 
 export default function PreviewSection({
@@ -34,6 +35,7 @@ export default function PreviewSection({
   onDownloadPDF,
   calculateTotal,
   autoDownload = false,
+  lampiran = [],
 }: PreviewSectionProps) {
   useEffect(() => {
     if (autoDownload) {
@@ -103,8 +105,15 @@ export default function PreviewSection({
   ];
 
   // Batas untuk menentukan apakah perlu split ke halaman berikutnya
-  const MATERIAL_THRESHOLD = 8; // Jika lebih dari 8, footer pindah ke halaman baru
-  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = 18; // Kapasitas halaman tengah
+  // Jika ada lampiran, kurangi threshold untuk memberi ruang lampiran
+  const hasLampiran = lampiran && lampiran.length > 0;
+  const imageLampiran = hasLampiran
+    ? lampiran.filter((file) => file.type.startsWith("image/"))
+    : [];
+  const hasImageLampiran = imageLampiran.length > 0;
+  // Jika ada image lampiran, kurangi lebih banyak untuk memberi ruang foto di bawah signature
+  const MATERIAL_THRESHOLD = hasImageLampiran ? 5 : hasLampiran ? 6 : 8;
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = hasImageLampiran ? 14 : hasLampiran ? 16 : 18;
 
   const activeMaterials = hasMaterialData()
     ? Array.isArray(materials)
@@ -286,94 +295,120 @@ export default function PreviewSection({
   );
 
   // Render footer with signatures
-  const renderFooter = () => (
-    <>
-      <div className="pb-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">Keterangan :</div>
-      </div>
-      <div className="py-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">
-          {formData.catatanTambahan || "(Catatan)"}
+  const renderFooter = () => {
+    // Filter hanya image files dari lampiran
+    const imageLampiran = lampiran.filter((file) => file.type.startsWith("image/"));
+    
+    return (
+      <>
+        <div className="pb-2 pl-2 border-b-2 border-gray-800">
+          <div className="text-base font-semibold">Keterangan :</div>
         </div>
-      </div>
+        <div className="py-2 pl-2 border-b-2 border-gray-800">
+          <div className="text-base font-semibold">
+            {formData.catatanTambahan || "(Catatan)"}
+          </div>
+        </div>
 
-      <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2">
-        <div className="table">
-          <div className="table-row">
-            <div className="table-cell pr-4 font-semibold">Kendaraan</div>
-            <div className="table-cell">
-              : {formData.informasiKendaraan || "(Kendaraan)"}
+        <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2">
+          <div className="table">
+            <div className="table-row">
+              <div className="table-cell pr-4 font-semibold">Kendaraan</div>
+              <div className="table-cell">
+                : {formData.informasiKendaraan || "(Kendaraan)"}
+              </div>
+            </div>
+            <div className="table-row">
+              <div className="table-cell pr-4 font-semibold">Pengemudi</div>
+              <div className="table-cell">
+                : {formData.namaPengemudi || "(Pengemudi)"}
+              </div>
             </div>
           </div>
-          <div className="table-row">
-            <div className="table-cell pr-4 font-semibold">Pengemudi</div>
-            <div className="table-cell">
-              : {formData.namaPengemudi || "(Pengemudi)"}
+          <div className="text-right">
+            <div>
+              Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}
             </div>
           </div>
         </div>
-        <div className="text-right">
+
+        <div className="grid grid-cols-2 gap-12 text-center">
           <div>
-            Bandung, {formatDate(formData.tanggalSurat) || "1 Nov 2025"}
+            <div className="mb-1.5 text-base">Yang Menerima,</div>
+            <div className="font-bold mb-3 text-base">
+              {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
+            </div>
+
+            <div className="h-20 mb-3 flex items-center justify-center">
+              {getPenerimaSignature() ? (
+                <img
+                  src={getPenerimaSignature()!}
+                  alt="Signature Penerima"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+              )}
+            </div>
+
+            <div className="text-base font-bold">
+              {formData.namaPenerima || "(Nama Penerima)"}
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
+            <div className="font-bold mb-3 text-base">
+              {formData.departemenPengirim || "(Departemen Pengirim)"}
+            </div>
+            <Image
+              src={`/images/ttd.png`}
+              alt="TTD"
+              width={120}
+              height={120}
+              className="absolute z-0 left-16 bottom-4"
+            />
+            <div className="h-20 mb-3 flex items-center justify-center">
+              {getPengirimSignature() ? (
+                <img
+                  src={getPengirimSignature()!}
+                  alt="Signature Pengirim"
+                  className="max-h-full max-w-full object-contain z-20"
+                />
+              ) : (
+                <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+              )}
+            </div>
+
+            <div className="font-bold text-base">
+              {formData.namaPengirim || "(Nama Pengirim)"}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-12 text-center">
-        <div>
-          <div className="mb-1.5 text-base">Yang Menerima,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.perusahaanPenerima || "(Perusahaan Penerima)"}
+        {/* Lampiran Images */}
+        {imageLampiran.length > 0 && (
+          <div className="mt-6">
+            <div className="text-base font-semibold mb-3 text-center">Lampiran :</div>
+            <div className="grid grid-cols-2 gap-4">
+              {imageLampiran.map((file, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Lampiran ${index + 1}`}
+                    className="max-w-full max-h-[200px] object-contain border border-gray-300 rounded"
+                  />
+                  <p className="text-xs text-gray-600 mt-1 text-center truncate max-w-full">
+                    {file.name}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {getPenerimaSignature() ? (
-              <img
-                src={getPenerimaSignature()!}
-                alt="Signature Penerima"
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="text-base font-bold">
-            {formData.namaPenerima || "(Nama Penerima)"}
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="mb-1.5 text-base">Yang Menyerahkan,</div>
-          <div className="font-bold mb-3 text-base">
-            {formData.departemenPengirim || "(Departemen Pengirim)"}
-          </div>
-          <Image
-            src={`/images/ttd.png`}
-            alt="TTD"
-            width={120}
-            height={120}
-            className="absolute z-0 left-16 bottom-4"
-          />
-          <div className="h-20 mb-3 flex items-center justify-center">
-            {getPengirimSignature() ? (
-              <img
-                src={getPengirimSignature()!}
-                alt="Signature Pengirim"
-                className="max-h-full max-w-full object-contain z-20"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
-            )}
-          </div>
-
-          <div className="font-bold text-base">
-            {formData.namaPengirim || "(Nama Pengirim)"}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+        )}
+      </>
+    );
+  };
 
   const lembarLabels = [
     "Pengirim Barang",
