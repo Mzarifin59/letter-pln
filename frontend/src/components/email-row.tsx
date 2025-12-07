@@ -91,6 +91,28 @@ export const EmailRowInbox = ({
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
+  // Fungsi untuk memotong perihal sesuai jumlah kata dan maksimal karakter:
+  // - 8 kata atau 60 karakter, mana yang lebih dulu tercapai
+  function truncatePerihal(text: string, maxWords = 8, maxChars = 60) {
+    if (!text) return "";
+    // Potong karakter dulu
+    let truncatedText = text.length > maxChars ? text.slice(0, maxChars) : text;
+    // Potong kata
+    const words = truncatedText.split(" ").slice(0, maxWords);
+    truncatedText = words.join(" ");
+    // Pastikan tidak menembus row/kebawah: hilangkan spasi akhir
+    truncatedText = truncatedText.trim();
+    // Jika masih lebih panjang dari maxChars, potong akhir dan tambahkan titik-titik
+    if (truncatedText.length > maxChars) {
+      truncatedText = truncatedText.slice(0, maxChars - 3).trim() + "...";
+    }
+    // Jika konten aslinya lebih panjang, tambahkan titik-titik juga
+    if (truncatedText.length < text.length) {
+      truncatedText = truncatedText.replace(/\s+$/, "") + "...";
+    }
+    return truncatedText;
+  }
+
   return (
     <div
       className={`
@@ -177,8 +199,14 @@ export const EmailRowInbox = ({
 
           {/* Preview */}
           {!openedEmail && (
-            <span className="text-sm text-[#545454] whitespace-normal break-words min-[1440px]:hidden">
-              {getPerihal(email)}
+            <span 
+              className="text-sm text-[#545454] whitespace-normal break-words min-[1440px]:hidden"
+              title={getPerihal(email)}
+            >
+              <span className="max-md:hidden">{getPerihal(email)}</span>
+              <span className="md:hidden">
+                {truncatePerihal(getPerihal(email) ?? "")}
+              </span>
             </span>
           )}
 
@@ -264,8 +292,14 @@ export const EmailRowInbox = ({
         }`}
       >
         <div className="flex flex-col gap-2">
-          <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden">
-            {getPerihal(email)}
+          <span 
+            className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden"
+            title={getPerihal(email)}
+          >
+            <span className="max-md:hidden">{getPerihal(email)}</span>
+            <span className="md:hidden">
+              {truncatePerihal(getPerihal(email) ?? "")}
+            </span>
           </span>
 
           {/* Attachments */}
@@ -442,6 +476,28 @@ export const EmailRow = ({
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
+  // Fungsi untuk memotong perihal sesuai jumlah kata dan maksimal karakter:
+  // - 8 kata atau 60 karakter, mana yang lebih dulu tercapai
+  function truncatePerihal(text: string, maxWords = 8, maxChars = 60) {
+    if (!text) return "";
+    // Potong karakter dulu
+    let truncatedText = text.length > maxChars ? text.slice(0, maxChars) : text;
+    // Potong kata
+    const words = truncatedText.split(" ").slice(0, maxWords);
+    truncatedText = words.join(" ");
+    // Pastikan tidak menembus row/kebawah: hilangkan spasi akhir
+    truncatedText = truncatedText.trim();
+    // Jika masih lebih panjang dari maxChars, potong akhir dan tambahkan titik-titik
+    if (truncatedText.length > maxChars) {
+      truncatedText = truncatedText.slice(0, maxChars - 3).trim() + "...";
+    }
+    // Jika konten aslinya lebih panjang, tambahkan titik-titik juga
+    if (truncatedText.length < text.length) {
+      truncatedText = truncatedText.replace(/\s+$/, "") + "...";
+    }
+    return truncatedText;
+  }
+
   return (
     <div
       className={`
@@ -462,7 +518,7 @@ export const EmailRow = ({
       {/* Checkbox & Star */}
       <div
         className={`flex items-center gap-2 w-[60px] flex-shrink-0 max-sm:order-1 ${
-          openedEmail ? "invisible" : ""
+          openedEmail ? "hidden" : ""
         }`}
       >
         <input
@@ -496,7 +552,7 @@ export const EmailRow = ({
       {/* Status & Sender*/}
       <div
         className={`${
-          openedEmail ? "items-center" : "items-start sm:items-center"
+          openedEmail ? "items-start" : "items-start sm:items-center"
         } flex gap-2 min-w-0 max-sm:flex-col max-sm:order-3`}
       >
         {/* Status */}
@@ -523,7 +579,7 @@ export const EmailRow = ({
           }`}
         >
           <div className="flex flex-col gap-1">
-            <div className="grid grid-cols-[200px_1fr] gap-3 items-start max-xl:grid-cols-1">
+            <div className="grid grid-cols-[200px_1fr] gap-3 items-center  max-xl:grid-cols-1">
               <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
                 {getPerusahaanPenerima(email)}
               </span>
@@ -534,13 +590,29 @@ export const EmailRow = ({
               )}
             </div>
             <span
-              className={`text-sm text-[#545454] block ${
+              className={`text-sm text-[#545454] block whitespace-normal break-words ${
                 openedEmail
-                  ? "whitespace-normal break-words"
-                  : "whitespace-normal break-words xl:hidden"
+                  ? ""
+                  : "xl:hidden"
               }`}
+              title={getPerihal(email)}
+              style={{
+                display: "block",
+                overflow: "hidden",
+                ...(window.innerWidth <= 768
+                  ? {
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "100%",
+                    }
+                  : {}),
+              }}
             >
-              {getPerihal(email)}
+              {/* Responsive: max-md pake truncate dgn batasi kata dan karakter */}
+              <span className="max-md:hidden">{getPerihal(email)}</span>
+              <span className="md:hidden">
+                {truncatePerihal(getPerihal(email) ?? "")}
+              </span>
             </span>
           </div>
         </div>
@@ -553,12 +625,18 @@ export const EmailRow = ({
                 <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
                   {getPerusahaanPenerima(email)}
                 </span>
-                <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden">
-                  {getPerihal(email)}
+                <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden max-md:truncate">
+                  <span className="max-md:hidden">{getPerihal(email)}</span>
+                  <span className="md:hidden">
+                    {truncatePerihal(getPerihal(email) ?? "")}
+                  </span>
                 </span>
               </div>
-              <span className="text-sm text-[#545454] block whitespace-normal break-words xl:hidden">
-                {getPerihal(email)}
+              <span className="text-sm text-[#545454] block whitespace-normal break-words xl:hidden max-md:truncate">
+                <span className="max-md:hidden">{getPerihal(email)}</span>
+                <span className="md:hidden">
+                  {truncatePerihal(getPerihal(email) ?? "")}
+                </span>
               </span>
             </div>
           </div>
