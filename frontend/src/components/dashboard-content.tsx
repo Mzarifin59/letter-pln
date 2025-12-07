@@ -411,7 +411,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           {/* Cards Row */}
           <div
             className={`${
-              user?.role?.name === "Spv" || user?.role?.name === "Gardu Induk" ? "xl:grid-cols-2" : "xl:grid-cols-3"
+              user?.role?.name === "Spv" || user?.role?.name === "Gardu Induk"
+                ? "xl:grid-cols-2"
+                : "xl:grid-cols-3"
             } grid grid-cols-1 gap-6`}
           >
             {/* Tabel Riwayat Card */}
@@ -594,70 +596,81 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
             </div>
 
             {/* New Activity Card */}
-            {user?.role?.name !== "Spv" && user?.role?.name !== "Gardu Induk" && (
-              <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
-                <div className="mb-8">
-                  <div className="flex items-center justify-between">
-                    <h2 className="plus-jakarta-sans text-lg font-bold text-[#232323]">
-                      New Activity
-                    </h2>
-                    <span className="text-[12px] text-[#232323] p-2 bg-[#F3F4F6] rounded-sm">
-                      5 Activity
-                    </span>
+            {user?.role?.name !== "Spv" &&
+              user?.role?.name !== "Gardu Induk" && (
+                <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between">
+                      <h2 className="plus-jakarta-sans text-lg font-bold text-[#232323]">
+                        New Activity
+                      </h2>
+                      <span className="text-[12px] text-[#232323] p-2 bg-[#F3F4F6] rounded-sm">
+                        5 Activity
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {suratData.slice(0, 5).map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 border-b border-gray-100 pb-3"
+                      >
+                        <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                          {item.surat_jalan.status_entry !== "Draft"
+                            ? statusIcons[item.surat_jalan.status_surat]?.icon
+                            : statusIcons["Draft"].icon}
+                        </div>
+                        {/* Responsive direction: badge akan turun jika kategori surat panjang */}
+                        <div className="flex flex-1 min-w-0 items-center justify-between max-sm:flex-col max-sm:items-start max-xl:gap-6">
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] whitespace-pre-line break-words w-full">
+                              {item.surat_jalan.kategori_surat}
+                            </p>
+                            <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
+                              oleh {item.sender.name} ·{" "}
+                              {timeAgo(item.createdAt)}
+                            </p>
+                          </div>
+                          <div className="ml-4 flex-shrink-0 max-w-[50vw] sm:max-w-none mt-2 max-sm:ml-0 max-sm:mt-2">
+                            {item.surat_jalan.status_entry !== "Draft" ? (
+                              <span
+                                className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium block w-max max-w-full text-ellipsis whitespace-nowrap overflow-hidden
+                                ${
+                                  item.surat_jalan.status_surat ===
+                                  "In Progress"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : item.surat_jalan.status_surat ===
+                                      "Approve"
+                                    ? "bg-green-100 text-green-700"
+                                    : item.surat_jalan.status_surat === "Reject"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-600"
+                                }
+                              `}
+                                style={{ maxWidth: "120px" }}
+                              >
+                                {item.surat_jalan.status_surat === "Approve"
+                                  ? "Disetujui"
+                                  : item.surat_jalan.status_surat ===
+                                    "In Progress"
+                                  ? "Terkirim"
+                                  : "Dibatalkan"}
+                              </span>
+                            ) : (
+                              <span
+                                className="plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 block w-max max-w-full text-ellipsis whitespace-nowrap overflow-hidden"
+                                style={{ maxWidth: "120px" }}
+                              >
+                                Draft
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {/* Activity Item 1 */}
-                  {suratData.slice(0, 5).map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 border-b border-gray-100 pb-3"
-                    >
-                      <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-                        {item.surat_jalan.status_entry !== "Draft"
-                          ? statusIcons[item.surat_jalan.status_surat]?.icon
-                          : statusIcons["Draft"].icon}
-                      </div>
-                      <div className="flex items-center justify-between max-xl:gap-6 min-w-0 flex-1">
-                        <div className="flex flex-wrap xl:flex-col max-xl:gap-6 max-sm:gap-0 max-xl:items-center">
-                          <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] truncate">
-                            {item.surat_jalan.kategori_surat}
-                          </p>
-                          <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
-                            oleh {item.sender.name} · {timeAgo(item.createdAt)}
-                          </p>
-                        </div>
-                        {item.surat_jalan.status_entry !== "Draft" ? (
-                          <span
-                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium ${
-                              item.surat_jalan.status_surat === "In Progress"
-                                ? "bg-blue-100 text-blue-700"
-                                : item.surat_jalan.status_surat === "Approve"
-                                ? "bg-green-100 text-green-700"
-                                : item.surat_jalan.status_surat === "Reject"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {item.surat_jalan.status_surat === "Approve"
-                              ? "Disetujui"
-                              : item.surat_jalan.status_surat === "In Progress"
-                              ? "Terkirim"
-                              : "Dibatalkan"}
-                          </span>
-                        ) : (
-                          <span
-                            className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600`}
-                          >
-                            Draft
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </main>

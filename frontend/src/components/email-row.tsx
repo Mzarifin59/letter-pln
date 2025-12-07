@@ -608,9 +608,7 @@ export const EmailRow = ({
                   : {}),
               }}
             >
-              {/* Responsive: max-md pake truncate dgn batasi kata dan karakter */}
-              <span className="max-md:hidden">{getPerihal(email)}</span>
-              <span className="md:hidden">
+              <span className="xl:hidden">
                 {truncatePerihal(getPerihal(email) ?? "")}
               </span>
             </span>
