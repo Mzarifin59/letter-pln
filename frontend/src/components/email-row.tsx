@@ -113,6 +113,13 @@ export const EmailRowInbox = ({
     return truncatedText;
   }
 
+  // Menentukan background color untuk avatar perusahaan
+  const kategoriSurat = email?.surat_jalan?.kategori_surat;
+  const companyAvatarBg =
+    kategoriSurat && kategoriSurat.toLowerCase().includes("surat jalan")
+      ? "bg-[#0056B0]"
+      : "bg-[#FFBE5F]";
+
   return (
     <div
       className={`
@@ -166,7 +173,7 @@ export const EmailRowInbox = ({
       <div
         className={`
           flex h-10 w-10 items-center justify-center flex-shrink-0
-          rounded-full text-sm font-medium text-white bg-blue-500
+          rounded-full text-sm font-medium text-white ${companyAvatarBg}
           max-sm:order-2 max-sm:hidden
           ${openedEmail ? "hidden" : ""}
         `}
