@@ -55,10 +55,10 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [openedEmail, setOpenedEmail] = useState<DynamicEmailData | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  // Sort data by createdAt descending (terbaru) by default
+  // Sort data by updatedAt descending (terbaru) by default
   const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
+    const dateA = new Date(a.updatedAt).getTime();
+    const dateB = new Date(b.updatedAt).getTime();
     return dateB - dateA; // Descending order (terbaru)
   });
   const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedData);
@@ -470,8 +470,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = new Date(a.updatedAt).getTime();
+      const dateB = new Date(b.updatedAt).getTime();
       return order === "asc" ? dateA - dateB : dateB - dateA;
     });
     setEmailList(sortedData);

@@ -123,7 +123,7 @@ export const EmailRowInbox = ({
   return (
     <div
       className={`
-        group gap-4 cursor-pointer
+        group gap-4 cursor-pointer relative
         border-b border-[#ADB5BD] px-4 py-3
         hover:bg-[#EDF1FF]
         ${isSelected ? "bg-blue-50" : ""}
@@ -131,7 +131,7 @@ export const EmailRowInbox = ({
         ${
           openedEmail
             ? "min-h-max"
-            : "grid grid-cols-[auto_auto_1fr_auto_auto_auto] max-[1440px]:grid-cols-[auto_auto_1fr_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto]"
+            : "grid grid-cols-[auto_auto_1fr_auto_auto] max-[1440px]:grid-cols-[auto_auto_1fr_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto]"
         }
         ${isOpened ? "items-start" : "items-center"}
       `}
@@ -436,16 +436,11 @@ export const EmailRowInbox = ({
       </div>
 
       {/* Unread Indicator */}
-      <div
-        className={`flex items-center min-w-[20px] justify-end flex-shrink-0 max-sm:hidden ${
-          openedEmail ? "hidden" : ""
-        }`}
-      >
-        {!email.email_statuses.find((item) => item.user.name === user?.name)
-          ?.is_read && (
+      {!openedEmail && !email.email_statuses.find((item) => item.user.name === user?.name)?.is_read && (
+        <div className="absolute top-3 right-3 max-sm:hidden">
           <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -508,7 +503,7 @@ export const EmailRow = ({
   return (
     <div
       className={`
-        group grid gap-3 cursor-pointer
+        group grid gap-3 cursor-pointer relative
         px-4 py-3 border-b border-[#ADB5BD]
         hover:bg-[#EDF1FF]
         ${isSelected ? "bg-blue-50" : ""}
@@ -516,7 +511,7 @@ export const EmailRow = ({
         ${
           openedEmail
             ? "grid-cols-1"
-            : "grid-cols-[auto_1fr_auto_auto_auto] max-sm:grid-cols-[auto_1fr_auto_auto]"
+            : "grid-cols-[auto_1fr_auto_auto] max-sm:grid-cols-[auto_1fr_auto_auto]"
         }
         ${isOpened ? "items-start" : "items-center"}
       `}
@@ -689,16 +684,9 @@ export const EmailRow = ({
       </div>
 
       {/* Unread Indicator */}
-      {pageRow !== "Draft" && (
-        <div
-          className={`flex items-center min-w-[20px] justify-end flex-shrink-0 max-sm:hidden ${
-            openedEmail ? "invisible" : ""
-          }`}
-        >
-          {!email.email_statuses.find((item) => item.user.name === user?.name)
-            ?.is_read && (
-            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-          )}
+      {pageRow !== "Draft" && !openedEmail && !email.email_statuses.find((item) => item.user.name === user?.name)?.is_read && (
+        <div className="absolute top-3 right-3 max-sm:hidden">
+          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
         </div>
       )}
     </div>

@@ -154,7 +154,7 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   };
 
   const sortedInitialData = [...data].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
   const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedInitialData);
@@ -211,8 +211,8 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = new Date(a.updatedAt).getTime();
+      const dateB = new Date(b.updatedAt).getTime();
       return order === "asc" ? dateA - dateB : dateB - dateA;
     });
     setEmailList(sortedData);

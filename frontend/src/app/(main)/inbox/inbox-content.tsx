@@ -259,8 +259,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const sortedInitialData = useMemo(() => {
     return [...data].sort(
       (a, b) =>
-        new Date(getTanggalSuratLocal(b)).getTime() -
-        new Date(getTanggalSuratLocal(a)).getTime()
+        new Date(b.updatedAt).getTime() -
+        new Date(a.updatedAt).getTime()
     );
   }, [data]);
 
@@ -585,8 +585,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   const handleSort = (order: "asc" | "desc") => {
     const sortedData = [...emailList].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = new Date(a.updatedAt).getTime();
+      const dateB = new Date(b.updatedAt).getTime();
       return order === "asc" ? dateA - dateB : dateB - dateA;
     });
     setEmailList(sortedData);

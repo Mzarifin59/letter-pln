@@ -43,7 +43,7 @@ export default function SidebarContent({
     return (filterType: string) => {
       return data.filter((item) => {
         const userEmailStatus = item.email_statuses?.find(
-          (emailStatus) => emailStatus.user.name === user?.name
+          (emailStatus) => emailStatus.user.name === user?.name && emailStatus.isDelete == false
         );
 
         if (!userEmailStatus) return false;
@@ -53,9 +53,17 @@ export default function SidebarContent({
         switch (filterType) {
           case "inbox":
             let condition = isPublished && userEmailStatus.is_read === false;
+            
             if (user?.role?.name === "Admin") {
               condition =
                 condition && item.surat_jalan?.status_surat !== "In Progress";
+            } else if (user?.role?.name === "Vendor") {
+              // Untuk Vendor, hanya tampilkan jika isHaveStatus === true
+              // dan kategori surat adalah Berita Acara Material Bongkaran
+              condition =
+                condition &&
+                item.isHaveStatus === true &&
+                item.surat_jalan?.kategori_surat === "Berita Acara Material Bongkaran";
             }
 
             return condition;
