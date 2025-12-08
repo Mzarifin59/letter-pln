@@ -473,9 +473,11 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-sm text-[#495057]">
-                            {item.recipient.name}
-                          </td>
+                          {user?.role?.name !== "Vendor" && (
+                            <td className="py-4 px-4 text-sm text-[#495057]">
+                              {item.recipient.name}
+                            </td>
+                          )}
                           <td className="py-4 px-4 text-sm text-[#212529]">
                             {getPerihal(item)}
                           </td>

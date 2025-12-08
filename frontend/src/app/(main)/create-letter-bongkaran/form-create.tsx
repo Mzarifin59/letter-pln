@@ -1350,6 +1350,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           onDraft={handleDraft}
           onDownloadPDF={handleDownloadPDF}
           calculateTotal={calculateTotal}
+          lampiran={lampiran}
         />
       </div>
     );

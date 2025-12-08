@@ -779,13 +779,6 @@ export default function PreviewSection({
                           {footerParts.lampiran && renderFooterLampiran()}
                         </>
                       )}
-
-                      {/* Indikator halaman untuk multi-page */}
-                      {materialPages.length > 1 && (
-                        <div className="text-center text-gray-500 text-xs mt-2">
-                          Halaman {pageIndex + 1} dari {materialPages.length}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
