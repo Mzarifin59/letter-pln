@@ -554,15 +554,15 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
   return (
     <>
-      <div className=" bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
-        <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
+      <div className="bg-[#F6F9FF] p-4 sm:p-9 overflow-hidden">
+        <div className="flex flex-col xl:flex-row gap-12 lg:gap-6 h-full">
           {/* Inbox Panel */}
           <div
             className={`${
-              openedEmail ? "xl:w-2/5" : "w-full"
+              openedEmail ? "hidden" : "w-full"
             } transition-all duration-300`}
           >
-            <div className="px-4 sm:px-6 py-5 flex flex-col bg-white rounded-xl shadow-md">
+            <div className="px-4 sm:px-6 py-5 flex flex-col bg-white rounded-xl shadow-md h-full overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
@@ -666,7 +666,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
               </div>
 
               {/* Email List */}
-              <div className="flex-1 overflow-auto py-4">
+              <div className="flex-1 overflow-y-auto py-4">
                 {emailListFiltered.length > 0 ? (
                   emailListFiltered
                     .slice(startIndex, endIndex)
@@ -698,7 +698,11 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
           </div>
 
           {/* Email Detail Panel */}
-          {renderEmailDetail()}
+          {openedEmail && (
+            <div className="w-full h-full overflow-hidden">
+              {renderEmailDetail()}
+            </div>
+          )}
         </div>
       </div>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

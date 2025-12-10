@@ -437,18 +437,18 @@ export default function SentContent({ data, token }: SentContentProps) {
 
   return (
     <>
-      <div className=" bg-[#F6F9FF] p-4  overflow-hidden">
-        <div className="flex flex-col xl:flex-row gap-12 lg:gap-6">
+      <div className="bg-[#F6F9FF] p-4 overflow-hidden">
+        <div className="flex flex-col xl:flex-row gap-12 lg:gap-6 h-full">
           {/* Inbox Panel */}
           <div
             className={`${
-              openedEmail ? "xl:w-2/5" : "w-full"
+              openedEmail ? "hidden" : "w-full"
             } transition-all duration-300`}
           >
             <div
               className={`${
                 openedEmail ? "px-[15px] py-[25px]" : "px-[43px] py-[25px]"
-              } flex flex-col bg-white rounded-xl shadow-md`}
+              } flex flex-col bg-white rounded-xl shadow-md h-full overflow-hidden`}
             >
               {/* Header */}
               <div className="">
@@ -553,7 +553,7 @@ export default function SentContent({ data, token }: SentContentProps) {
               </div>
 
               {/* Email List */}
-              <div className="flex-1 overflow-auto py-5">
+              <div className="flex-1 overflow-y-auto py-5">
                 {/* Today Section */}
                 <div className="mb-6">
                   {emailListFiltered.length > 0 ? (
@@ -588,69 +588,73 @@ export default function SentContent({ data, token }: SentContentProps) {
           </div>
 
           {/* Email Detail Panel */}
-          {openedEmail && user?.role?.name === "Admin" && (() => {
-            const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
-            if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
-              return (
-                <EmailDetailBeritaPemeriksaan
-                  email={openedEmail as EmailDataOther}
-                  handleCloseDetail={handleCloseDetail}
-                  isSend={true}
-                  markEmailAsBookmarked={markEmailAsBookmarked}
-                />
-              );
-            }
-            return (
-              <EmailDetail
-                email={openedEmail}
-                handleCloseDetail={handleCloseDetail}
-                isSend={true}
-                markEmailAsBookmarked={markEmailAsBookmarked}
-              />
-            );
-          })()}
+          {openedEmail && (
+            <div className="w-full h-full overflow-hidden">
+              {user?.role?.name === "Admin" && (() => {
+                const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+                if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+                  return (
+                    <EmailDetailBeritaPemeriksaan
+                      email={openedEmail as EmailDataOther}
+                      handleCloseDetail={handleCloseDetail}
+                      isSend={true}
+                      markEmailAsBookmarked={markEmailAsBookmarked}
+                    />
+                  );
+                }
+                return (
+                  <EmailDetail
+                    email={openedEmail}
+                    handleCloseDetail={handleCloseDetail}
+                    isSend={true}
+                    markEmailAsBookmarked={markEmailAsBookmarked}
+                  />
+                );
+              })()}
 
-          {openedEmail && user?.role?.name === "Vendor" && (
-            <EmailDetailBeritaBongkaran
-              email={openedEmail as EmailDataVendor}
-              handleCloseDetail={handleCloseDetail}
-              isSend={true}
-              markEmailAsBookmarked={markEmailAsBookmarked}
-            />
-          )}
-
-          {openedEmail && user?.role?.name === "Spv" && (() => {
-            const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
-            if (kategoriSurat === "Surat Jalan") {
-              return (
-                <EmailDetail
-                  email={openedEmail}
-                  handleCloseDetail={handleCloseDetail}
-                  isSend={true}
-                  markEmailAsBookmarked={markEmailAsBookmarked}
-                />
-              );
-            } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
-              return (
+              {user?.role?.name === "Vendor" && (
                 <EmailDetailBeritaBongkaran
                   email={openedEmail as EmailDataVendor}
                   handleCloseDetail={handleCloseDetail}
                   isSend={true}
                   markEmailAsBookmarked={markEmailAsBookmarked}
                 />
-              );
-            } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
-              return (
-                <EmailDetailBeritaPemeriksaan
-                  email={openedEmail as EmailDataOther}
-                  handleCloseDetail={handleCloseDetail}
-                  isSend={true}
-                  markEmailAsBookmarked={markEmailAsBookmarked}
-                />
-              );
-            }
-            return null;
-          })()}
+              )}
+
+              {user?.role?.name === "Spv" && (() => {
+                const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+                if (kategoriSurat === "Surat Jalan") {
+                  return (
+                    <EmailDetail
+                      email={openedEmail}
+                      handleCloseDetail={handleCloseDetail}
+                      isSend={true}
+                      markEmailAsBookmarked={markEmailAsBookmarked}
+                    />
+                  );
+                } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
+                  return (
+                    <EmailDetailBeritaBongkaran
+                      email={openedEmail as EmailDataVendor}
+                      handleCloseDetail={handleCloseDetail}
+                      isSend={true}
+                      markEmailAsBookmarked={markEmailAsBookmarked}
+                    />
+                  );
+                } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+                  return (
+                    <EmailDetailBeritaPemeriksaan
+                      email={openedEmail as EmailDataOther}
+                      handleCloseDetail={handleCloseDetail}
+                      isSend={true}
+                      markEmailAsBookmarked={markEmailAsBookmarked}
+                    />
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
         </div>
       </div>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

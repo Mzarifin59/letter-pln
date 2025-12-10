@@ -229,7 +229,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
   return (
     <>
-      <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
+      <div className="plus-jakarta-sans h-full bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-y-auto">
         {/* Header */}
         {isSend || isCanceled ? (
           <>

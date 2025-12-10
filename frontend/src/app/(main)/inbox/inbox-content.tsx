@@ -751,18 +751,18 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   return (
     <>
-      <div className=" bg-[#F6F9FF] p-4">
-        <div className="flex flex-col xl:flex-row gap-6 lg:gap-6">
+      <div className="bg-[#F6F9FF] p-4 overflow-hidden">
+        <div className="flex flex-col xl:flex-row gap-6 lg:gap-6 h-full">
           {/* Inbox Panel */}
           <div
             className={`${
-              openedEmail ? "xl:w-2/6" : "w-full"
+              openedEmail ? "hidden" : "w-full"
             } transition-all duration-300`}
           >
             <div
               className={`${
                 openedEmail ? "px-[15px] py-[25px]" : "px-[43px] py-[25px]"
-              } flex flex-col bg-white rounded-xl shadow-md`}
+              } flex flex-col bg-white rounded-xl shadow-md h-full overflow-hidden`}
             >
               {/* Header */}
               <div className="">
@@ -906,7 +906,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
               </div>
 
               {/* Email List */}
-              <div className="flex-1 overflow-auto py-5">
+              <div className="flex-1 overflow-y-auto py-5">
                 {/* Jika filtered, tampilkan langsung tanpa grouping */}
                 {isFiltered ? (
                   <>
@@ -1050,7 +1050,11 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
             </div>
           </div>
           {/* Email Detail Panel */}
-          {renderEmailDetail()}
+          {openedEmail && (
+            <div className="w-full h-full overflow-hidden">
+              {renderEmailDetail()}
+            </div>
+          )}
         </div>
       </div>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

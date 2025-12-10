@@ -858,7 +858,7 @@ export const EmailDetail = ({
 
   return (
     <>
-      <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
+      <div className="plus-jakarta-sans h-full bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-y-auto">
         {/* Header */}
         {isSend || isCanceled ? (
           <>
@@ -1123,7 +1123,7 @@ export const EmailDetail = ({
               </div>
               {/* Materials Table */}
               <div className="mb-3 min-w-[300px] overflow-x-auto">
-                <table className="border-t border-b border-gray-300 text-sm">
+                <table className="border-t border-b border-gray-300 text-sm w-full">
                   <thead className="bg-gray-100">
                     <tr className="text-lg text-center">
                       <th className="border-2 border-gray-800  px-2 py-2">
@@ -2377,7 +2377,7 @@ export const EmailDetailBeritaBongkaran = ({
 
   return (
     <>
-      <div className="plus-jakarta-sans flex-1 bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-hidden">
+      <div className="plus-jakarta-sans h-full bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-y-auto">
         {/* Header - KODE YANG SAMA SEPERTI SEBELUMNYA */}
         {isSend || isCanceled ? (
           <>
@@ -2628,7 +2628,7 @@ export const EmailDetailBeritaBongkaran = ({
               </div>
               {/* Materials Table */}
               <div className="mb-3 min-w-[300px] overflow-x-auto">
-                <table className="border-t border-b border-gray-300 text-sm">
+                <table className="border-t border-b border-gray-300 text-sm w-full">
                   <thead className="bg-gray-100">
                     <tr className="text-lg text-center">
                       <th className="border-2 border-gray-800  px-2 py-2">
