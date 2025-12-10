@@ -41,9 +41,8 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   const router = useRouter();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedToDelete, setSelectedToDelete] = useState<DynamicEmailData | null>(
-    null
-  );
+  const [selectedToDelete, setSelectedToDelete] =
+    useState<DynamicEmailData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMultipleDelete, setIsMultipleDelete] = useState(false);
 
@@ -141,15 +140,21 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
   const handleRowClick = (email: DynamicEmailData): void => {
     sessionStorage.setItem("draftData", JSON.stringify(email));
     const kategori = email.surat_jalan.kategori_surat;
-    
-    if(user?.role?.name === "Admin"){
+
+    if (user?.role?.name === "Admin") {
       if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-        router.push(`/create-letter/berita-acara-pemeriksaan-tim-mutu?mode=edit&id=${email.surat_jalan.documentId}`);
+        router.push(
+          `/create-letter/berita-acara-pemeriksaan-tim-mutu?mode=edit&id=${email.surat_jalan.documentId}`
+        );
       } else {
-        router.push(`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`);
+        router.push(
+          `/create-letter?mode=edit&id=${email.surat_jalan.documentId}`
+        );
       }
     } else {
-      router.push(`/create-letter-bongkaran?mode=edit&id=${email.surat_jalan.documentId}`);
+      router.push(
+        `/create-letter-bongkaran?mode=edit&id=${email.surat_jalan.documentId}`
+      );
     }
   };
 
@@ -157,25 +162,32 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
-  const [emailList, setEmailList] = useState<DynamicEmailData[]>(sortedInitialData);
+  const [emailList, setEmailList] =
+    useState<DynamicEmailData[]>(sortedInitialData);
   let emailListFiltered: DynamicEmailData[];
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
       const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === "Admin Gudang"
+        (status) => status.user.email === user.email
       );
 
-      return hasAdminGudangStatus && item.recipient.name === "Spv" && item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran" ;
+      return (
+        hasAdminGudangStatus &&
+        item.recipient.name === "Spv" &&
+        item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran"
+      );
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
       const hasVendorStatus = item.email_statuses.some(
-        (status) => status.user.name === "Vendor" 
+        (status) => status.user.email === user?.email
       );
 
       return (
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" && item.surat_jalan.status_entry === "Draft"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.surat_jalan.status_entry === "Draft" &&
+        hasVendorStatus
       );
     });
   }
@@ -380,7 +392,9 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
+                  {selectedToDelete
+                    ? getPerihal(selectedToDelete)
+                    : "Tanpa perihal"}
                 </span>
               </>
             )}
