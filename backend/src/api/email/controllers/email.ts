@@ -264,57 +264,64 @@ export default factories.createCoreController(
           );
         }
 
+        // Ambil email dengan related email_statuses
         const email = await strapi.documents("api::email.email").findOne({
-          documentId: documentId,
+          documentId,
           populate: {
             surat_jalan: true,
-            email_statuses: true,
+            email_statuses: {
+              populate: {
+                user: {
+                  populate: ['role']
+                }
+              }
+            }
           },
         });
 
-        let emailStatus = await strapi
-          .documents("api::email-status.email-status")
-          .findMany({
-            filters: {
-              email: {
-                documentId: email.documentId,
-              },
-              user: {
-                documentId: process.env.ADMIN_ID,
-              },
-            },
-          });
-
-        if (email) {
-          await strapi.documents("api::email.email").update({
-            documentId: documentId,
-            data: {
-              isHaveStatus: true,
-              sender: process.env.ADMIN_ID,
-              recipient: process.env.SPV_ID,
-            },
-            status: "published",
-          });
-
-          await strapi.documents("api::surat-jalan.surat-jalan").update({
-            documentId: email.surat_jalan.documentId,
-            data: {
-              status_surat: "Approve",
-            },
-            status: "published",
-          });
-
-          await strapi.documents("api::email-status.email-status").update({
-            documentId: emailStatus[0].documentId,
-            data: {
-              is_read: false,
-            },
-          });
-
-          console.log("Request Approve Berhasil ✅");
-        } else {
-          console.log("Ada kesalahan dalam request");
+        if (!email) {
+          console.log("Ada kesalahan dalam request (email tidak ditemukan)");
+          return ctx.notFound("Email not found");
         }
+
+        // Update Email
+        await strapi.documents("api::email.email").update({
+          documentId,
+          data: {
+            isHaveStatus: true,
+            sender: process.env.ADMIN_ID,
+            recipient: process.env.SPV_ID,
+          },
+          status: "published",
+        });
+
+        // Update Surat Jalan
+        await strapi.documents("api::surat-jalan.surat-jalan").update({
+          documentId: email.surat_jalan.documentId,
+          data: {
+            status_surat: "Approve",
+          },
+          status: "published",
+        });
+
+        // Reset is_read status pada semua email_status user Admin untuk email ini
+        if (email.email_statuses && email.email_statuses.length > 0) {
+          const adminStatusList = email.email_statuses.filter(
+            (status) => status.user && status.user.role && status.user.role.name === "Admin"
+          );
+
+          for (const adminStatus of adminStatusList) {
+            await strapi.documents("api::email-status.email-status").update({
+              documentId: adminStatus.documentId,
+              data: {
+                is_read: false,
+              },
+              status: "published",
+            });
+          }
+        }
+
+        console.log("Request Approve Berhasil ✅");
 
         return ctx.send({
           message: "Request Approve Berhasil ✅",
@@ -437,7 +444,7 @@ export default factories.createCoreController(
           });
         }
 
-        if(existingMengetahui){
+        if (existingMengetahui) {
           await strapi.documents("api::email-status.email-status").create({
             data: {
               email: email.documentId,
@@ -620,10 +627,14 @@ export default factories.createCoreController(
     async approveBeritaPemeriksaan(ctx) {
       try {
         const { documentId } = ctx.params;
-        const { signaturePenyediaBarang, signaturesMengetahui } = ctx.request.body;
+        const { signaturePenyediaBarang, signaturesMengetahui } =
+          ctx.request.body;
         const user = ctx.state.user;
 
-        console.log("📥 Received data:", { signaturePenyediaBarang, signaturesMengetahui });
+        console.log("📥 Received data:", {
+          signaturePenyediaBarang,
+          signaturesMengetahui,
+        });
 
         // Validasi user
         if (!user) {
