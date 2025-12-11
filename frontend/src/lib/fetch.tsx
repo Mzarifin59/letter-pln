@@ -216,3 +216,18 @@ export async function getAllEmails() {
     throw error;
   }
 }
+
+export async function getAllUsers() {
+  try {
+    const data = await fetchWithError(`${apiUrl}/api/users?populate=role`, {
+      next: {
+        tags: ["users"],
+      },
+    });
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching Data User:", error);
+    throw error;
+  }
+}

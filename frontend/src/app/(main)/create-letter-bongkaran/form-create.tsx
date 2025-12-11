@@ -17,10 +17,17 @@ import { FileUtils } from "@/lib/surat-bongkaran/file.utils";
 import { useBeritaBongkaranForm } from "@/lib/surat-bongkaran/useBeritaBongkaranForm";
 import PreviewSection from "@/components/preview-berita-acara";
 import { toast } from "sonner";
-import { FileAttachment, BeritaBongkaran } from "@/lib/interface";
+import { FileAttachment, BeritaBongkaran, User } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { generateNextBeritaAcara } from "@/lib/generate-no-surat";
 import PreviewSectionBeritaBongkaran from "@/components/preview-berita-acara";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PreviewData {
   upload: string | null;
@@ -29,14 +36,19 @@ interface PreviewData {
 
 interface FormCreateProps {
   dataSurat: BeritaBongkaran[];
+  users: User[];
 }
 
-export default function FormCreatePage({ dataSurat }: FormCreateProps) {
+export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   const router = useRouter();
   const { user } = useUserLogin();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const draftId = searchParams.get("id");
+
+  // Filter users berdasarkan role
+  const vendorUsers = users.filter((u) => u.role?.name === "Vendor");
+  const garduIndukUsers = users.filter((u) => u.role?.name === "Gardu Induk");
 
   const {
     formData,
@@ -1087,16 +1099,78 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
             Perusahaan {title}
           </label>
-          <input
-            type="text"
-            name={perusahaanName}
-            value={perusahaanValue}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={
-              type === "penerima" ? "GI Bandung Utara" : "Logistik UPT Bandung"
-            }
-          />
+          {type === "pengirim" ? (
+            <Select
+              value={perusahaanValue || undefined}
+              onValueChange={(value) => {
+                const selectedUser = vendorUsers.find((u) => u.name === value);
+                if (selectedUser) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    [perusahaanName]: selectedUser.name,
+                  }));
+                }
+              }}
+            >
+              <SelectTrigger className="w-full text-sm sm:text-base">
+                <SelectValue placeholder="Pilih Perusahaan Pengirim" />
+              </SelectTrigger>
+              <SelectContent>
+                {vendorUsers.length > 0 ? (
+                  vendorUsers.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.name}>
+                      {vendor.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    Tidak ada data Vendor
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          ) : type === "mengetahui" ? (
+            <Select
+              value={perusahaanValue || undefined}
+              onValueChange={(value) => {
+                const selectedUser = garduIndukUsers.find((u) => u.name === value);
+                if (selectedUser) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    [perusahaanName]: selectedUser.name,
+                  }));
+                }
+              }}
+            >
+              <SelectTrigger className="w-full text-sm sm:text-base">
+                <SelectValue placeholder="Pilih Perusahaan Mengetahui" />
+              </SelectTrigger>
+              <SelectContent>
+                {garduIndukUsers.length > 0 ? (
+                  garduIndukUsers.map((gi) => (
+                    <SelectItem key={gi.id} value={gi.name}>
+                      {gi.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    Tidak ada data Gardu Induk
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          ) : (
+            <input
+              type="text"
+              name={perusahaanName}
+              value={perusahaanValue}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder={
+                type === "penerima" ? "GI Bandung Utara" : "Logistik UPT Bandung"
+              }
+            />
+          )}
         </div>
 
         {/* Input Nama */}

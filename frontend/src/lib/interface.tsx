@@ -272,3 +272,14 @@ export function getTanggalSurat(data: DynamicEmailData): string {
 export function isBeritaPemeriksaanData(data: DynamicEmailData): data is EmailDataOther {
   return data.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu";
 }
+
+export interface User {
+  id: number;
+  documentId: string;
+  name: string;
+  email: string;
+  role: {
+    id: number;
+    name: string;
+  };
+}
