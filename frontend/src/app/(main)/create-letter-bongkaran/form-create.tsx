@@ -566,6 +566,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       }
 
       sessionStorage.removeItem("draftData");
+      router.push("/sent");
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -641,8 +642,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
       if (isEditMode) {
         sessionStorage.removeItem("draftData");
-        router.push("/draft");
       }
+
+      router.push("/draft");
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Gagal menyimpan draft 😢";

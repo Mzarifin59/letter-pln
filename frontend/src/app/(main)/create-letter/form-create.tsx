@@ -500,6 +500,8 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
       }
 
       sessionStorage.removeItem("draftData");
+
+      router.push("/sent");
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -578,8 +580,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
 
       if (isEditMode) {
         sessionStorage.removeItem("draftData");
-        router.push("/draft");
       }
+
+      router.push("/draft");
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Gagal menyimpan draft 😢";
@@ -894,8 +897,8 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   >
                     <option value="">Pilih Satuan</option>
                     <option value="Keping">Keping</option>
-                    <option value="PCS">PCS (Pieces)</option>
-                    <option value="Kg">Kg (Kilogram)</option>
+                    <option value="PCS ">PCS (Pieces)</option>
+                    <option value="Kg ">Kg (Kilogram)</option>
                     <option value="Meter">Meter</option>
                     <option value="Liter">Liter</option>
                     <option value="Bh">Buah</option>

@@ -555,7 +555,7 @@ export default function FormCreatePemeriksaanPage({
       // Dispatch event untuk update Header dan Sidebar secara real-time
       window.dispatchEvent(new CustomEvent("emailCreated"));
 
-      router.push("/draft");
+      router.push("/sent");
     } catch (error: unknown) {
       const message =
         error instanceof Error
