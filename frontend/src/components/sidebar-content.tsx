@@ -30,6 +30,13 @@ interface SidebarContentProps {
   onItemClick?: () => void;
 }
 
+// Helper function untuk mengecek apakah surat_jalan memiliki mengetahui
+function hasMengetahui(
+  sj: unknown
+): sj is { mengetahui: { ttd_mengetahui?: any } } {
+  return !!sj && typeof sj === "object" && "mengetahui" in (sj as object);
+}
+
 export default function SidebarContent({
   data,
   token,
@@ -42,16 +49,18 @@ export default function SidebarContent({
   const getFilteredData = useMemo(() => {
     return (filterType: string) => {
       return data.filter((item) => {
+        // Untuk tracking, tidak semua case memerlukan userEmailStatus
+        // Tapi kita tetap filter untuk memastikan email relevan dengan user
         const userEmailStatus = item.email_statuses?.find(
           (emailStatus) => emailStatus.user.name === user?.name && emailStatus.isDelete == false
         );
-
-        if (!userEmailStatus) return false;
 
         const isPublished = item.surat_jalan?.status_entry === "Published";
 
         switch (filterType) {
           case "inbox":
+            if (!userEmailStatus) return false;
+            
             let condition = isPublished && userEmailStatus.is_read === false;
             
             if (user?.role?.name === "Admin") {
@@ -69,17 +78,54 @@ export default function SidebarContent({
             return condition;
 
           case "tracking":
+            // Logika khusus untuk Spv
+            if (user?.role?.name === "Spv") {
+              const kategori = item.surat_jalan.kategori_surat;
+              
+              // Surat Jalan dan Berita Pemeriksaan - sama seperti Surat Jalan
+              if (kategori === "Surat Jalan" || kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+                return item.surat_jalan.status_surat === "In Progress";
+              }
+              
+              // Berita Acara Material Bongkaran - perlu cek mengetahui
+              if (hasMengetahui(item.surat_jalan)) {
+                const mengetahuiLengkap =
+                  item.surat_jalan.status_surat !== "Reject" &&
+                  Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
+                  ("penerima" in item.surat_jalan && item.surat_jalan.penerima
+                    ? Boolean(!item.surat_jalan.penerima.ttd_penerima)
+                    : false);
+
+                return mengetahuiLengkap;
+              }
+              
+              return false;
+            }
+            
+            // Logika khusus untuk Gardu Induk
+            if (user?.role?.name === "Gardu Induk") {
+              return (
+                item.surat_jalan.status_surat === "In Progress" &&
+                item.surat_jalan.status_entry !== "Draft" &&
+                item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+              );
+            }
+            
+            // Default untuk role lain
+            if (!userEmailStatus) return false;
             return (
               isPublished && item.surat_jalan.status_surat === "In Progress"
             );
 
           case "draft":
+            if (!userEmailStatus) return false;
             return (
               item.surat_jalan.status_entry === "Draft" &&
               userEmailStatus.is_read === false
             );
 
           case "sent":
+            if (!userEmailStatus) return false;
             return (
               isPublished &&
               item.surat_jalan.status_surat === "In Progress" &&
@@ -87,6 +133,7 @@ export default function SidebarContent({
             );
 
           case "reject":
+            if (!userEmailStatus) return false;
             return (
               isPublished &&
               item.surat_jalan.status_surat === "Reject" &&
@@ -121,7 +168,7 @@ export default function SidebarContent({
         label: "Tracking",
         icon: CheckSquare,
         id: "tracking",
-        count: 0,
+        count: getFilteredData("tracking").length,
       },
       {
         href: "/draft",
