@@ -52,7 +52,9 @@ export default function SidebarContent({
         // Untuk tracking, tidak semua case memerlukan userEmailStatus
         // Tapi kita tetap filter untuk memastikan email relevan dengan user
         const userEmailStatus = item.email_statuses?.find(
-          (emailStatus) => emailStatus.user.name === user?.name && emailStatus.isDelete == false
+          (emailStatus) =>
+            emailStatus.user.name === user?.name &&
+            emailStatus.isDelete == false
         );
 
         const isPublished = item.surat_jalan?.status_entry === "Published";
@@ -60,9 +62,9 @@ export default function SidebarContent({
         switch (filterType) {
           case "inbox":
             if (!userEmailStatus) return false;
-            
+
             let condition = isPublished && userEmailStatus.is_read === false;
-            
+
             if (user?.role?.name === "Admin") {
               condition =
                 condition && item.surat_jalan?.status_surat !== "In Progress";
@@ -72,19 +74,25 @@ export default function SidebarContent({
               condition =
                 condition &&
                 item.isHaveStatus === true &&
-                item.surat_jalan?.kategori_surat === "Berita Acara Material Bongkaran";
+                item.surat_jalan?.kategori_surat ===
+                  "Berita Acara Material Bongkaran";
             }
 
             return condition;
 
           case "tracking":
-            // Logika khusus untuk Spv
+            // Admin dan Vendor tidak perlu notifikasi tracking
+            if (user?.role?.name === "Admin" || user?.role?.name === "Vendor") {
+              return false;
+            }
+
+            // Logika khusus untuk Spv - sama persis dengan tracking-content.tsx
             if (user?.role?.name === "Spv") {
               const kategori = item.surat_jalan.kategori_surat;
               
               // Surat Jalan dan Berita Pemeriksaan - sama seperti Surat Jalan
               if (kategori === "Surat Jalan" || kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-                return item.surat_jalan.status_surat === "In Progress";
+                return item.surat_jalan.status_surat === "In Progress" && item.surat_jalan.status_entry !== "Draft";
               }
               
               // Berita Acara Material Bongkaran - perlu cek mengetahui
@@ -101,17 +109,18 @@ export default function SidebarContent({
               
               return false;
             }
-            
+
             // Logika khusus untuk Gardu Induk
             if (user?.role?.name === "Gardu Induk") {
               return (
                 item.surat_jalan.status_surat === "In Progress" &&
                 item.surat_jalan.status_entry !== "Draft" &&
-                item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+                item.surat_jalan.kategori_surat ===
+                  "Berita Acara Material Bongkaran"
               );
             }
-            
-            // Default untuk role lain
+
+            // Default untuk role lain (jika ada)
             if (!userEmailStatus) return false;
             return (
               isPublished && item.surat_jalan.status_surat === "In Progress"
@@ -254,9 +263,7 @@ export default function SidebarContent({
 
             <DropdownMenuContent className="w-full">
               <DropdownMenuItem asChild>
-                <Link href="/create-letter">
-                  Surat Jalan
-                </Link>
+                <Link href="/create-letter">Surat Jalan</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/create-letter/berita-acara-pemeriksaan-tim-mutu">

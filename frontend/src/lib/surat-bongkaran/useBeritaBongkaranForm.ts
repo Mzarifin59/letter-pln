@@ -11,7 +11,7 @@ import {
   INITIAL_FORM_DATA,
   INITIAL_MATERIAL,
 } from "@/lib/surat-bongkaran/form.constants";
-import { BeritaBongkaran } from "@/lib/interface";
+import { BeritaBongkaran, User } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 
 export async function getAllSuratJalan() {
@@ -74,6 +74,16 @@ export async function getAllSuratJalan() {
   if (!res.ok) throw new Error("Gagal mengambil data surat jalan");
   const { data } = await res.json();
   return data;
+}
+
+async function getAllUsers(): Promise<User[]> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users?populate=role`,
+  );
+
+  if (!res.ok) throw new Error("Gagal mengambil data users");
+  const response = await res.json();  
+  return response || [];
 }
 
 export const useBeritaBongkaranForm = () => {
@@ -227,6 +237,9 @@ export const useBeritaBongkaranForm = () => {
         submissionData.tanggal_kontrak = now;
       }
 
+      const users = await getAllUsers();
+      const receipt = users.find((user) => user.name === formData.departemenMengetahui);
+
       const existingSurat = dataBeritaBongkaran.find(
         (item) => item.no_berita_acara === submissionData.no_berita_acara
       );
@@ -265,7 +278,7 @@ export const useBeritaBongkaranForm = () => {
             connect: [`${user?.documentId}`],
           },
           recipient: {
-            connect: [`${process.env.NEXT_PUBLIC_GI_ID}`],
+            connect: [`${receipt?.documentId}`],
           },
         };
 

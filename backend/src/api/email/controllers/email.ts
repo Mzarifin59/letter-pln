@@ -289,8 +289,6 @@ export default factories.createCoreController(
           documentId,
           data: {
             isHaveStatus: true,
-            sender: process.env.ADMIN_ID,
-            recipient: process.env.SPV_ID,
           },
           status: "published",
         });
@@ -379,9 +377,8 @@ export default factories.createCoreController(
         await strapi.documents("api::email.email").update({
           documentId: documentId,
           data: {
+            recipient: process.env.ADMIN_ID,
             isHaveStatus: true,
-            sender: email.recipient.documentId,
-            recipient: email.sender.documentId,
           },
           status: "published",
         });
@@ -389,9 +386,6 @@ export default factories.createCoreController(
         // ===== PERBAIKAN UTAMA: Ambil data existing dulu =====
         const existingMengetahui = email.surat_jalan.mengetahui || {};
         const existingPenerima = email.surat_jalan.penerima || {};
-
-        console.log("📦 Existing mengetahui:", existingMengetahui);
-        console.log("📦 Existing penerima:", existingPenerima);
 
         // ===== UPDATE SURAT JALAN - LANGSUNG TANPA OBJECT TERPISAH =====
         await strapi.documents("api::surat-jalan.surat-jalan").update({
@@ -508,8 +502,6 @@ export default factories.createCoreController(
             documentId: documentId,
             data: {
               isHaveStatus: true,
-              sender: process.env.ADMIN_ID,
-              recipient: process.env.SPV_ID,
               pesan,
             },
             status: "published",
@@ -580,8 +572,6 @@ export default factories.createCoreController(
             documentId: documentId,
             data: {
               isHaveStatus: true,
-              sender: email.recipient.documentId,
-              recipient: email.sender.documentId,
               pesan,
             },
 
@@ -678,8 +668,6 @@ export default factories.createCoreController(
           documentId: documentId,
           data: {
             isHaveStatus: true,
-            sender: email.recipient.documentId,
-            recipient: email.sender.documentId,
           },
           status: "published",
         });
@@ -777,8 +765,6 @@ export default factories.createCoreController(
           documentId: documentId,
           data: {
             isHaveStatus: true,
-            sender: email.recipient.documentId,
-            recipient: email.sender.documentId,
             pesan,
           },
           status: "published",

@@ -159,7 +159,7 @@ export default function TrackingContentPage({
       
       // Surat Jalan dan Berita Pemeriksaan - sama seperti Surat Jalan
       if (kategori === "Surat Jalan" || kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-        return item.surat_jalan.status_surat === "In Progress";
+        return item.surat_jalan.status_surat === "In Progress" && item.surat_jalan.status_entry !== "Draft";
       }
       
       // Berita Acara Material Bongkaran - perlu cek mengetahui

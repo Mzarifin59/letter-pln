@@ -1011,10 +1011,10 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
                   >
                     <option value="">Pilih Satuan</option>
                     <option value="Keping">Keping</option>
-                    <option value="PCS">PCS (Pieces)</option>
-                    <option value="Kg">Kg (Kilogram)</option>
+                    <option value="PCS ">PCS (Pieces)</option>
+                    <option value="Kg ">Kg (Kilogram)</option>
                     <option value="Meter">Meter</option>
-                    <option value="Liter">Liter</option>
+                    <option value="Liter">Liter</option>  
                     <option value="Bh">Bahan</option>
                     <option value="Set">Set</option>
                     <option value="Unit">Unit</option>
