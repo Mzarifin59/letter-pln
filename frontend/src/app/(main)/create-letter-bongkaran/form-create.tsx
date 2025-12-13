@@ -174,7 +174,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
         }
 
         toast.success("Data berhasil dimuat", {
-          description: "Anda dapat melanjutkan mengedit surat jalan",
+          description: "Anda dapat melanjutkan mengedit berita bongkaran",
           position: "top-center",
         });
       } else {
@@ -525,7 +525,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
       return;
     }
     try {
-      toast.loading(isEditMode ? "Memperbarui surat..." : "Mengirim surat...", {
+      toast.loading(isEditMode ? "Memperbarui berita bongkaran..." : "Mengirim berita bongkaran...", {
         id: "submit",
         position: "top-center",
       });
@@ -560,15 +560,15 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
 
       toast.success(
         isEditMode
-          ? "Surat berhasil diperbarui 🎉"
-          : "Surat berhasil dikirim 🎉",
+          ? "Berita Bongkaran berhasil diperbarui 🎉"
+          : "Berita Bongkaran berhasil dikirim 🎉",
         {
           id: "submit",
           position: "top-center",
           duration: 3000,
           description: isEditMode
-            ? "Perubahan surat jalan telah disimpan dan dikirim."
-            : "Surat jalan telah berhasil dikirim ke penerima.",
+            ? "Perubahan berita bongkaran telah disimpan dan dikirim."
+            : "Berita Bongkaran  telah berhasil dikirim ke penerima.",
         }
       );
 
@@ -824,7 +824,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             value={formData.nomorBeritaAcara}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
-            placeholder="NO : 001.BA/GAE/IX/2025"
+            placeholder="Contoh: NO : 001.BA/GAE/IX/2025"
             required
           />
         </div>
@@ -840,7 +840,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             onChange={handleInputChange}
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
-            placeholder="001.REQ/GD.UPT-BDG/IX/2025"
+            placeholder="Contoh: 0018.PJ/DAN.01.03/UPTBDG/2025"
           />
         </div>
 
@@ -867,7 +867,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             name="perihal"
             value={formData.perihal}
             onChange={handleInputChange}
-            placeholder="PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"
+            placeholder="Contoh: SERAH TERIMA MATERIAL BONGKARAN CT, LA, PMT DLL"
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
@@ -885,7 +885,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             onChange={handleInputChange}
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="GI CIGERELENG "
+            placeholder="Contoh: GI CIGERELENG "
           />
         </div>
 
@@ -900,7 +900,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             onChange={handleInputChange}
             required
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="GUDANG CIGERELENG"
+            placeholder="Contoh: GUDANG CIGERELENG"
           />
         </div>
       </div>
@@ -1167,7 +1167,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
               onChange={handleInputChange}
               className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={
-                type === "penerima" ? "GI Bandung Utara" : "Logistik UPT Bandung"
+                type === "penerima" ? "Contoh: UPT Logistik Bandung" : "Contoh: PT PANDAN WANGI SAE"
               }
             />
           )}
@@ -1184,7 +1184,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
             value={namaValue}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={type === "penerima" ? "Pak Rudi" : "Andri Setiawan"}
+            placeholder={type === "penerima" ? "Nama Penerima" : type === "pengirim" ? "Nama Pengirim" : "Nama Mengetahui"}
           />
         </div>
 
@@ -1500,7 +1500,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
                       onChange={handleInputChange}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      placeholder="COLT DIESEL / D 8584 HL"
+                      placeholder="Contoh: COLT DIESEL / D 8584 HL"
                     />
                   </div>
                   <div>
@@ -1514,7 +1514,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
                       onChange={handleInputChange}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      placeholder="AYI"
+                      placeholder="Contoh: AYI"
                     />
                   </div>
                 </div>

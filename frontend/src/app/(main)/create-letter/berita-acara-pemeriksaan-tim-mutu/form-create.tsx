@@ -539,14 +539,14 @@ export default function FormCreatePemeriksaanPage({
       // Tunggu state update selesai
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      toast.loading("Mengirim surat...", {
+      toast.loading("Mengirim berita pemeriksaan...", {
         id: "submit",
         position: "top-center",
       });
 
       await submitForm(false);
 
-      toast.success("Surat berhasil dikirim 🎉", {
+      toast.success("Berita Pemeriksaanberhasil dikirim 🎉", {
         id: "submit",
         position: "top-center",
         duration: 3000,
@@ -834,7 +834,7 @@ export default function FormCreatePemeriksaanPage({
             value={formData.nomorBeritaAcara}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
-            placeholder="NO : 001.BA/GD.UPT-BDG/IX/2025"
+            placeholder="Contoh: NO : 001/BAHPMB/X/2025"
           />
         </div>
 
@@ -848,7 +848,7 @@ export default function FormCreatePemeriksaanPage({
             value={formData.nomorPerjanjianKontrak}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
-            placeholder="001.REQ/GD.UPT-BDG/IX/2025"
+            placeholder="Contoh: No. 0057.PJ/DAN.01.03/F33000/2025"
           />
         </div>
 
@@ -890,7 +890,7 @@ export default function FormCreatePemeriksaanPage({
             value={formData.perihalKontrak}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
-            placeholder="Perihal kontrak..."
+            placeholder="Contoh: Pengadaan MTU AIS GITET NEW UJUNG BERUNG"
           />
         </div>
 
@@ -947,7 +947,7 @@ export default function FormCreatePemeriksaanPage({
                 }));
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Surat Jalan"
+              placeholder="Contoh: Surat Jalan"
             />
           </div>
           <div>
@@ -976,7 +976,7 @@ export default function FormCreatePemeriksaanPage({
                 }));
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="No 09126434321"
+              placeholder="Contoh: No 09126434321"
             />
           </div>
           <div>
@@ -1309,7 +1309,7 @@ export default function FormCreatePemeriksaanPage({
             value={formData.perusahaanPenyediaBarang}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="PT ABC"
+            placeholder="Contoh: PT HITACHI SAKTI ENERGY INDONESIA"
           />
         </div>
 

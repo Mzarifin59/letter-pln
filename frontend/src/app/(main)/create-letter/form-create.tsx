@@ -490,7 +490,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
           duration: 3000,
           description: isEditMode
             ? "Perubahan surat jalan telah disimpan dan dikirim."
-            : "Surat jalan telah berhasil dikirim ke penerima.",
+            : "Surat jalan telah berhasil dikirim ke Spv.",
         }
       );
 
@@ -714,7 +714,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={formData.nomorSuratJalan}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent bg-gray-50"
-            placeholder="NO : 001.SJ/GD.UPT-BDG/IX/2025"
+            placeholder="Contoh:NO : 001.SJ/GD.UPT-BDG/IX/2025"
             readOnly={!isEditMode}
           />
         </div>
@@ -729,7 +729,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={formData.nomorSuratPermintaan}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0056B0] focus:border-transparent"
-            placeholder="001.REQ/GD.UPT-BDG/IX/2025"
+            placeholder="Contoh: 001.REQ/GD.UPT-BDG/IX/2025"
           />
         </div>
 
@@ -756,7 +756,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             name="perihal"
             value={formData.perihal}
             onChange={handleInputChange}
-            placeholder="PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"
+            placeholder="Contoh: PEMAKAIAN MATERIAL KABEL KONTROL UNTUK GI BDUTRA BAY TRF #3"
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
           />
@@ -772,7 +772,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={formData.lokasiAsal}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="STORAGE POU EK HATI 00"
+            placeholder="Contoh: GUDANG CIGERELENG"
           />
         </div>
 
@@ -786,7 +786,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={formData.lokasiTujuan}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="TK PERMATA 17 UTARA"
+            placeholder="Contoh: GI BANDUNG UTARA"
           />
         </div>
       </div>
@@ -880,7 +880,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Katalog"
+                    placeholder="No Katalog"
                   />
                 </td>
                 <td className="px-4 py-3">
@@ -990,7 +990,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={
-              type === "penerima" ? "GI Bandung Utara" : "Logistik UPT Bandung"
+              type === "penerima" ? "Contoh: GI Bandung Utara" : "Contoh: Logistik UPT Bandung"
             }
           />
         </div>
@@ -1005,7 +1005,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             value={namaValue}
             onChange={handleInputChange}
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={type === "penerima" ? "Pak Rudi" : "Andri Setiawan"}
+            placeholder={type === "penerima" ? "Contoh: Pak Rudi" : "Contoh: Andri Setiawan"}
           />
         </div>
 
@@ -1320,7 +1320,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  placeholder="PENGIRIMAN MATERIAL PASIR, KORAL, DLL UNTUK IN-SITU BETON BAT PB 04"
+                  placeholder="Contoh: PENGIRIMAN MATERIAL PASIR, KORAL, DLL UNTUK IN-SITU BETON BAT PB 04"
                 />
               </div>
 
@@ -1337,7 +1337,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                       value={formData.informasiKendaraan}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      placeholder="COLT DIESEL / D 8584 HL"
+                      placeholder="Contoh: COLT DIESEL / D 8584 HL"
                     />
                   </div>
                   <div>
@@ -1350,7 +1350,7 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
                       value={formData.namaPengemudi}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      placeholder="AYI"
+                      placeholder="Contoh: AYI"
                     />
                   </div>
                 </div>

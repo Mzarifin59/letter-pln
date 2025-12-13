@@ -3,6 +3,7 @@ import {
   API_CONFIG_EMAIL,
   API_CONFIG_STATUSEMAIL,
 } from "@/lib/surat-jalan/form.constants";
+import qs from "qs";
 
 interface StrapiResponse<T = any> {
   data: T;
@@ -195,6 +196,79 @@ export class StrapiAPIService {
         method: "POST",
         headers: this.getHeaders(),
         body: JSON.stringify({ data }),
+      }
+    );
+
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Update email isHaveStatus
+   */
+  static async updateEmail(
+    emailDocumentId: string,
+    data: { isHaveStatus?: boolean }
+  ): Promise<StrapiResponse> {
+    const response = await fetch(
+      `${API_CONFIG.baseURL}${API_CONFIG_EMAIL.endpoints.email}/${emailDocumentId}`,
+      {
+        method: "PUT",
+        headers: this.getHeaders(),
+        body: JSON.stringify({ data }),
+      }
+    );
+
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Update email-status is_read
+   */
+  static async updateEmailStatus(
+    emailStatusDocumentId: string,
+    data: { is_read?: boolean }
+  ): Promise<StrapiResponse> {
+    const response = await fetch(
+      `${API_CONFIG.baseURL}${API_CONFIG_STATUSEMAIL.endpoints.statusEmail}/${emailStatusDocumentId}`,
+      {
+        method: "PUT",
+        headers: this.getHeaders(),
+        body: JSON.stringify({ data }),
+      }
+    );
+
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Get emails by surat jalan documentId
+   */
+  static async getEmailsBySuratJalan(
+    suratJalanDocumentId: string
+  ): Promise<StrapiResponse> {
+    const query = qs.stringify({
+      filters: {
+        surat_jalan: {
+          documentId: {
+            $eq: suratJalanDocumentId,
+          },
+        },
+      },
+      populate: {
+        email_statuses: true,
+        surat_jalan: {
+          fields: ["status_surat"],
+        },
+      },
+      pagination: {
+        pageSize: -1,
+      },
+    });
+
+    const response = await fetch(
+      `${API_CONFIG.baseURL}${API_CONFIG_EMAIL.endpoints.email}?${query}`,
+      {
+        headers: this.getHeaders(false),
       }
     );
 

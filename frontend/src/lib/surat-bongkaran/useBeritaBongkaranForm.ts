@@ -247,10 +247,66 @@ export const useBeritaBongkaranForm = () => {
       let result;
 
       if (existingSurat) {
+        // Cek kondisi khusus SEBELUM update berita bongkaran:
+        // jika isHaveStatus true dan status_surat Reject, maka reset status email dan email-status
+        const emailsResponse = await StrapiAPIService.getEmailsByBeritaBongkaran(
+          existingSurat.documentId
+        );
+        const emails = Array.isArray(emailsResponse.data)
+          ? emailsResponse.data
+          : emailsResponse.data
+          ? [emailsResponse.data]
+          : [];
+
+        // Simpan status_surat sebelum update
+        const previousStatusSurat = existingSurat.status_surat;
+        
+        console.log("🔍 Debug Reset Email - Berita Bongkaran:", {
+          documentId: existingSurat.documentId,
+          previousStatusSurat,
+          emailsCount: emails.length,
+          emails: emails.map((e: any) => ({
+            documentId: e.documentId,
+            isHaveStatus: e.isHaveStatus,
+            email_statuses_count: e.email_statuses?.length || 0,
+          })),
+        });
+
+        // Update berita bongkaran
         result = await StrapiAPIService.updateBeritaAcara(
           existingSurat.documentId,
           submissionData
         );
+
+        // Loop semua email yang terkait dengan berita bongkaran ini
+        for (const email of emails) {
+          // Cek apakah email.isHaveStatus === true dan status_surat sebelumnya adalah "Reject"
+          if (
+            email.isHaveStatus === true &&
+            previousStatusSurat === "Reject"
+          ) {
+            console.log("🔄 Resetting email:", email.documentId);
+            
+            // Update email.isHaveStatus menjadi false
+            await StrapiAPIService.updateEmail(email.documentId, {
+              isHaveStatus: false,
+            });
+
+            // Update semua email-status yang berelasi dengan email tersebut
+            // Set is_read menjadi false
+            if (email.email_statuses && email.email_statuses.length > 0) {
+              const updatePromises = email.email_statuses.map(
+                (emailStatus: any) =>
+                  StrapiAPIService.updateEmailStatus(
+                    emailStatus.documentId || emailStatus.id,
+                    { is_read: false }
+                  )
+              );
+              await Promise.all(updatePromises);
+              console.log("✅ Email statuses reset:", email.email_statuses.length);
+            }
+          }
+        }
       } else {
         result = await StrapiAPIService.createBeritaAcara(submissionData);
       }
@@ -260,12 +316,7 @@ export const useBeritaBongkaranForm = () => {
       let resultStatusEmail;
       let resultStatusEmailGI;
 
-      if (existingSurat) {
-        result = await StrapiAPIService.updateBeritaAcara(
-          existingSurat.documentId,
-          submissionData
-        );
-      } else {
+      if (!existingSurat) {
         // Buat email
         const dataEmail = {
           subject: submissionData.perihal,

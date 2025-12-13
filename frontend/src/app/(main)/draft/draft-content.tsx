@@ -174,7 +174,6 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
 
       return (
         hasAdminGudangStatus &&
-        item.recipient.name === "Spv" &&
         item.surat_jalan.kategori_surat !== "Berita Acara Material Bongkaran"
       );
     });

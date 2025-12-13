@@ -1429,7 +1429,9 @@ export const EmailDetail = ({
           );
         })()}
         {user?.role?.name === "Admin" &&
-          email.surat_jalan.status_surat === "Reject" && (
+          email.surat_jalan.status_surat === "Reject" &&
+          email.surat_jalan.kategori_surat === "Surat Jalan" &&
+          isCanceled && (
             <Link
               href={`/create-letter?mode=edit&id=${email.surat_jalan.documentId}`}
             >

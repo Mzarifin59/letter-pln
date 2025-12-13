@@ -163,7 +163,7 @@ export const useBeritaPemeriksaanForm = () => {
       // Fetch data berita pemeriksaan untuk cek duplikasi
       const query = qs.stringify({
         sort: ["createdAt:desc"],
-        fields: ["no_berita_acara", "documentId"],
+        fields: ["no_berita_acara", "documentId", "status_surat"],
       });
 
       const token = getAuthToken();
@@ -232,10 +232,66 @@ export const useBeritaPemeriksaanForm = () => {
       let result;
 
       if (existingSurat) {
+        // Cek kondisi khusus SEBELUM update berita pemeriksaan:
+        // jika isHaveStatus true dan status_surat Reject, maka reset status email dan email-status
+        const emailsResponse = await StrapiAPIService.getEmailsByBeritaPemeriksaan(
+          existingSurat.documentId
+        );
+        const emails = Array.isArray(emailsResponse.data)
+          ? emailsResponse.data
+          : emailsResponse.data
+          ? [emailsResponse.data]
+          : [];
+
+        // Simpan status_surat sebelum update
+        const previousStatusSurat = existingSurat.status_surat;
+        
+        console.log("🔍 Debug Reset Email - Berita Pemeriksaan:", {
+          documentId: existingSurat.documentId,
+          previousStatusSurat,
+          emailsCount: emails.length,
+          emails: emails.map((e: any) => ({
+            documentId: e.documentId,
+            isHaveStatus: e.isHaveStatus,
+            email_statuses_count: e.email_statuses?.length || 0,
+          })),
+        });
+
+        // Update berita pemeriksaan
         result = await StrapiAPIService.updateBeritaPemeriksaan(
           existingSurat.documentId,
           submissionData
         );
+
+        // Loop semua email yang terkait dengan berita pemeriksaan ini
+        for (const email of emails) {
+          // Cek apakah email.isHaveStatus === true dan status_surat sebelumnya adalah "Reject"
+          if (
+            email.isHaveStatus === true &&
+            previousStatusSurat === "Reject"
+          ) {
+            console.log("🔄 Resetting email:", email.documentId);
+            
+            // Update email.isHaveStatus menjadi false
+            await StrapiAPIService.updateEmail(email.documentId, {
+              isHaveStatus: false,
+            });
+
+            // Update semua email-status yang berelasi dengan email tersebut
+            // Set is_read menjadi false
+            if (email.email_statuses && email.email_statuses.length > 0) {
+              const updatePromises = email.email_statuses.map(
+                (emailStatus: any) =>
+                  StrapiAPIService.updateEmailStatus(
+                    emailStatus.documentId || emailStatus.id,
+                    { is_read: false }
+                  )
+              );
+              await Promise.all(updatePromises);
+              console.log("✅ Email statuses reset:", email.email_statuses.length);
+            }
+          }
+        }
       } else {
         result = await StrapiAPIService.createBeritaPemeriksaan(submissionData);
       }
