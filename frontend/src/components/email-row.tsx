@@ -131,7 +131,7 @@ export const EmailRowInbox = ({
         ${
           openedEmail
             ? "min-h-max"
-            : "grid grid-cols-[auto_auto_1fr_auto_auto] max-[1440px]:grid-cols-[auto_auto_1fr_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto] max-xs:grid-cols-1"
+            : "grid grid-cols-[auto_auto_1fr_auto_auto] max-[1560px]:grid-cols-[auto_auto_1fr_auto_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto] max-xs:grid-cols-1"
         }
         ${isOpened ? "items-start" : "items-center"}
       `}
@@ -204,8 +204,9 @@ export const EmailRowInbox = ({
               >
                 <Star
                   className={`w-4 h-4 transition-colors duration-200 ${
-                    email.email_statuses.find((item) => item.user.name === user?.name)
-                      ?.is_bookmarked
+                    email.email_statuses.find(
+                      (item) => item.user.name === user?.name
+                    )?.is_bookmarked
                       ? "text-yellow-400 fill-yellow-400"
                       : "text-[#E9E9E9]"
                   }`}
@@ -215,110 +216,110 @@ export const EmailRowInbox = ({
           )}
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="grid grid-cols-[180px_1fr] gap-3 items-start max-xl:grid-cols-1">
-            <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
-              {getPerusahaanPenerima(email)}
-            </span>
+              <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
+                {getPerusahaanPenerima(email)}
+              </span>
 
-            {/* Subject */}
+              {/* Subject */}
+              {!openedEmail && (
+                <span className="text-sm font-medium text-[#0056B0] whitespace-normal break-words max-xl:hidden">
+                  {email.surat_jalan.kategori_surat}
+                </span>
+              )}
+
+              {/* Subject (mobile) */}
+              {!openedEmail && (
+                <span className="text-sm font-medium text-[#0056B0] whitespace-normal break-words xl:hidden">
+                  {email.surat_jalan.kategori_surat}
+                </span>
+              )}
+            </div>
+
+            {/* Preview */}
             {!openedEmail && (
-              <span className="text-sm font-medium text-[#0056B0] whitespace-normal break-words max-xl:hidden">
-                {email.surat_jalan.kategori_surat}
+              <span
+                className="text-sm text-[#545454] whitespace-normal break-words min-[1440px]:hidden"
+                title={getPerihal(email)}
+              >
+                <span className="max-md:hidden">{getPerihal(email)}</span>
+                <span className="md:hidden">
+                  {truncatePerihal(getPerihal(email) ?? "")}
+                </span>
               </span>
             )}
 
-            {/* Subject (mobile) */}
-            {!openedEmail && (
-              <span className="text-sm font-medium text-[#0056B0] whitespace-normal break-words xl:hidden">
-                {email.surat_jalan.kategori_surat}
+            {/* Preview (opened) */}
+            {openedEmail && (
+              <span className="text-sm text-[#545454] whitespace-normal break-words">
+                {getPerihal(email)}
               </span>
             )}
-          </div>
 
-          {/* Preview */}
-          {!openedEmail && (
-            <span 
-              className="text-sm text-[#545454] whitespace-normal break-words min-[1440px]:hidden"
-              title={getPerihal(email)}
-            >
-              <span className="max-md:hidden">{getPerihal(email)}</span>
-              <span className="md:hidden">
-                {truncatePerihal(getPerihal(email) ?? "")}
-              </span>
-            </span>
-          )}
+            {/* Attachments (responsive) */}
+            {!openedEmail &&
+              (() => {
+                const suratJalan = email.surat_jalan as any;
+                const hasLampiran =
+                  "lampiran" in suratJalan &&
+                  suratJalan.lampiran &&
+                  Array.isArray(suratJalan.lampiran) &&
+                  suratJalan.lampiran.length > 0;
 
-          {/* Preview (opened) */}
-          {openedEmail && (
-            <span className="text-sm text-[#545454] whitespace-normal break-words">
-              {getPerihal(email)}
-            </span>
-          )}
+                if (!hasLampiran) return null;
 
-          {/* Attachments (responsive) */}
-          {!openedEmail &&
-            (() => {
-              const suratJalan = email.surat_jalan as any;
-              const hasLampiran =
-                "lampiran" in suratJalan &&
-                suratJalan.lampiran &&
-                Array.isArray(suratJalan.lampiran) &&
-                suratJalan.lampiran.length > 0;
+                const lampiran = suratJalan.lampiran as Array<{ name: string }>;
+                const firstAttachment = lampiran[0];
+                const hasMore = lampiran.length > 1;
 
-              if (!hasLampiran) return null;
-
-              const lampiran = suratJalan.lampiran as Array<{ name: string }>;
-              const firstAttachment = lampiran[0];
-              const hasMore = lampiran.length > 1;
-
-              return (
-                <div className="flex items-center space-x-1 min-[1440px]:hidden">
-                  <div className="flex h-3 w-3 items-center justify-center rounded bg-green-100">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                  </div>
-                  <span className="text-xs text-gray-600 truncate max-w-[200px]">
-                    {firstAttachment.name}
-                  </span>
-                  {hasMore && (
-                    <span className="text-xs text-gray-500 whitespace-nowrap">
-                      dan lainnya
+                return (
+                  <div className="flex items-center space-x-1 min-[1440px]:hidden">
+                    <div className="flex h-3 w-3 items-center justify-center rounded bg-green-100">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    </div>
+                    <span className="text-xs text-gray-600 truncate max-w-[200px]">
+                      {firstAttachment.name}
                     </span>
-                  )}
-                </div>
-              );
-            })()}
-
-          {/* Attachments (opened) */}
-          {openedEmail &&
-            (() => {
-              const suratJalan = email.surat_jalan as any;
-              const hasLampiran =
-                "lampiran" in suratJalan &&
-                suratJalan.lampiran &&
-                Array.isArray(suratJalan.lampiran) &&
-                suratJalan.lampiran.length > 0;
-
-              if (!hasLampiran) return null;
-
-              const lampiran = suratJalan.lampiran as Array<{ name: string }>;
-              const firstAttachment = lampiran[0];
-              const hasMore = lampiran.length > 1;
-
-              return (
-                <div className="flex items-center space-x-1">
-                  <div className="flex h-3 w-3 items-center justify-center rounded bg-green-100">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    {hasMore && (
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        dan lainnya
+                      </span>
+                    )}
                   </div>
-                  <span className="text-xs text-gray-600 truncate max-w-[200px]">
-                    {firstAttachment.name}
-                  </span>
-                  {hasMore && (
-                    <span className="text-xs text-gray-500 whitespace-nowrap">
-                      dan lainnya
+                );
+              })()}
+
+            {/* Attachments (opened) */}
+            {openedEmail &&
+              (() => {
+                const suratJalan = email.surat_jalan as any;
+                const hasLampiran =
+                  "lampiran" in suratJalan &&
+                  suratJalan.lampiran &&
+                  Array.isArray(suratJalan.lampiran) &&
+                  suratJalan.lampiran.length > 0;
+
+                if (!hasLampiran) return null;
+
+                const lampiran = suratJalan.lampiran as Array<{ name: string }>;
+                const firstAttachment = lampiran[0];
+                const hasMore = lampiran.length > 1;
+
+                return (
+                  <div className="flex items-center space-x-1">
+                    <div className="flex h-3 w-3 items-center justify-center rounded bg-green-100">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    </div>
+                    <span className="text-xs text-gray-600 truncate max-w-[200px]">
+                      {firstAttachment.name}
                     </span>
-                  )}
-                </div>
-              );
-            })()}
+                    {hasMore && (
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        dan lainnya
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
           </div>
         </div>
       </div>
@@ -330,7 +331,7 @@ export const EmailRowInbox = ({
         }`}
       >
         <div className="flex flex-col gap-2">
-          <span 
+          <span
             className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden"
             title={getPerihal(email)}
           >
@@ -410,7 +411,7 @@ export const EmailRowInbox = ({
         }`}
       >
         <div className="relative flex items-end">
-          <span className="text-[10px] text-gray-500 whitespace-nowrap group-hover:opacity-0 transition-opacity">
+          <span className="text-[10px] text-gray-500 whitespace-nowrap">
             {formatDate(getTanggalSuratLocal(email), "short")}
           </span>
           <button
@@ -418,7 +419,7 @@ export const EmailRowInbox = ({
               e.stopPropagation();
               onDelete?.(email);
             }}
-            className="absolute inset-0 flex items-end justify-end opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute inset-0 hidden sm:flex items-end justify-end opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
           </button>
@@ -460,18 +461,20 @@ export const EmailRowInbox = ({
             e.stopPropagation();
             onDelete?.(email);
           }}
-          className="absolute inset-0 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
+          className="sm:absolute inset-0 hidden sm:flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
         </button>
       </div>
 
       {/* Unread Indicator */}
-      {!openedEmail && !email.email_statuses.find((item) => item.user.name === user?.name)?.is_read && (
-        <div className="absolute top-3 right-3 max-sm:hidden">
-          <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
-        </div>
-      )}
+      {!openedEmail &&
+        !email.email_statuses.find((item) => item.user.name === user?.name)
+          ?.is_read && (
+          <div className="absolute top-3 right-3">
+            <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+          </div>
+        )}
     </div>
   );
 };
@@ -609,8 +612,9 @@ export const EmailRow = ({
               >
                 <Star
                   className={`w-4 h-4 transition-colors duration-200 ${
-                    email.email_statuses.find((item) => item.user.name === user?.name)
-                      ?.is_bookmarked
+                    email.email_statuses.find(
+                      (item) => item.user.name === user?.name
+                    )?.is_bookmarked
                       ? "text-yellow-400 fill-yellow-400"
                       : "text-[#E9E9E9]"
                   }`}
@@ -643,41 +647,39 @@ export const EmailRow = ({
               }`}
             >
               <div className="flex flex-col gap-1">
-            <div className="grid grid-cols-[200px_1fr] gap-3 items-center  max-xl:grid-cols-1">
-              <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
-                {getPerusahaanPenerima(email)}
-              </span>
-              {!openedEmail && (
-                <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden">
-                  {getPerihal(email)}
+                <div className="grid grid-cols-[200px_1fr] gap-3 items-center  max-xl:grid-cols-1">
+                  <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
+                    {getPerusahaanPenerima(email)}
+                  </span>
+                  {!openedEmail && (
+                    <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden">
+                      {getPerihal(email)}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={`text-sm text-[#545454] block whitespace-normal break-words ${
+                    openedEmail ? "" : "xl:hidden"
+                  }`}
+                  title={getPerihal(email)}
+                  style={{
+                    display: "block",
+                    overflow: "hidden",
+                    ...(window.innerWidth <= 768
+                      ? {
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "100%",
+                        }
+                      : {}),
+                  }}
+                >
+                  <span className="xl:hidden">
+                    {truncatePerihal(getPerihal(email) ?? "")}
+                  </span>
                 </span>
-              )}
+              </div>
             </div>
-            <span
-              className={`text-sm text-[#545454] block whitespace-normal break-words ${
-                openedEmail
-                  ? ""
-                  : "xl:hidden"
-              }`}
-              title={getPerihal(email)}
-              style={{
-                display: "block",
-                overflow: "hidden",
-                ...(window.innerWidth <= 768
-                  ? {
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      maxWidth: "100%",
-                    }
-                  : {}),
-              }}
-            >
-              <span className="xl:hidden">
-                {truncatePerihal(getPerihal(email) ?? "")}
-              </span>
-            </span>
-          </div>
-        </div>
 
             {/* Sender & Preview (mobile-only, !openedEmail, order-3) */}
             {!openedEmail && (
@@ -721,7 +723,7 @@ export const EmailRow = ({
             e.stopPropagation();
             onDelete?.(email);
           }}
-          className="absolute inset-0 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute inset-0 hidden sm:flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
         </button>
@@ -733,7 +735,7 @@ export const EmailRow = ({
           openedEmail ? "invisible" : ""
         }`}
       >
-        <span className="text-[10px] text-gray-500 whitespace-nowrap group-hover:opacity-0 transition-opacity">
+        <span className="text-[10px] text-gray-500 whitespace-nowrap">
           {formatDate(email.surat_jalan.createdAt, "short")}
         </span>
         <button
@@ -741,18 +743,21 @@ export const EmailRow = ({
             e.stopPropagation();
             onDelete?.(email);
           }}
-          className="absolute inset-0 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute inset-0 hidden sm:flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Trash2 className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
         </button>
       </div>
 
       {/* Unread Indicator */}
-      {pageRow !== "Draft" && !openedEmail && !email.email_statuses.find((item) => item.user.name === user?.name)?.is_read && (
-        <div className="absolute top-3 right-3 max-sm:hidden">
-          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-        </div>
-      )}
+      {pageRow !== "Draft" &&
+        !openedEmail &&
+        !email.email_statuses.find((item) => item.user.name === user?.name)
+          ?.is_read && (
+          <div className="absolute top-3 right-3">
+            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+          </div>
+        )}
     </div>
   );
 };
