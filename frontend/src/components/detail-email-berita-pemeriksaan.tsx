@@ -388,9 +388,9 @@ export const EmailDetailBeritaPemeriksaan = ({
         <hr className="border-t-4 border-gray-800 mb-6" />
 
         {/* Document Preview */}
-        <div className="mb-6 md:mb-8">
-          <div className="w-full transform origin-top-left">
-            <div className="bg-white py-4">
+        <div className="mb-6 md:mb-8 w-full flex justify-center" style={{ height: "auto" }}>
+          <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
+            <div className="bg-white py-4" style={{ width: '210mm' }}>
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
