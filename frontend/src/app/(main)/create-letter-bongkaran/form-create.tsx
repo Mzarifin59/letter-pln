@@ -763,7 +763,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   }, [mode, draftId, formData.tanggalKontrak, setFormData]);
 
   const renderBasicInformation = () => (
-    <div>
+    <div className="w-full max-w-full">
       <div className="pb-5">
         <label className="plus-jakarta-sans block text-sm text-[#232323] mb-2">
           Cop Surat
@@ -919,7 +919,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   }
 
   const renderMaterialsTable = () => (
-    <div>
+    <div className="w-full max-w-full">
       <div className="flex max-sm:flex-col sm:items-center justify-between mb-4">
         <h3 className="plus-jakarta-sans text-[26px] font-semibold text-[#353739]">
           Daftar Material
@@ -934,8 +934,157 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-[#ADB5BD] overflow-x-auto">
-        <table className="w-full border-collapse text-xs sm:text-sm md:text-base min-w-[500px]">
+      {/* Mobile View - Card Layout (layar < 640px) */}
+      <div className="block sm:hidden space-y-4">
+        {materials.map((material, index) => (
+          <div
+            key={material.id}
+            className="bg-white border border-[#ADB5BD] rounded-xl p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="bg-[#F6F9FF] text-[#232323] font-semibold px-3 py-1 rounded-lg text-sm">
+                  #{index + 1}
+                </span>
+              </div>
+              {materials.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeMaterial(material.id)}
+                  className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="plus-jakarta-sans block text-xs font-medium text-[#232323] mb-1.5">
+                  Nama Material
+                </label>
+                <Input
+                  type="text"
+                  value={material.namaMaterial}
+                  onChange={(e) =>
+                    handleMaterialChange(
+                      material.id,
+                      "namaMaterial",
+                      e.target.value
+                    )
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nama Material"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="plus-jakarta-sans block text-xs font-medium text-[#232323] mb-1.5">
+                    Merk
+                  </label>
+                  <Input
+                    type="text"
+                    value={material.katalog}
+                    onChange={(e) =>
+                      handleMaterialChange(
+                        material.id,
+                        "katalog",
+                        e.target.value
+                      )
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Merk"
+                  />
+                </div>
+
+                <div>
+                  <label className="plus-jakarta-sans block text-xs font-medium text-[#232323] mb-1.5">
+                    Satuan
+                  </label>
+                  <select
+                    value={material.satuan}
+                    onChange={(e) =>
+                      handleMaterialChange(
+                        material.id,
+                        "satuan",
+                        e.target.value
+                      )
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">Pilih Satuan</option>
+                    <option value="Keping">Keping</option>
+                    <option value="PCS ">PCS (Pieces)</option>
+                    <option value="Kg ">Kg (Kilogram)</option>
+                    <option value="Meter">Meter</option>
+                    <option value="Liter">Liter</option>
+                    <option value="Bh">Bahan</option>
+                    <option value="Set">Set</option>
+                    <option value="Unit">Unit</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="plus-jakarta-sans block text-xs font-medium text-[#232323] mb-1.5">
+                    Jumlah
+                  </label>
+                  <Input
+                    type="number"
+                    value={material.jumlah}
+                    onChange={(e) =>
+                      handleMaterialChange(
+                        material.id,
+                        "jumlah",
+                        e.target.value
+                      )
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="plus-jakarta-sans block text-xs font-medium text-[#232323] mb-1.5">
+                    Keterangan
+                  </label>
+                  <Input
+                    type="text"
+                    value={material.keterangan}
+                    onChange={(e) =>
+                      handleMaterialChange(
+                        material.id,
+                        "keterangan",
+                        e.target.value
+                      )
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Keterangan"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Total Mobile */}
+        <div className="bg-[#F6F9FF] border border-[#ADB5BD] rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <span className="plus-jakarta-sans font-semibold text-[#232323]">
+              TOTAL:
+            </span>
+            <span className="plus-jakarta-sans font-bold text-lg text-[#232323]">
+              {calculateTotal()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop View - Table Layout (layar >= 640px) */}
+      <div className="hidden sm:block w-full max-w-full overflow-x-auto rounded-2xl border border-[#ADB5BD]">
+        <table className="w-full border-collapse text-xs sm:text-sm md:text-base">
           <thead className="bg-[#F6F9FF]">
             <tr>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-sm font-semibold text-[#232323]">
@@ -1298,7 +1447,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   );
 
   const renderAttachmentSection = () => (
-    <div className="flex flex-col bg-white rounded-xl shadow-md">
+    <div className="flex flex-col bg-white rounded-xl shadow-md w-full max-w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
         <div className="flex items-center gap-3">
           <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739]">
@@ -1435,8 +1584,8 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   if (!showPreview) {
     return (
       <>
-        <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12">
-          <div className="flex flex-col bg-white rounded-xl shadow-md">
+        <div className="bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex flex-col gap-8 lg:gap-12 overflow-x-hidden max-w-full">
+          <div className="flex flex-col bg-white rounded-xl shadow-md w-full">
             {/* Header */}
             <div className="flex flex-col xl:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4">
               <div className="flex items-center gap-3">
@@ -1465,7 +1614,7 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
                   <StickyNote
                     width={18}
                     height={18}
-                    className="text-[#232323]"
+                    className="text-[#232323] flex-shrink-0"
                   />
                   Draft
                 </button>
@@ -1473,13 +1622,13 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
                   onClick={handleSubmit}
                   className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-white rounded-xl bg-[#0056B0] border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
                 >
-                  <Send width={18} height={18} className="text-white" />
+                  <Send width={18} height={18} className="text-white flex-shrink-0" />
                   Kirim
                 </button>
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 w-full max-w-full overflow-x-hidden">
               {/* Basic Information */}
               {renderBasicInformation()}
 
