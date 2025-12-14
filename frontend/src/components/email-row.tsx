@@ -131,7 +131,7 @@ export const EmailRowInbox = ({
         ${
           openedEmail
             ? "min-h-max"
-            : "grid grid-cols-[auto_auto_1fr_auto_auto] max-[1440px]:grid-cols-[auto_auto_1fr_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto]"
+            : "grid grid-cols-[auto_auto_1fr_auto_auto] max-[1440px]:grid-cols-[auto_auto_1fr_auto_auto] max-sm:grid-cols-[auto_auto_1fr_auto] max-xs:grid-cols-1"
         }
         ${isOpened ? "items-start" : "items-center"}
       `}
@@ -139,7 +139,7 @@ export const EmailRowInbox = ({
     >
       {/* Checkbox & Star */}
       <div
-        className={`flex items-center gap-2 w-[60px] flex-shrink-0 max-sm:order-1 ${
+        className={`flex items-center gap-2 w-[60px] flex-shrink-0 max-sm:order-1 max-xs:hidden ${
           openedEmail ? "hidden" : ""
         }`}
       >
@@ -183,8 +183,38 @@ export const EmailRowInbox = ({
 
       {/* Sender & Preview */}
       <div className="min-w-0 max-sm:order-3">
-        <div className="flex flex-col gap-1">
-          <div className="grid grid-cols-[180px_1fr] gap-3 items-start max-xl:grid-cols-1">
+        <div className="flex gap-2 max-xs:flex-row min-xs:flex-col">
+          {/* Checkbox & Star (mobile max-xs) */}
+          {!openedEmail && (
+            <div className="flex items-center gap-2 w-[60px] flex-shrink-0 min-xs:hidden">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => onSelect(email.documentId)}
+                className="rounded border-gray-300"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markEmailAsBookmarked?.(email.documentId);
+                }}
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
+                aria-label="Toggle bookmark"
+              >
+                <Star
+                  className={`w-4 h-4 transition-colors duration-200 ${
+                    email.email_statuses.find((item) => item.user.name === user?.name)
+                      ?.is_bookmarked
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-[#E9E9E9]"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <div className="grid grid-cols-[180px_1fr] gap-3 items-start max-xl:grid-cols-1">
             <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
               {getPerusahaanPenerima(email)}
             </span>
@@ -289,6 +319,7 @@ export const EmailRowInbox = ({
                 </div>
               );
             })()}
+          </div>
         </div>
       </div>
 
@@ -374,7 +405,7 @@ export const EmailRowInbox = ({
 
       {/* Time & Status (mobile) */}
       <div
-        className={`min-w-[100px] max-w-[120px] flex flex-col items-end justify-end gap-2 md:hidden max-md:order-4 ${
+        className={`xs:min-w-[100px] xs:max-w-[120px] flex xs:flex-col xs:items-end justify-between xs:justify-end gap-2 md:hidden max-md:order-4 ${
           openedEmail ? "hidden" : ""
         }`}
       >
@@ -511,7 +542,7 @@ export const EmailRow = ({
         ${
           openedEmail
             ? "grid-cols-1"
-            : "grid-cols-[auto_1fr_auto_auto] max-sm:grid-cols-[auto_1fr_auto_auto]"
+            : "grid-cols-[auto_1fr_auto_auto] max-sm:grid-cols-[auto_1fr_auto_auto] max-xs:grid-cols-1"
         }
         ${isOpened ? "items-start" : "items-center"}
       `}
@@ -519,7 +550,7 @@ export const EmailRow = ({
     >
       {/* Checkbox & Star */}
       <div
-        className={`flex items-center gap-2 w-[60px] flex-shrink-0 max-sm:order-1 ${
+        className={`flex items-center gap-2 w-[60px] flex-shrink-0 max-sm:order-1 max-xs:hidden ${
           openedEmail ? "hidden" : ""
         }`}
       >
@@ -557,30 +588,61 @@ export const EmailRow = ({
           openedEmail ? "items-start" : "items-start sm:items-center"
         } flex gap-2 min-w-0 max-sm:flex-col max-sm:order-3`}
       >
-        {/* Status */}
-        <div
-          className={`min-w-[80px] max-w-[80px] flex-shrink-0 ${
-            pageRow === "Reject"
-              ? "text-[#A62344]"
-              : pageRow === "Draft"
-              ? "text-[#A62344]"
-              : "text-gray-900"
-          } text-xs sm:text-sm font-semibold`}
-        >
-          {pageRow === "Reject"
-            ? "Dibatalkan"
-            : pageRow === "Send"
-            ? "Kepada :"
-            : "Draft"}
-        </div>
+        <div className="flex gap-2 max-xs:flex-row min-xs:flex-col flex-1 min-w-0">
+          {/* Checkbox & Star (mobile max-xs) */}
+          {!openedEmail && (
+            <div className="flex items-center gap-2 w-[60px] flex-shrink-0 min-xs:hidden">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => onSelect(email.documentId)}
+                className="rounded border-gray-300"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markEmailAsBookmarked?.(email.documentId);
+                }}
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
+                aria-label="Toggle bookmark"
+              >
+                <Star
+                  className={`w-4 h-4 transition-colors duration-200 ${
+                    email.email_statuses.find((item) => item.user.name === user?.name)
+                      ?.is_bookmarked
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-[#E9E9E9]"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+          <div className="flex gap-2 max-sm:flex-col sm:flex-1 min-w-0">
+            {/* Status */}
+            <div
+              className={`min-w-[80px] max-w-[80px] flex-shrink-0 ${
+                pageRow === "Reject"
+                  ? "text-[#A62344]"
+                  : pageRow === "Draft"
+                  ? "text-[#A62344]"
+                  : "text-gray-900"
+              } text-xs sm:text-sm font-semibold`}
+            >
+              {pageRow === "Reject"
+                ? "Dibatalkan"
+                : pageRow === "Send"
+                ? "Kepada :"
+                : "Draft"}
+            </div>
 
-        {/* Sender & Preview (desktop + mobile if openedEmail) */}
-        <div
-          className={`min-w-0 ${
-            !openedEmail ? "max-sm:hidden" : "max-sm:order-3"
-          }`}
-        >
-          <div className="flex flex-col gap-1">
+            {/* Sender & Preview (desktop + mobile if openedEmail) */}
+            <div
+              className={`min-w-0 ${
+                !openedEmail ? "max-sm:hidden" : "max-sm:order-3"
+              }`}
+            >
+              <div className="flex flex-col gap-1">
             <div className="grid grid-cols-[200px_1fr] gap-3 items-center  max-xl:grid-cols-1">
               <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
                 {getPerusahaanPenerima(email)}
@@ -617,30 +679,32 @@ export const EmailRow = ({
           </div>
         </div>
 
-        {/* Sender & Preview (mobile-only, !openedEmail, order-3) */}
-        {!openedEmail && (
-          <div className="min-w-0 max-sm:order-3 sm:hidden">
-            <div className="flex flex-col gap-1">
-              <div className="grid grid-cols-[200px_1fr] gap-3 items-start max-xl:grid-cols-1">
-                <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
-                  {getPerusahaanPenerima(email)}
-                </span>
-                <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden max-md:truncate">
-                  <span className="max-md:hidden">{getPerihal(email)}</span>
-                  <span className="md:hidden">
-                    {truncatePerihal(getPerihal(email) ?? "")}
+            {/* Sender & Preview (mobile-only, !openedEmail, order-3) */}
+            {!openedEmail && (
+              <div className="min-w-0 max-sm:order-3 sm:hidden">
+                <div className="flex flex-col gap-1">
+                  <div className="grid grid-cols-[200px_1fr] gap-3 items-start max-xl:grid-cols-1">
+                    <span className="text-sm font-medium text-gray-900 whitespace-normal break-words">
+                      {getPerusahaanPenerima(email)}
+                    </span>
+                    <span className="text-sm text-[#545454] whitespace-normal break-words max-xl:hidden max-md:truncate">
+                      <span className="max-md:hidden">{getPerihal(email)}</span>
+                      <span className="md:hidden">
+                        {truncatePerihal(getPerihal(email) ?? "")}
+                      </span>
+                    </span>
+                  </div>
+                  <span className="text-sm text-[#545454] block whitespace-normal break-words xl:hidden max-md:truncate">
+                    <span className="max-md:hidden">{getPerihal(email)}</span>
+                    <span className="md:hidden">
+                      {truncatePerihal(getPerihal(email) ?? "")}
+                    </span>
                   </span>
-                </span>
+                </div>
               </div>
-              <span className="text-sm text-[#545454] block whitespace-normal break-words xl:hidden max-md:truncate">
-                <span className="max-md:hidden">{getPerihal(email)}</span>
-                <span className="md:hidden">
-                  {truncatePerihal(getPerihal(email) ?? "")}
-                </span>
-              </span>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Time with Trash */}
@@ -665,7 +729,7 @@ export const EmailRow = ({
 
       {/* Time (mobile) with Trash */}
       <div
-        className={`min-w-[100px] max-w-[120px] flex justify-end items-center flex-shrink-0 sm:hidden relative max-sm:order-4 ${
+        className={`xs:min-w-[100px] xs:max-w-[120px] flex justify-end items-center flex-shrink-0 sm:hidden relative max-sm:order-4 ${
           openedEmail ? "invisible" : ""
         }`}
       >

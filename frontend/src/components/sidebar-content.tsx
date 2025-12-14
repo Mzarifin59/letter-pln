@@ -7,12 +7,6 @@ import { EmailData } from "@/lib/interface";
 
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Plus,
   LayoutGrid,
   Inbox,
@@ -20,7 +14,17 @@ import {
   StickyNote,
   Send,
   ArchiveX,
+  ChevronDown,
+  LogOut,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useUserLogin } from "@/lib/user";
 import { useMemo } from "react";
 
@@ -322,9 +326,53 @@ export default function SidebarContent({
       </div>
 
       {/* Footer Section */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="text-center text-xs text-gray-500">
-          © 2025 PLN - SIGASPOL
+      <div className="border-t border-gray-200">
+        {/* Profile Section - Only visible on mobile */}
+        <div className="lg:hidden p-4 border-b border-gray-200">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors group w-full">
+                <div className="w-10 h-10 bg-[#0056B0] rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                  {user?.name?.[0]?.toUpperCase() ?? "?"}
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {user?.name ?? "Guest"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0"
+                />
+              </div>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  window.location.href = "/logout";
+                }}
+                className="text-red-400 focus:text-red-500 cursor-pointer"
+              >
+                <LogOut
+                  width={20}
+                  height={20}
+                  className="text-red-400 focus:text-red-500 mr-2"
+                />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Copyright */}
+        <div className="p-4">
+          <div className="text-center text-xs text-gray-500">
+            © 2025 PLN - SIGASPOL
+          </div>
         </div>
       </div>
     </div>

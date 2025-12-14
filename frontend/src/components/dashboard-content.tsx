@@ -251,29 +251,30 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
   return (
     <>
       {/* Main Content */}
-      <main className=" flex-1 p-8 overflow-hidden bg-[#F6F9FF] min-h-screen">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden bg-[#F6F9FF] min-h-screen">
+        <div className="max-w-7xl mx-auto w-full">
           {/* Card Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-md border border-gray-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1.5 items-start">
-                  <h3 className="text-[12px] font-medium text-[#495057]">
+                <div className="flex flex-col gap-1 sm:gap-1.5 items-start">
+                  <h3 className="text-[11px] sm:text-[12px] font-medium text-[#495057]">
                     Surat Dibuat
                   </h3>
-                  <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
+                  <p className="plus-jakarta-sans text-3xl sm:text-4xl font-bold text-[#212529]">
                     {suratDataThisMonth.length}
                   </p>
-                  <p className="text-[#9D9D9D] text-[10px] font-medium">
+                  <p className="text-[#9D9D9D] text-[9px] sm:text-[10px] font-medium">
                     Bulan ini
                   </p>
                 </div>
-                <div className="p-3 bg-[#4263EB] border-8 border-[#004EEB] rounded-full">
+                <div className="p-2 sm:p-3 bg-[#4263EB] border-4 sm:border-8 border-[#004EEB] rounded-full flex-shrink-0">
                   <svg
-                    width="25"
-                    height="24"
+                    width="20"
+                    height="20"
                     viewBox="0 0 25 24"
                     fill="none"
+                    className="sm:w-[25px] sm:h-[24px]"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <g clipPath="url(#clip0_55_918)">
@@ -310,31 +311,32 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                 </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-md border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1.5 items-start">
-                  <h3 className="text-[12px] font-medium text-[#495057]">
+                <div className="flex flex-col gap-1 sm:gap-1.5 items-start">
+                  <h3 className="text-[11px] sm:text-[12px] font-medium text-[#495057]">
                     {user?.role?.name === "Admin"
                       ? "Surat Terkirim"
                       : "Surat Disetujui"}
                   </h3>
-                  <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
+                  <p className="plus-jakarta-sans text-3xl sm:text-4xl font-bold text-[#212529]">
                     {user?.role?.name === "Admin"
                       ? publishedDataThisMonth.length
                       : suratDataThisMonth.filter(
                           (item) => item.surat_jalan.status_surat === "Approve"
                         ).length}
                   </p>
-                  <p className="text-[#9D9D9D] text-[10px] font-medium">
+                  <p className="text-[#9D9D9D] text-[9px] sm:text-[10px] font-medium">
                     Bulan ini
                   </p>
                 </div>
-                <div className="p-3 bg-[#00BE4D] border-8 border-[#00A543] rounded-full">
+                <div className="p-2 sm:p-3 bg-[#00BE4D] border-4 sm:border-8 border-[#00A543] rounded-full flex-shrink-0">
                   <svg
-                    width="25"
-                    height="24"
+                    width="20"
+                    height="20"
                     viewBox="0 0 25 24"
                     fill="none"
+                    className="sm:w-[25px] sm:h-[24px]"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
@@ -369,15 +371,15 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                 </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-md border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 sm:p-6 rounded-md border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1.5 items-start">
-                  <h3 className="text-[12px] font-medium text-[#495057]">
+                <div className="flex flex-col gap-1 sm:gap-1.5 items-start">
+                  <h3 className="text-[11px] sm:text-[12px] font-medium text-[#495057]">
                     {user?.role?.name === "Vendor"
                       ? "Menunggu Tanda Tangan"
                       : "Menunggu Persetujuan"}
                   </h3>
-                  <p className="plus-jakarta-sans text-4xl font-bold text-[#212529]">
+                  <p className="plus-jakarta-sans text-3xl sm:text-4xl font-bold text-[#212529]">
                     {
                       suratData.filter(
                         (item) =>
@@ -385,16 +387,17 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                       ).length
                     }
                   </p>
-                  <p className="text-[#9D9D9D] text-[10px] font-medium">
+                  <p className="text-[#9D9D9D] text-[9px] sm:text-[10px] font-medium">
                     Perlu Tindakan
                   </p>
                 </div>
-                <div className="p-3 bg-[#FB6C2B] border-8 border-[#F24B00] rounded-full">
+                <div className="p-2 sm:p-3 bg-[#FB6C2B] border-4 sm:border-8 border-[#F24B00] rounded-full flex-shrink-0">
                   <svg
-                    width="22"
-                    height="23"
+                    width="18"
+                    height="19"
                     viewBox="0 0 22 23"
                     fill="none"
+                    className="sm:w-[22px] sm:h-[23px]"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
@@ -414,12 +417,12 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
               user?.role?.name === "Spv" || user?.role?.name === "Gardu Induk"
                 ? "xl:grid-cols-2"
                 : "xl:grid-cols-3"
-            } grid grid-cols-1 gap-6`}
+            } grid grid-cols-1 gap-4 sm:gap-6`}
           >
             {/* Tabel Riwayat Card */}
-            <div className="lg:col-span-2 bg-white rounded-md border border-gray-200 shadow-sm flex flex-col">
-              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="plus-jakarta-sans text-lg text-[#232323]">
+            <div className="lg:col-span-2 bg-white rounded-md border border-gray-200 shadow-sm flex flex-col w-full overflow-hidden">
+              <div className="p-3 sm:p-5 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="plus-jakarta-sans text-base sm:text-lg text-[#232323]">
                   Terbaru
                 </h2>
                 <button className="p-2 hover:bg-gray-50 rounded-lg">
@@ -438,25 +441,25 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
               </div>
 
               {/* Responsif Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px]">
+              <div className="overflow-x-auto -mx-3 sm:mx-0">
+                <table className="w-full min-w-[640px] sm:min-w-0">
                   <thead className="bg-[#F9FAFB]">
                     <tr className="border-b border-gray-100">
-                      <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                      <th className="text-left text-[10px] sm:text-xs font-medium text-[#495057] py-2 sm:py-3 px-3 sm:px-6">
                         Tanggal
                       </th>
                       {user?.role?.name !== "Vendor" && (
-                        <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                        <th className="text-left text-[10px] sm:text-xs font-medium text-[#495057] py-2 sm:py-3 px-3 sm:px-6">
                           Kepada
                         </th>
                       )}
-                      <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                      <th className="text-left text-[10px] sm:text-xs font-medium text-[#495057] py-2 sm:py-3 px-3 sm:px-6">
                         Perihal
                       </th>
-                      <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                      <th className="text-left text-[10px] sm:text-xs font-medium text-[#495057] py-2 sm:py-3 px-3 sm:px-6">
                         No Surat
                       </th>
-                      <th className="text-left text-xs font-medium text-[#495057] py-3 px-6">
+                      <th className="text-left text-[10px] sm:text-xs font-medium text-[#495057] py-2 sm:py-3 px-3 sm:px-6">
                         Status
                       </th>
                     </tr>
@@ -466,28 +469,28 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                     <tbody>
                       {suratData.map((item, index) => (
                         <tr key={index} className="border-b border-gray-50">
-                          <td className="py-4 px-4">
-                            <div className="text-sm text-[#212529]">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4">
+                            <div className="text-xs sm:text-sm text-[#212529] break-words">
                               <div>
                                 {formatDateTime(getTanggalSuratLocal(item))}
                               </div>
                             </div>
                           </td>
                           {user?.role?.name !== "Vendor" && (
-                            <td className="py-4 px-4 text-sm text-[#495057]">
+                            <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#495057] break-words">
                               {item.recipient.name}
                             </td>
                           )}
-                          <td className="py-4 px-4 text-sm text-[#212529]">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#212529] break-words max-w-[120px] sm:max-w-none">
                             {getPerihal(item)}
                           </td>
-                          <td className="py-4 px-4 text-sm text-[#495057]">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#495057] break-words">
                             {getNoSurat(item)}
                           </td>
-                          <td className="py-4 px-4">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4">
                             {item.surat_jalan.status_entry !== "Draft" ? (
                               <div
-                                className={`px-3 py-1 rounded-xl ${
+                                className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl inline-block ${
                                   item.surat_jalan.status_surat ===
                                   "In Progress"
                                     ? "bg-yellow-100"
@@ -498,7 +501,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                                 }`}
                               >
                                 <span
-                                  className={`plus-jakarta-sans text-xs font-medium ${
+                                  className={`plus-jakarta-sans text-[10px] sm:text-xs font-medium whitespace-nowrap ${
                                     item.surat_jalan.status_surat ===
                                     "In Progress"
                                       ? "text-yellow-700"
@@ -513,9 +516,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               </div>
                             ) : (
                               <div
-                                className={`px-3 py-1 rounded-xl bg-gray-100`}
+                                className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl bg-gray-100 inline-block`}
                               >
-                                <span className="plus-jakarta-sans text-xs font-medium text-gray-600">
+                                <span className="plus-jakarta-sans text-[10px] sm:text-xs font-medium text-gray-600 whitespace-nowrap">
                                   Draft
                                 </span>
                               </div>
@@ -532,8 +535,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                         )
                         .map((item, index) => (
                           <tr key={index} className="border-b border-gray-50">
-                            <td className="py-4 px-4">
-                              <div className="text-sm text-[#212529]">
+                            <td className="py-3 sm:py-4 px-3 sm:px-4">
+                              <div className="text-xs sm:text-sm text-[#212529] break-words">
                                 <div>
                                   <div>
                                     {formatDateTime(getTanggalSuratLocal(item))}
@@ -542,20 +545,20 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                               </div>
                             </td>
                             {user?.role?.name !== "Vendor" && (
-                              <td className="py-4 px-4 text-sm text-[#495057]">
+                              <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#495057] break-words">
                                 {item.recipient.name}
                               </td>
                             )}
-                            <td className="py-4 px-4 text-sm text-[#212529]">
+                            <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#212529] break-words max-w-[120px] sm:max-w-none">
                               {getPerihal(item)}
                             </td>
-                            <td className="py-4 px-4 text-sm text-[#495057]">
+                            <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#495057] break-words">
                               {getNoSurat(item)}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-3 sm:py-4 px-3 sm:px-4">
                               {item.surat_jalan.status_entry !== "Draft" ? (
                                 <div
-                                  className={`px-3 py-1 rounded-xl ${
+                                  className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl inline-block ${
                                     item.surat_jalan.status_surat ===
                                     "In Progress"
                                       ? "bg-yellow-100"
@@ -566,7 +569,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                                   }`}
                                 >
                                   <span
-                                    className={`plus-jakarta-sans text-xs font-medium ${
+                                    className={`plus-jakarta-sans text-[10px] sm:text-xs font-medium whitespace-nowrap ${
                                       item.surat_jalan.status_surat ===
                                       "In Progress"
                                         ? "text-yellow-700"
@@ -581,9 +584,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                                 </div>
                               ) : (
                                 <div
-                                  className={`px-3 py-1 rounded-xl bg-gray-100`}
+                                  className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl bg-gray-100 inline-block`}
                                 >
-                                  <span className="plus-jakarta-sans text-xs font-medium text-gray-600">
+                                  <span className="plus-jakarta-sans text-[10px] sm:text-xs font-medium text-gray-600 whitespace-nowrap">
                                     Draft
                                   </span>
                                 </div>
@@ -600,13 +603,13 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
             {/* New Activity Card */}
             {user?.role?.name !== "Spv" &&
               user?.role?.name !== "Gardu Induk" && (
-                <div className="bg-white rounded-md border border-gray-200 shadow-sm px-[17.5px] py-[25px]">
-                  <div className="mb-8">
+                <div className="bg-white rounded-md border border-gray-200 shadow-sm px-4 sm:px-[17.5px] py-4 sm:py-[25px]">
+                  <div className="mb-4 sm:mb-8">
                     <div className="flex items-center justify-between">
-                      <h2 className="plus-jakarta-sans text-lg font-bold text-[#232323]">
+                      <h2 className="plus-jakarta-sans text-base sm:text-lg font-bold text-[#232323]">
                         New Activity
                       </h2>
-                      <span className="text-[12px] text-[#232323] p-2 bg-[#F3F4F6] rounded-sm">
+                      <span className="text-[10px] sm:text-[12px] text-[#232323] p-1.5 sm:p-2 bg-[#F3F4F6] rounded-sm">
                         5 Activity
                       </span>
                     </div>
@@ -615,25 +618,25 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
                     {suratData.slice(0, 5).map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-3 border-b border-gray-100 pb-3"
+                        className="flex items-center gap-2 sm:gap-3 border-b border-gray-100 pb-2 sm:pb-3"
                       >
-                        <div className="p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
+                        <div className="p-1.5 sm:p-2 rounded-full bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
                           {item.surat_jalan.status_entry !== "Draft"
                             ? statusIcons[item.surat_jalan.status_surat]?.icon
                             : statusIcons["Draft"].icon}
                         </div>
                         {/* Responsive direction: badge akan turun jika kategori surat panjang */}
-                        <div className="flex flex-1 min-w-0 items-center justify-between max-sm:flex-col max-sm:items-start max-xl:gap-6">
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <p className="plus-jakarta-sans text-xs font-semibold text-[#232323] whitespace-pre-line break-words w-full">
+                        <div className="flex flex-1 min-w-0 items-center justify-between  max-sm:items-start max-xl:gap-6">
+                          <div className="flex flex-col flex-1 min-w-0 pr-2">
+                            <p className="plus-jakarta-sans text-[10px] sm:text-xs font-semibold text-[#232323] break-words w-full">
                               {item.surat_jalan.kategori_surat}
                             </p>
-                            <p className="plus-jakarta-sans text-[10px] text-[#545454] mt-1">
+                            <p className="plus-jakarta-sans text-[9px] sm:text-[10px] text-[#545454] mt-0.5 sm:mt-1">
                               oleh {item.sender.name} ·{" "}
                               {timeAgo(item.createdAt)}
                             </p>
                           </div>
-                          <div className="ml-4 flex-shrink-0 max-w-[50vw] sm:max-w-none mt-2 max-sm:ml-0 max-sm:mt-2">
+                          <div className="ml-2 sm:ml-4 flex-shrink-0 max-w-[50vw] sm:max-w-none mt-2 max-sm:ml-0 max-sm:mt-2">
                             {item.surat_jalan.status_entry !== "Draft" ? (
                               <span
                                 className={`plus-jakarta-sans px-2 py-1 rounded-full text-xs font-medium block w-max max-w-full text-ellipsis whitespace-nowrap overflow-hidden

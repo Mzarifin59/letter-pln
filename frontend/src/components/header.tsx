@@ -344,20 +344,20 @@ export default function Header() {
     <div className=" flex-1 flex flex-col">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-200 px-4 lg:px-8 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Left Section - Mobile Menu + Search */}
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {/* Search Section */}
-            <form onSubmit={handleSearch} className="flex-1 max-w-md">
-              <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-4 py-3">
-                <Search size={20} className="text-gray-500" />
+            <form onSubmit={handleSearch} className="flex-1 max-w-full sm:max-w-md min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 bg-[#F6F9FF] rounded-xl px-2 sm:px-4 py-2 sm:py-3">
+                <Search size={18} className="text-gray-500 flex-shrink-0 sm:w-5 sm:h-5" />
                 <input
                   type="text"
-                  placeholder="Search by No. Surat Jalan"
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500"
+                  className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500 text-sm sm:text-base min-w-0"
                 />
 
                 {/* Only show filter button if user has available categories */}
@@ -370,12 +370,12 @@ export default function Header() {
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
+                          className="text-gray-500 hover:text-[#0056B0] transition-colors relative flex-shrink-0"
                         >
-                          <SlidersVertical size={20} />
+                          <SlidersVertical size={18} className="sm:w-5 sm:h-5" />
                           {/* Badge untuk active filters */}
                           {selectedCategories.length > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                            <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-[10px] sm:text-xs rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center font-semibold">
                               {selectedCategories.length}
                             </span>
                           )}
@@ -425,9 +425,9 @@ export default function Header() {
                 )}
               </div>
 
-              {/* Active Filter Pills */}
+              {/* Active Filter Pills - Hidden on mobile to save space */}
               {selectedCategories.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="hidden sm:flex flex-wrap gap-2 mt-2">
                   {selectedCategories.map((category) => (
                     <span
                       key={category}
@@ -449,17 +449,17 @@ export default function Header() {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             {/* Action Icons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Bell Notification with Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all relative">
-                    <Bell size={20} />
+                  <button className="p-1.5 sm:p-2 text-gray-500 hover:text-[#0056B0] hover:bg-[#F2F5FE] rounded-lg transition-all relative">
+                    <Bell size={18} className="sm:w-5 sm:h-5" />
                     {/* Badge untuk unread emails dengan animasi */}
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-semibold">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
@@ -552,44 +552,46 @@ export default function Header() {
             {/* Divider - hidden di mobile */}
             <div className="hidden md:block h-8 w-px bg-gray-300"></div>
 
-            {/* User Profile */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors group">
-                  <div className="w-10 h-10 bg-[#0056B0] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {user?.name?.[0]?.toUpperCase() ?? "?"}
+            {/* User Profile - Hidden di mobile, akan ditampilkan di sidebar */}
+            <div className="hidden sm:flex items-center gap-2 md:gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-2 md:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-[#0056B0] rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
+                      {user?.name?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div className="hidden md:flex flex-col">
+                      <p className="text-sm font-medium text-gray-800">
+                        {loading ? "Loading..." : user?.name ?? "Guest"}
+                      </p>
+                      <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
+                    </div>
+                    <ChevronDown
+                      size={16}
+                      className="hidden md:block text-gray-400 group-hover:text-gray-600 transition-colors"
+                    />
                   </div>
-                  <div className="hidden sm:flex flex-col">
-                    <p className="text-sm font-medium text-gray-800">
-                      {loading ? "Loading..." : user?.name ?? "Guest"}
-                    </p>
-                    <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className="hidden sm:block text-gray-400 group-hover:text-gray-600 transition-colors"
-                  />
-                </div>
-              </DropdownMenuTrigger>
+                </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    window.location.href = "/logout";
-                  }}
-                  className="text-red-400 focus:text-red-500"
-                >
-                  <LogOut
-                    width={20}
-                    height={20}
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = "/logout";
+                    }}
                     className="text-red-400 focus:text-red-500"
-                  />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  >
+                    <LogOut
+                      width={20}
+                      height={20}
+                      className="text-red-400 focus:text-red-500"
+                    />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
