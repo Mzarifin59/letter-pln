@@ -317,10 +317,16 @@ export default function PreviewSection({
           />
         </div>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
+          <div 
+            className="text-sm font-semibold text-[#232323] leading-tight"
+            style={{ whiteSpace: "normal", wordSpacing: "normal" }}
+          >
             PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
           </div>
-          <div className="text-sm font-semibold text-[#232323] leading-tight">
+          <div 
+            className="text-sm font-semibold text-[#232323] leading-tight"
+            style={{ whiteSpace: "normal", wordSpacing: "normal" }}
+          >
             UNIT PELAKSANA TRANSMISI BANDUNG
           </div>
         </div>
@@ -354,7 +360,7 @@ export default function PreviewSection({
           Mohon diizinkan membawa barang-barang tersebut di bawah ini :
         </div>
 
-        <div className="space-y-0.5 text-base">
+        <div className="space-y-0.5 text-base" style={{ whiteSpace: "normal", wordSpacing: "normal" }}>
           <div className="flex">
             <div className="min-w-[170px]">No Surat Permintaan</div>
             <div>
@@ -403,10 +409,10 @@ export default function PreviewSection({
   const renderFooterKeterangan = () => (
     <>
       <div className="pb-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">Keterangan :</div>
+        <div className="text-base font-semibold" style={{ whiteSpace: "normal", wordSpacing: "normal" }}>Keterangan :</div>
       </div>
       <div className="py-2 pl-2 border-b-2 border-gray-800">
-        <div className="text-base font-semibold">
+        <div className="text-base font-semibold" style={{ whiteSpace: "normal", wordSpacing: "normal" }}>
           {formData.catatanTambahan || "(Catatan)"}
         </div>
       </div>
@@ -415,7 +421,7 @@ export default function PreviewSection({
 
   // Render bagian Informasi Kendaraan (bagian 2 dari footer)
   const renderFooterKendaraan = () => (
-    <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2">
+    <div className="pl-2 grid grid-cols-2 gap-8 mb-6 text-base py-2" style={{ whiteSpace: "normal", wordSpacing: "normal" }}>
       <div className="table">
         <div className="table-row">
           <div className="table-cell pr-4 font-semibold">Kendaraan</div>
@@ -519,9 +525,6 @@ export default function PreviewSection({
                   className="w-full h-full object-contain"
                 />
               </div>
-              <p className="text-xs text-gray-600 mt-2 text-center truncate max-w-full px-1">
-                {file.name}
-              </p>
             </div>
           ))}
         </div>
@@ -560,6 +563,8 @@ export default function PreviewSection({
         style={{
           padding: "15mm 15mm 15mm 15mm",
           boxSizing: "border-box",
+          whiteSpace: "normal",
+          wordSpacing: "normal",
         }}
       >
         {/* Header */}
@@ -586,9 +591,6 @@ export default function PreviewSection({
                   className="w-full h-full object-contain"
                 />
               </div>
-              <p className="text-xs text-gray-600 mt-2 text-center truncate max-w-full px-1">
-                {file.name}
-              </p>
             </div>
           ))}
         </div>
@@ -606,9 +608,9 @@ export default function PreviewSection({
   return (
     <div className="bg-white flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex max-sm:flex-col gap-5 items-center sm:justify-between p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-800">Preview Surat</h2>
-          <div className="flex gap-3">
+          <div className="flex max-sm:flex-wrap max-sm:justify-center items-center gap-3">
             <Button
               onClick={onSubmit}
               className="bg-blue-600 hover:bg-blue-700"
@@ -631,163 +633,336 @@ export default function PreviewSection({
         </div>
 
         <div className="bg-[#F6F9FF] p-8 overflow-y-auto flex-1">
-          <div id="preview-content">
-            {/* Loop untuk setiap lembar (4 lembar) */}
-            {[0, 1, 2, 3].map((lembarIndex) => (
-              <div key={lembarIndex}>
-                {/* Loop untuk setiap halaman material */}
-                {materialPages.map((pageData, pageIndex) => {
-                  const {
-                    materials: pageMaterials,
-                    showFooter,
-                    footerParts = {
-                      keterangan: false,
-                      kendaraan: false,
-                      tandaTangan: false,
-                      lampiran: false,
-                    },
-                    isFirstPage,
-                  } = pageData;
+          <div id="preview-content" className="w-full flex justify-center">
+            <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
+              {/* Loop untuk setiap lembar (4 lembar) */}
+              {[0, 1, 2, 3].map((lembarIndex) => (
+                <div key={lembarIndex}>
+                  {/* Loop untuk setiap halaman material */}
+                  {materialPages.map((pageData, pageIndex) => {
+                    const {
+                      materials: pageMaterials,
+                      showFooter,
+                      footerParts = {
+                        keterangan: false,
+                        kendaraan: false,
+                        tandaTangan: false,
+                        lampiran: false,
+                      },
+                      isFirstPage,
+                    } = pageData;
 
-                  // Hitung nomor awal untuk halaman ini
-                  let startIndex = 0;
-                  for (let i = 0; i < pageIndex; i++) {
-                    startIndex += materialPages[i].materials.length;
-                  }
+                    // Hitung nomor awal untuk halaman ini
+                    let startIndex = 0;
+                    for (let i = 0; i < pageIndex; i++) {
+                      startIndex += materialPages[i].materials.length;
+                    }
 
-                  const isLastPage = pageIndex === materialPages.length - 1;
+                    const isLastPage = pageIndex === materialPages.length - 1;
 
-                  return (
-                    <div
-                      key={`${lembarIndex}-${pageIndex}`}
-                      className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
-                      data-lembar={lembarIndex}
-                      data-page={pageIndex}
-                      style={{
-                        padding: "15mm 15mm 15mm 15mm",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {/* Header - ada di setiap halaman */}
-                      {renderHeader(lembarIndex, lembarLabels)}
+                    return (
+                      <div
+                        key={`${lembarIndex}-${pageIndex}`}
+                        className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                        data-lembar={lembarIndex}
+                        data-page={pageIndex}
+                        style={{
+                          padding: "15mm 15mm 15mm 15mm",
+                          boxSizing: "border-box",
+                          whiteSpace: "normal",
+                          wordSpacing: "normal",
+                        }}
+                      >
+                        {/* Header - ada di setiap halaman */}
+                        {renderHeader(lembarIndex, lembarLabels)}
 
-                      {/* Title dan Info - hanya di halaman pertama */}
-                      {isFirstPage && renderTitleAndInfo()}
+                        {/* Title dan Info - hanya di halaman pertama */}
+                        {isFirstPage && renderTitleAndInfo()}
 
-                      {/* Materials Table - jika ada material di halaman ini */}
-                      {pageMaterials.length > 0 && (
-                        <div className="mb-3">
-                          <table
-                            className="w-full border-collapse"
-                            style={{ fontSize: "13px" }}
-                          >
-                            <thead className="bg-gray-100">
-                              <tr className="text-center">
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "5%" }}
-                                >
-                                  NO
-                                </th>
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "30%" }}
-                                >
-                                  NAMA MATERIAL
-                                </th>
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "12%" }}
-                                >
-                                  KATALOG
-                                </th>
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "10%" }}
-                                >
-                                  SATUAN
-                                </th>
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "10%" }}
-                                >
-                                  JUMLAH
-                                </th>
-                                <th
-                                  className="border-2 border-gray-800 px-1.5 py-1"
-                                  style={{ width: "33%" }}
-                                >
-                                  KETERANGAN (LOKASI TYPE, S/N DLL)
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pageMaterials.map((material, idx) => (
-                                <tr key={material.id || idx}>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
-                                    {startIndex + idx + 1}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1">
-                                    {material.namaMaterial || "-"}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
-                                    {material.katalog || "-"}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
-                                    {material.satuan || "-"}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
-                                    {material.jumlah || "0"}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
-                                    {material.keterangan || "-"}
-                                  </td>
-                                </tr>
-                              ))}
-
-                              {/* Total row jika showFooter */}
-                              {showFooter && (
-                                <tr className="bg-gray-100 font-semibold">
-                                  <td
-                                    colSpan={4}
-                                    className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                        {/* Materials Table - jika ada material di halaman ini */}
+                        {pageMaterials.length > 0 && (
+                          <div className="mb-3">
+                            <table
+                              className="w-full border-collapse"
+                              style={{ fontSize: "13px" }}
+                            >
+                              <thead className="bg-gray-100">
+                                <tr className="text-center">
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "5%" }}
                                   >
-                                    TOTAL
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
-                                    {hasMaterialData()
-                                      ? calculateTotal()
-                                      : dummyMaterials.reduce(
-                                          (sum, m) => sum + m.jumlah,
-                                          0
-                                        )}
-                                  </td>
-                                  <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                    NO
+                                  </th>
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "30%" }}
+                                  >
+                                    NAMA MATERIAL
+                                  </th>
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "12%" }}
+                                  >
+                                    KATALOG
+                                  </th>
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "10%" }}
+                                  >
+                                    SATUAN
+                                  </th>
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "10%" }}
+                                  >
+                                    JUMLAH
+                                  </th>
+                                  <th
+                                    className="border-2 border-gray-800 px-1.5 py-1"
+                                    style={{ width: "33%" }}
+                                  >
+                                    KETERANGAN (LOKASI TYPE, S/N DLL)
+                                  </th>
                                 </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                              </thead>
+                              <tbody>
+                                {pageMaterials.map((material, idx) => (
+                                  <tr key={material.id || idx}>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                      {startIndex + idx + 1}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1">
+                                      {material.namaMaterial || "-"}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                      {material.katalog || "-"}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                      {material.satuan || "-"}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                      {material.jumlah || "0"}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                      {material.keterangan || "-"}
+                                    </td>
+                                  </tr>
+                                ))}
 
-                      {/* Footer - render bagian yang sesuai */}
-                      {showFooter && (
-                        <>
-                          {footerParts.keterangan && renderFooterKeterangan()}
-                          {footerParts.kendaraan && renderFooterKendaraan()}
-                          {footerParts.tandaTangan && renderFooterTandaTangan()}
-                          {footerParts.lampiran && renderFooterLampiran()}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-                
-                {/* Halaman Lampiran terpisah - hanya jika material <= 8 */}
-                {renderLampiranPage(lembarIndex, lembarLabels)}
-              </div>
-            ))}
+                                {/* Total row jika showFooter */}
+                                {showFooter && (
+                                  <tr className="bg-gray-100 font-semibold">
+                                    <td
+                                      colSpan={4}
+                                      className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                    >
+                                      TOTAL
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                      {hasMaterialData()
+                                        ? calculateTotal()
+                                        : dummyMaterials.reduce(
+                                            (sum, m) => sum + m.jumlah,
+                                            0
+                                          )}
+                                    </td>
+                                    <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Footer - render bagian yang sesuai */}
+                        {showFooter && (
+                          <>
+                            {footerParts.keterangan && renderFooterKeterangan()}
+                            {footerParts.kendaraan && renderFooterKendaraan()}
+                            {footerParts.tandaTangan && renderFooterTandaTangan()}
+                            {footerParts.lampiran && renderFooterLampiran()}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Halaman Lampiran terpisah - hanya jika material <= 8 */}
+                  {renderLampiranPage(lembarIndex, lembarLabels)}
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Hidden div untuk PDF generation - tidak terpengaruh responsive scale */}
+      <div
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: 0,
+          backgroundColor: "#ffffff",
+          zIndex: -1,
+        }}
+      >
+        <div id="hidden-preview-content">
+          {/* Loop untuk setiap lembar (4 lembar) */}
+          {[0, 1, 2, 3].map((lembarIndex) => (
+            <div key={lembarIndex}>
+              {/* Loop untuk setiap halaman material */}
+              {materialPages.map((pageData, pageIndex) => {
+                const {
+                  materials: pageMaterials,
+                  showFooter,
+                  footerParts = {
+                    keterangan: false,
+                    kendaraan: false,
+                    tandaTangan: false,
+                    lampiran: false,
+                  },
+                  isFirstPage,
+                } = pageData;
+
+                // Hitung nomor awal untuk halaman ini
+                let startIndex = 0;
+                for (let i = 0; i < pageIndex; i++) {
+                  startIndex += materialPages[i].materials.length;
+                }
+
+                return (
+                  <div
+                    key={`${lembarIndex}-${pageIndex}`}
+                    className="surat w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                    data-lembar={lembarIndex}
+                    data-page={pageIndex}
+                    style={{
+                      padding: "15mm 15mm 15mm 15mm",
+                      boxSizing: "border-box",
+                      whiteSpace: "normal",
+                      wordSpacing: "normal",
+                    }}
+                  >
+                    {/* Header - ada di setiap halaman */}
+                    {renderHeader(lembarIndex, lembarLabels)}
+
+                    {/* Title dan Info - hanya di halaman pertama */}
+                    {isFirstPage && renderTitleAndInfo()}
+
+                    {/* Materials Table - jika ada material di halaman ini */}
+                    {pageMaterials.length > 0 && (
+                      <div className="mb-3">
+                        <table
+                          className="w-full border-collapse"
+                          style={{ fontSize: "13px" }}
+                        >
+                          <thead className="bg-gray-100">
+                            <tr className="text-center">
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "5%" }}
+                              >
+                                NO
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "30%" }}
+                              >
+                                NAMA MATERIAL
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "12%" }}
+                              >
+                                KATALOG
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "10%" }}
+                              >
+                                SATUAN
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "10%" }}
+                              >
+                                JUMLAH
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "33%" }}
+                              >
+                                KETERANGAN (LOKASI TYPE, S/N DLL)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageMaterials.map((material, idx) => (
+                              <tr key={material.id || idx}>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {startIndex + idx + 1}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1">
+                                  {material.namaMaterial || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.katalog || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.satuan || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.jumlah || "0"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.keterangan || "-"}
+                                </td>
+                              </tr>
+                            ))}
+
+                            {/* Total row jika showFooter */}
+                            {showFooter && (
+                              <tr className="bg-gray-100 font-semibold">
+                                <td
+                                  colSpan={4}
+                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                >
+                                  TOTAL
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                  {hasMaterialData()
+                                    ? calculateTotal()
+                                    : dummyMaterials.reduce(
+                                        (sum, m) => sum + m.jumlah,
+                                        0
+                                      )}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Footer - render bagian yang sesuai */}
+                    {showFooter && (
+                      <>
+                        {footerParts.keterangan && renderFooterKeterangan()}
+                        {footerParts.kendaraan && renderFooterKendaraan()}
+                        {footerParts.tandaTangan && renderFooterTandaTangan()}
+                        {footerParts.lampiran && renderFooterLampiran()}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Halaman Lampiran terpisah - hanya jika material <= 8 */}
+              {renderLampiranPage(lembarIndex, lembarLabels)}
+            </div>
+          ))}
         </div>
       </div>
     </div>

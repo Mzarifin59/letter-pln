@@ -136,7 +136,12 @@ export default function PreviewBeritaPemeriksaan({
     const generatePDF = async () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const pages = document.querySelectorAll(".surat-berita-pemeriksaan");
+      // Gunakan hidden div untuk PDF generation (tidak terpengaruh responsive scale)
+      const hiddenContent = document.getElementById("hidden-preview-content");
+      const pages = hiddenContent
+        ? hiddenContent.querySelectorAll(".surat-berita-pemeriksaan")
+        : document.querySelectorAll(".surat-berita-pemeriksaan");
+      
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
         setIsGeneratingPDF(false);
@@ -237,48 +242,53 @@ export default function PreviewBeritaPemeriksaan({
     <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9">
       <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
         {/* Header Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="plus-jakarta-sans text-xl sm:text-2xl font-semibold text-[#353739]">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <h2 className="plus-jakarta-sans text-lg sm:text-xl md:text-2xl font-semibold text-[#353739]">
             Preview Berita Acara Pemeriksaan Tim Mutu
           </h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Button
               variant="outline"
               onClick={onClose}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              size="sm"
             >
-              <X className="w-4 h-4" />
-              Tutup
+              <X className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Tutup</span>
             </Button>
             <Button
               variant="outline"
               onClick={handleDownloadPDF}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              size="sm"
             >
-              <Download className="w-4 h-4" />
-              Download PDF
+              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Download PDF</span>
             </Button>
             <Button
               variant="outline"
               onClick={onDraft}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              size="sm"
             >
-              <StickyNote className="w-4 h-4" />
-              Draft
+              <StickyNote className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Draft</span>
             </Button>
             <Button
               onClick={onSubmit}
-              className="flex items-center gap-2 bg-[#0056B0] text-white hover:bg-[#004494]"
+              className="flex items-center gap-1 sm:gap-2 bg-[#0056B0] text-white hover:bg-[#004494] text-xs sm:text-sm"
+              size="sm"
             >
-              <Send className="w-4 h-4" />
-              Kirim
+              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Kirim</span>
             </Button>
           </div>
         </div>
 
         {/* Preview Content */}
-        <div className="space-y-6">
-          {materialPages.map((pageMaterials, pageIndex) => {
+        <div className="space-y-6 w-full flex justify-center">
+          <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
+            {materialPages.map((pageMaterials, pageIndex) => {
             const isCompactMode = pageMaterials.length <= 3;
             const lembarLabels =
               materialPages.length > 1
@@ -635,20 +645,21 @@ export default function PreviewBeritaPemeriksaan({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
-      {/* Hidden PDF Preview */}
-      {isGeneratingPDF && (
-        <div
-          style={{
-            position: "fixed",
-            left: "-10000px",
-            top: 0,
-            backgroundColor: "#ffffff",
-            zIndex: -1,
-          }}
-        >
+      {/* Hidden PDF Preview - selalu ada untuk PDF generation */}
+      <div
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: 0,
+          backgroundColor: "#ffffff",
+          zIndex: -1,
+        }}
+      >
+        <div id="hidden-preview-content">
           {materialPages.map((pageMaterials, pageIndex) => {
             const isCompactMode = pageMaterials.length <= 3;
             const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
@@ -660,6 +671,8 @@ export default function PreviewBeritaPemeriksaan({
                 style={{
                   padding: "15mm 15mm 15mm 15mm",
                   boxSizing: "border-box",
+                  whiteSpace: "normal",
+                  wordSpacing: "normal",
                 }}
               >
                 {/* Company Header */}
@@ -1059,7 +1072,7 @@ export default function PreviewBeritaPemeriksaan({
             );
           })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

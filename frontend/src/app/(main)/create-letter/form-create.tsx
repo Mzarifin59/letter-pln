@@ -612,7 +612,12 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
   };
 
   const handleDownloadPDF = async () => {
-    const pages = document.querySelectorAll(".surat");
+    // Gunakan hidden div untuk PDF generation (tidak terpengaruh responsive scale)
+    const hiddenContent = document.getElementById("hidden-preview-content");
+    const pages = hiddenContent
+      ? hiddenContent.querySelectorAll(".surat")
+      : document.querySelectorAll(".surat");
+    
     if (!pages.length) return alert("Preview tidak ditemukan!");
 
     const pdf = new jsPDF({
@@ -649,6 +654,9 @@ export default function FormCreatePage({ dataSurat }: FormCreateProps) {
             clonedPage.style.height = "297mm";
             clonedPage.style.maxHeight = "297mm";
             clonedPage.style.overflow = "hidden";
+            // Pastikan spasi tetap terlihat di PDF
+            clonedPage.style.whiteSpace = "normal";
+            clonedPage.style.wordSpacing = "normal";
           }
         },
       });

@@ -686,7 +686,12 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
   };
 
   const handleDownloadPDF = async () => {
-    const pages = document.querySelectorAll(".surat");
+    // Gunakan hidden div untuk PDF generation (tidak terpengaruh responsive scale)
+    const hiddenContent = document.getElementById("hidden-preview-content");
+    const pages = hiddenContent
+      ? hiddenContent.querySelectorAll(".surat")
+      : document.querySelectorAll(".surat");
+    
     if (!pages.length) return alert("Preview tidak ditemukan!");
 
     const pdf = new jsPDF({
@@ -712,6 +717,18 @@ export default function FormCreatePage({ dataSurat, users }: FormCreateProps) {
         height: page.scrollHeight,
         logging: false,
         imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          const clonedPage = clonedDoc.querySelector(
+            `[data-page="${page.getAttribute("data-page")}"]`
+          ) as HTMLElement;
+          if (clonedPage) {
+            clonedPage.style.height = "297mm";
+            clonedPage.style.maxHeight = "297mm";
+            clonedPage.style.overflow = "hidden";
+            clonedPage.style.whiteSpace = "normal";
+            clonedPage.style.wordSpacing = "normal";
+          }
+        },
       });
 
       const imgData = canvas.toDataURL("image/png");
