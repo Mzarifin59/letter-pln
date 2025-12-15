@@ -387,11 +387,25 @@ export default factories.createCoreController(
         const existingMengetahui = email.surat_jalan.mengetahui || {};
         const existingPenerima = email.surat_jalan.penerima || {};
 
-        // ===== UPDATE SURAT JALAN - LANGSUNG TANPA OBJECT TERPISAH =====
+        // Cek apakah existingMengetahui dan existingPenerima benar-benar ada (bukan empty object)
+        const hasMengetahui = existingMengetahui && Object.keys(existingMengetahui).length > 0 && !existingPenerima;
+        const hasPenerima = signaturePenerima && Object.keys(existingPenerima).length > 0 && !signature;
+
+        // Tentukan status_surat berdasarkan kondisi:
+        // - Jika existingMengetahui ada → "In Progress"
+        // - Jika existingMengetahui tidak ada tetapi existingPenerima ada → "Approve"
+        let statusSurat = null;
+        if (hasMengetahui) {
+          statusSurat = "In Progress";
+        } else if (hasPenerima) {
+          statusSurat = "Approve";
+        }
+
+        // ===== UPDATE SURAT JALAN =====
         await strapi.documents("api::surat-jalan.surat-jalan").update({
           documentId: email.surat_jalan.documentId,
           data: {
-            status_surat: "Approve",
+            ...(statusSurat && { status_surat: statusSurat }),
             ...(signature && {
               mengetahui: {
                 ...existingMengetahui,
@@ -438,7 +452,8 @@ export default factories.createCoreController(
           });
         }
 
-        if (existingMengetahui) {
+        // Hanya create email status untuk Admin jika existingMengetahui ada
+        if (hasMengetahui) {
           await strapi.documents("api::email-status.email-status").create({
             data: {
               email: email.documentId,

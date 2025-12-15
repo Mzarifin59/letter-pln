@@ -185,7 +185,9 @@ export default function TrackingContentPage({
       (item) =>
         item.surat_jalan.status_surat === "In Progress" &&
         item.surat_jalan.status_entry !== "Draft" &&
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        hasMengetahui(item.surat_jalan) &&
+        !item.surat_jalan.mengetahui?.ttd_mengetahui
     );
   }
 
