@@ -438,7 +438,7 @@ async function searchEmails(
     // Spv: semua kategori, semua filter
     if (searchType === "semua") {
       filters.$or = [
-        // No. Surat
+        // No. Surat - field yang pasti ada
         {
           surat_jalan: {
             no_surat_jalan: { $containsi: query },
@@ -489,75 +489,7 @@ async function searchEmails(
             },
           },
         },
-        // Penerima
-        {
-          surat_jalan: {
-            penerima: {
-              perusahaan_penerima: { $containsi: query },
-            },
-          },
-        },
-        {
-          surat_jalan: {
-            penerima: {
-              nama_penerima: { $containsi: query },
-            },
-          },
-        },
-        // Pengirim
-        {
-          surat_jalan: {
-            pengirim: {
-              departemen_pengirim: { $containsi: query },
-            },
-          },
-        },
-        {
-          surat_jalan: {
-            pengirim: {
-              nama_pengirim: { $containsi: query },
-            },
-          },
-        },
-        // Mengetahui (Vendor)
-        {
-          surat_jalan: {
-            mengetahui: {
-              departemen_mengetahui: { $containsi: query },
-            },
-          },
-        },
-        {
-          surat_jalan: {
-            mengetahui: {
-              nama_mengetahui: { $containsi: query },
-            },
-          },
-        },
-        // Penyedia Barang
-        {
-          surat_jalan: {
-            penyedia_barang: {
-              perusahaan_penyedia_barang: { $containsi: query },
-            },
-          },
-        },
-        {
-          surat_jalan: {
-            penyedia_barang: {
-              nama_penanggung_jawab: { $containsi: query },
-            },
-          },
-        },
-        // Pemeriksa Barang
-        {
-          surat_jalan: {
-            pemeriksa_barang: {
-              departemen_pemeriksa: { $containsi: query },
-            },
-          },
-        },
-        // Field lainnya
+        // Field lainnya yang pasti ada
         {
           surat_jalan: {
             catatan_tambahan: { $containsi: query },
@@ -697,9 +629,29 @@ async function searchEmails(
     },
   });
 
-  const res = await fetch(`${apiUrl}/api/emails?${queryString}`);
-  const data = await res.json();
-  return data.data;
+  try {
+    const res = await fetch(`${apiUrl}/api/emails?${queryString}`);
+    
+    if (!res.ok) {
+      console.error("Search API error:", res.status, res.statusText);
+      const errorData = await res.json().catch(() => ({}));
+      console.error("Error details:", errorData);
+      throw new Error(`Search failed: ${res.status} ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    
+    // Pastikan data.data adalah array
+    if (!data || !data.data) {
+      console.warn("Search returned invalid data structure:", data);
+      return [];
+    }
+    
+    return Array.isArray(data.data) ? data.data : [];
+  } catch (error) {
+    console.error("Error in searchEmails:", error);
+    throw error;
+  }
 }
 
 const getNoSurat = (item: DynamicEmailData) => {
@@ -811,8 +763,6 @@ export default function SearchResultPage() {
     setSearchType(searchTypeParam);
   }, [query, searchTypeParam]);
 
-  console.log("Data:", results)
-
   useEffect(() => {
     const fetchResults = async () => {
       if (!query || !user?.role?.name) {
@@ -828,14 +778,17 @@ export default function SearchResultPage() {
           user.role.name
         );
 
+        // Pastikan data adalah array, jika null/undefined gunakan array kosong
+        const emailData = Array.isArray(data) ? data : [];
+
         // Filter berdasarkan status_entry untuk Spv
         let filteredData =
           user?.role?.name === "Spv"
-            ? data.filter((item) => {
+            ? emailData.filter((item) => {
                 const suratJalan = item.surat_jalan;
-                return suratJalan.status_entry !== "Draft";
+                return suratJalan?.status_entry !== "Draft";
               })
-            : data;
+            : emailData;
 
         // Filter berdasarkan kategori jika ada
         if (selectedCategories.length > 0) {
@@ -978,9 +931,9 @@ export default function SearchResultPage() {
           {/* Search Form */}
           <form onSubmit={handleSearch} className="space-y-3">
             {/* Search Type Selector */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Filter size={18} className="text-gray-500" />
-              <span className="text-sm text-gray-600 font-medium">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <Filter size={16} className="text-gray-500 flex-shrink-0 sm:w-[18px] sm:h-[18px]" />
+              <span className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">
                 Cari berdasarkan:
               </span>
               {availableSearchTypes.map((type) => (
@@ -988,7 +941,7 @@ export default function SearchResultPage() {
                   key={type.value}
                   type="button"
                   onClick={() => handleSearchTypeChange(type.value)}
-                  className={`text-sm px-4 py-1.5 rounded-lg font-medium transition-colors ${
+                  className={`text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
                     searchType === type.value
                       ? "bg-[#0056B0] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1000,31 +953,31 @@ export default function SearchResultPage() {
             </div>
 
             {/* Search Input */}
-            <div className="flex items-center gap-3 bg-[#F6F9FF] rounded-xl px-6 py-4 border-2 border-[#0056B0]/20 focus-within:border-[#0056B0] transition-colors">
-              <Search size={24} className="text-[#0056B0]" />
+            <div className="flex items-center gap-2 sm:gap-3 bg-[#F6F9FF] rounded-xl px-3 sm:px-6 py-3 sm:py-4 border-2 border-[#0056B0]/20 focus-within:border-[#0056B0] transition-colors">
+              <Search size={20} className="text-[#0056B0] flex-shrink-0 sm:w-6 sm:h-6" />
               <input
                 type="text"
                 placeholder={getSearchPlaceholder()}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="bg-transparent border-none outline-none flex-1 text-gray-700 placeholder-gray-500 text-lg"
+                className="bg-transparent border-none outline-none flex-1 min-w-0 text-gray-700 placeholder-gray-500 text-sm sm:text-lg"
                 autoFocus
               />
 
               {/* Filter Dropdown - Only show if user has available categories */}
               {showFilter && (
                 <>
-                  <div className="h-8 w-px bg-[#0056B0] mx-2"></div>
+                  <div className="h-6 sm:h-8 w-px bg-[#0056B0] mx-1 sm:mx-2 flex-shrink-0"></div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="text-gray-500 hover:text-[#0056B0] transition-colors relative"
+                        className="text-gray-500 hover:text-[#0056B0] transition-colors relative flex-shrink-0"
                       >
-                        <SlidersVertical size={24} />
+                        <SlidersVertical size={20} className="sm:w-6 sm:h-6" />
                         {/* Badge untuk active filters */}
                         {selectedCategories.length > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                          <span className="absolute -top-1 -right-1 bg-[#0056B0] text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-semibold text-[10px] sm:text-xs">
                             {selectedCategories.length}
                           </span>
                         )}
@@ -1070,7 +1023,7 @@ export default function SearchResultPage() {
 
               <button
                 type="submit"
-                className="bg-[#0056B0] text-white px-6 py-2 rounded-lg hover:bg-[#004494] transition-colors font-medium"
+                className="bg-[#0056B0] text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg hover:bg-[#004494] transition-colors font-medium text-sm sm:text-base flex-shrink-0 whitespace-nowrap"
               >
                 Cari
               </button>
@@ -1079,28 +1032,28 @@ export default function SearchResultPage() {
 
           {/* Active Filters */}
           {selectedCategories.length > 0 && (
-            <div className="mt-4 flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-600 font-medium">
+            <div className="mt-4 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">
                 Filter berdasarkan:
               </span>
               {selectedCategories.map((category) => (
                 <span
                   key={category}
-                  className="inline-flex items-center gap-2 bg-[#0056B0] text-white text-sm px-3 py-1.5 rounded-lg"
+                  className="inline-flex items-center gap-1 sm:gap-2 bg-[#0056B0] text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg"
                 >
-                  {category}
+                  <span className="truncate max-w-[120px] sm:max-w-none">{category}</span>
                   <button
                     onClick={() => handleRemoveCategory(category)}
-                    className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-white/20 rounded-full p-0.5 transition-colors flex-shrink-0"
                     type="button"
                   >
-                    <X size={14} />
+                    <X size={12} className="sm:w-[14px] sm:h-[14px]" />
                   </button>
                 </span>
               ))}
               <button
                 onClick={handleClearAllFilters}
-                className="text-sm text-red-600 hover:text-red-700 font-medium underline"
+                className="text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium underline whitespace-nowrap"
                 type="button"
               >
                 Hapus semua filter
@@ -1110,7 +1063,7 @@ export default function SearchResultPage() {
 
           {/* Search Info */}
           {query && (
-            <p className="mt-4 text-sm text-gray-600">
+            <p className="mt-4 text-xs sm:text-sm text-gray-600 break-words">
               Menampilkan hasil untuk:{" "}
               <span className="font-semibold text-gray-900">"{query}"</span>
               <span className="text-gray-500">
@@ -1128,7 +1081,7 @@ export default function SearchResultPage() {
                 </span>
               )}
               {!loading && (
-                <span className="ml-2">
+                <span className="ml-1 sm:ml-2 block sm:inline">
                   ({results?.length} hasil{results?.length !== 1 ? "" : ""}{" "}
                   ditemukan)
                 </span>
@@ -1143,9 +1096,9 @@ export default function SearchResultPage() {
         <div className="flex max-lg:flex-col gap-6">
           {/* LEFT SIDE - Search Result List */}
           <div
-            className={`transition-all duration-300 ${
-              openedEmail ? "lg:w-1/2" : "w-full"
-            }`}
+            className={`${
+              openedEmail ? "hidden" : "w-full"
+            } transition-all duration-300`}
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
@@ -1230,11 +1183,7 @@ export default function SearchResultPage() {
                       </div>
 
                       {/* Details Grid */}
-                      <div
-                        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 transition-all duration-200 ${
-                          openedEmail ? "hidden lg:grid" : "grid"
-                        }`}
-                      >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar size={16} className="text-gray-400" />
                           <span className="text-gray-500">Tanggal:</span>
@@ -1282,11 +1231,7 @@ export default function SearchResultPage() {
                       {/* Materials Count */}
                       {email.surat_jalan?.materials &&
                         email.surat_jalan.materials.length > 0 && (
-                          <div
-                            className={`flex items-center gap-2 text-sm text-gray-600 mb-4 transition-all duration-200 ${
-                              openedEmail ? "hidden lg:flex" : "flex"
-                            }`}
-                          >
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FileText size={16} className="text-gray-400" />
                             <span>
                               Terdapat {email.surat_jalan.materials.length} material  
@@ -1295,11 +1240,7 @@ export default function SearchResultPage() {
                         )}
 
                       {/* Action Button */}
-                      <div
-                        className={`flex items-center justify-end gap-3 pt-4 border-t border-gray-100 ${
-                          openedEmail ? "hidden lg:flex" : "flex"
-                        }`}
-                      >
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                         <button
                           onClick={() => handleEmailClick(email)}
                           className="px-4 py-2 bg-[#0056B0] text-white rounded-lg hover:bg-[#004494] transition-colors font-medium text-sm"
@@ -1316,17 +1257,19 @@ export default function SearchResultPage() {
 
           {/* RIGHT SIDE - Email Detail */}
           {openedEmail && (
-            <div className="lg:w-2/3 bg-white rounded-xl shadow-sm border border-gray-200 overflow-y-auto">
+            <div className="w-full h-full overflow-hidden">
               {openedEmail.surat_jalan.kategori_surat === "Surat Jalan" ? (
                 <EmailDetail
                   email={openedEmail as EmailDataAdmin}
                   handleCloseDetail={handleCloseDetail}
+                  isSend={true}
                 />
               ) : openedEmail.surat_jalan.kategori_surat ===
                 "Berita Acara Material Bongkaran" ? (
                 <EmailDetailBeritaBongkaran
                   email={openedEmail as EmailDataVendor}
                   handleCloseDetail={handleCloseDetail}
+                  isSend={true}
                 />
               ) : openedEmail.surat_jalan.kategori_surat ===
                 "Berita Acara Pemeriksaan Tim Mutu" ? (
