@@ -221,10 +221,6 @@ export const useBeritaPemeriksaanForm = () => {
         submissionData.tanggal_pelaksanaan = now;
       }
 
-      // Debug: Log data yang akan dikirim
-      console.log("📤 Submission Data:", JSON.stringify(submissionData, null, 2));
-      console.log("📤 Pemeriksa Barang:", submissionData.pemeriksa_barang);
-
       const existingSurat = dataBeritaPemeriksaan.find(
         (item) => item.no_berita_acara === submissionData.no_berita_acara
       );

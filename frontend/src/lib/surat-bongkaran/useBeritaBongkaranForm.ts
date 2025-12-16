@@ -260,17 +260,6 @@ export const useBeritaBongkaranForm = () => {
 
         // Simpan status_surat sebelum update
         const previousStatusSurat = existingSurat.status_surat;
-        
-        console.log("🔍 Debug Reset Email - Berita Bongkaran:", {
-          documentId: existingSurat.documentId,
-          previousStatusSurat,
-          emailsCount: emails.length,
-          emails: emails.map((e: any) => ({
-            documentId: e.documentId,
-            isHaveStatus: e.isHaveStatus,
-            email_statuses_count: e.email_statuses?.length || 0,
-          })),
-        });
 
         // Update berita bongkaran
         result = await StrapiAPIService.updateBeritaAcara(
@@ -285,8 +274,6 @@ export const useBeritaBongkaranForm = () => {
             email.isHaveStatus === true &&
             previousStatusSurat === "Reject"
           ) {
-            console.log("🔄 Resetting email:", email.documentId);
-            
             // Update email.isHaveStatus menjadi false
             await StrapiAPIService.updateEmail(email.documentId, {
               isHaveStatus: false,

@@ -201,14 +201,111 @@ export default function PreviewBeritaPemeriksaan({
   };
 
   const splitMaterialsIntoPages = () => {
-    const itemsPerPage = 3;
-    const pages: MaterialForm[][] = [];
+    const totalMaterials = materials.length;
+    const kelengkapanCount = kelengkapanDokumen.length;
+    const mengetahuiCount = pemeriksaBarang.mengetahui?.length || 0;
 
-    for (let i = 0; i < materials.length; i += itemsPerPage) {
-      pages.push(materials.slice(i, i + itemsPerPage));
+    // Logika baru:
+    // - Jika kelengkapan <= 2: tetap satu halaman kecuali material >= 4
+    // - Jika kelengkapan > 2: break page jika material >= 2
+    
+    let shouldBreakPage = false;
+    let materialsThreshold = 3;
+    
+    if (kelengkapanCount <= 2) {
+      // Kelengkapan sedikit: bisa muat lebih banyak material di satu halaman
+      materialsThreshold = 3; // Tetap satu halaman jika material <= 3
+      shouldBreakPage = totalMaterials > materialsThreshold;
+    } else {
+      // Kelengkapan banyak (> 2): break page jika material >= 2
+      materialsThreshold = 1; // Break jika material >= 2
+      shouldBreakPage = totalMaterials >= 2;
+    }
+    
+    // Jika tidak perlu break page, semua dalam satu halaman
+    if (!shouldBreakPage) {
+      return [
+        {
+          materials: materials,
+          showIntro: true,
+          showKelengkapan: true,
+          showClosing: true,
+          showSignature: true,
+          isFirstPage: true,
+          isLastPage: true,
+        },
+      ];
     }
 
-    return pages.length > 0 ? pages : [[]];
+    // Jika perlu break page, mulai split
+    const pages = [];
+    let remainingMaterials = [...materials];
+
+    // Tentukan berapa material di halaman pertama
+    let materialsFirstPage = 2;
+    if (kelengkapanCount <= 2) {
+      materialsFirstPage = 3; // Lebih banyak material jika kelengkapan sedikit
+    } else if (kelengkapanCount <= 5) {
+      materialsFirstPage = 2;
+    } else {
+      materialsFirstPage = 2; // Kelengkapan banyak, material sedikit di halaman 1
+    }
+
+    // Halaman pertama
+    const firstPageMaterials = remainingMaterials.slice(0, materialsFirstPage);
+    remainingMaterials = remainingMaterials.slice(materialsFirstPage);
+
+    pages.push({
+      materials: firstPageMaterials,
+      showIntro: true,
+      showKelengkapan: true,
+      showClosing: false,
+      showSignature: false,
+      isFirstPage: true,
+      isLastPage: false,
+    });
+
+    // Halaman tengah - 4 materials per halaman
+    const MATERIALS_PER_MIDDLE_PAGE = 4;
+    while (remainingMaterials.length > MATERIALS_PER_MIDDLE_PAGE) {
+      const nextPageMaterials = remainingMaterials.slice(0, MATERIALS_PER_MIDDLE_PAGE);
+      pages.push({
+        materials: nextPageMaterials,
+        showIntro: false,
+        showKelengkapan: false,
+        showClosing: false,
+        showSignature: false,
+        isFirstPage: false,
+        isLastPage: false,
+      });
+      remainingMaterials = remainingMaterials.slice(MATERIALS_PER_MIDDLE_PAGE);
+    }
+
+    // Halaman terakhir - sisa materials + closing + signature
+    if (remainingMaterials.length > 0) {
+      pages.push({
+        materials: remainingMaterials,
+        showIntro: false,
+        showKelengkapan: false,
+        showClosing: true,
+        showSignature: true,
+        isFirstPage: false,
+        isLastPage: true,
+      });
+    } else {
+      // Jika tidak ada sisa material, tambahkan halaman baru untuk closing + signature
+      pages.push({
+        materials: [],
+        showIntro: false,
+        showKelengkapan: false,
+        showClosing: true,
+        showSignature: true,
+        isFirstPage: false,
+        isLastPage: true,
+      });
+    }
+
+    return pages;
   };
 
   const materialPages = splitMaterialsIntoPages();
@@ -288,26 +385,38 @@ export default function PreviewBeritaPemeriksaan({
         {/* Preview Content */}
         <div className="space-y-6 w-full flex justify-center">
           <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
-            {materialPages.map((pageMaterials, pageIndex) => {
+            {materialPages.map((pageData, pageIndex) => {
+            const {
+              materials: pageMaterials,
+              showIntro,
+              showKelengkapan,
+              showClosing,
+              showSignature,
+              isFirstPage,
+              isLastPage,
+            } = pageData;
+
             const isCompactMode = pageMaterials.length <= 3;
-            const lembarLabels =
-              materialPages.length > 1
-                ? [`Lembar ${pageIndex + 1}`, `Lembar ${pageIndex + 1}`]
-                : ["Lembar 1", "Lembar 1"];
 
             // Hitung lebar maksimum untuk container nama mengetahui berdasarkan nama terpanjang
             const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
 
+            // Hitung index global untuk material numbering
+            let startIndex = 0;
+            for (let i = 0; i < pageIndex; i++) {
+              startIndex += materialPages[i].materials.length;
+            }
+
             return (
               <div
                 key={pageIndex}
-                className="surat bg-white border border-gray-300 p-6 sm:p-8"
+                className="surat bg-white border border-gray-300 p-6 sm:p-8 mb-8"
                 data-lembar={pageIndex + 1}
                 data-page={pageIndex + 1}
                 style={{
                   width: "210mm",
                   minHeight: "297mm",
-                  margin: "0 auto",
+                  margin: "10 auto",
                 }}
               >
                 {/* Company Header */}
@@ -333,64 +442,68 @@ export default function PreviewBeritaPemeriksaan({
 
                 <hr className="border-t-2 border-gray-800 mb-4" />
 
-                {/* Title */}
-                <div className="text-center mb-8">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    BERITA ACARA
-                  </h1>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    HASIL PEMERIKSAAN MUTU BARANG
-                  </h1>
-                  <div className="text-blue-600 font-bold text-2xl">
-                    {formData.nomorBeritaAcara || "(No Berita Acara)"}
+                {/* Title - only on first page */}
+                {isFirstPage && (
+                  <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      BERITA ACARA
+                    </h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      HASIL PEMERIKSAAN MUTU BARANG
+                    </h1>
+                    <div className="text-blue-600 font-bold text-2xl">
+                      {formData.nomorBeritaAcara || "(No Berita Acara)"}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Introduction */}
-                <div
-                  className={`mb-6 ${
-                    isCompactMode ? "text-base" : "text-lg"
-                  } text-justify`}
-                >
-                  <p className="mb-2">
-                    Pada hari{" "}
-                    <span className="font-semibold">
-                      {formatDateWithDay(
-                        formData.tanggalPelaksanaan ||
-                          formData.tanggalKontrak ||
-                          new Date().toISOString()
-                      )}
-                    </span>{" "}
-                    kami yang bertanda tangan di bawah ini telah bersama - sama
-                    melaksanakan pemeriksaan terhadap barang sesuai dengan
-                    Kontrak Rinci{" "}
-                    <span className="font-semibold">
-                      {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
-                    </span>{" "}
-                    tanggal{" "}
-                    <span className="font-semibold">
-                      {formatDate(formData.tanggalKontrak)}
-                    </span>{" "}
-                    perihal{" "}
-                    <span className="font-semibold">
-                      {formData.perihalKontrak || "(Perihal Kontrak)"}
-                    </span>
-                    .
-                  </p>
-                  <p className="">
-                    Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
-                    mutu barang. Adapun hasil dari pemeriksaan{" "}
-                    <span className="font-semibold">
-                      {formData.perihalKontrak || "(Perihal Kontrak)"}
-                    </span>{" "}
-                    dapat diterima /{" "}
-                    <span className="line-through">tidak diterima</span> dengan
-                    kelengkapan dokumen sebagai berikut:
-                  </p>
-                </div>
+                {/* Introduction - only on first page */}
+                {showIntro && (
+                  <div
+                    className={`mb-6 ${
+                      isCompactMode ? "text-base" : "text-lg"
+                    } text-justify`}
+                  >
+                    <p className="mb-2">
+                      Pada hari{" "}
+                      <span className="font-semibold">
+                        {formatDateWithDay(
+                          formData.tanggalPelaksanaan ||
+                            formData.tanggalKontrak ||
+                            new Date().toISOString()
+                        )}
+                      </span>{" "}
+                      kami yang bertanda tangan di bawah ini telah bersama - sama
+                      melaksanakan pemeriksaan terhadap barang sesuai dengan
+                      Kontrak Rinci{" "}
+                      <span className="font-semibold">
+                        {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
+                      </span>{" "}
+                      tanggal{" "}
+                      <span className="font-semibold">
+                        {formatDate(formData.tanggalKontrak)}
+                      </span>{" "}
+                      perihal{" "}
+                      <span className="font-semibold">
+                        {formData.perihalKontrak || "(Perihal Kontrak)"}
+                      </span>
+                      .
+                    </p>
+                    <p className="">
+                      Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
+                      mutu barang. Adapun hasil dari pemeriksaan{" "}
+                      <span className="font-semibold">
+                        {formData.perihalKontrak || "(Perihal Kontrak)"}
+                      </span>{" "}
+                      dapat diterima /{" "}
+                      <span className="line-through">tidak diterima</span> dengan
+                      kelengkapan dokumen sebagai berikut:
+                    </p>
+                  </div>
+                )}
 
-                {/* Kelengkapan Dokumen */}
-                {kelengkapanDokumen.length > 0 && (
+                {/* Kelengkapan Dokumen - only on first page */}
+                {showKelengkapan && kelengkapanDokumen.length > 0 && (
                   <div
                     className={`mb-6 ${
                       isCompactMode ? "text-base" : "text-lg"
@@ -446,7 +559,7 @@ export default function PreviewBeritaPemeriksaan({
                         className={isCompactMode ? "text-base" : "text-lg"}
                       >
                         {pageMaterials.map((material, index) => {
-                          const globalIndex = pageIndex * 3 + index;
+                          const globalIndex = startIndex + index;
                           return (
                             <tr key={material.id}>
                               <td className="border-2 border-gray-800 px-2 py-2 text-center">
@@ -493,154 +606,154 @@ export default function PreviewBeritaPemeriksaan({
                   </div>
                 )}
 
-                {/* Closing Statement */}
-                {pageIndex === materialPages.length - 1 && (
-                  <>
-                    <div
-                      className={`mb-6 ${
-                        isCompactMode ? "text-base" : "text-lg"
-                      }`}
-                    >
-                      <p>
-                        Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
-                        dengan sesungguhnya untuk dapat dipergunakan sebagai
-                        mana mestinya.
-                      </p>
-                    </div>
+                {/* Closing Statement - only on last page */}
+                {showClosing && (
+                  <div
+                    className={`mb-6 ${
+                      isCompactMode ? "text-base" : "text-lg"
+                    }`}
+                  >
+                    <p>
+                      Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
+                      dengan sesungguhnya untuk dapat dipergunakan sebagai
+                      mana mestinya.
+                    </p>
+                  </div>
+                )}
 
-                    {/* Signatures */}
-                    <div className="flex justify-between mb-8">
-                      {/* Penyedia Barang */}
-                      <div className="text-left items-center flex flex-col">
-                        <div
-                          className={`mb-2 font-semibold ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          }`}
-                        >
-                          Penyedia Barang
-                        </div>
-                        <div
-                          className={`font-bold mb-4 ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          }`}
-                        >
-                          {formData.perusahaanPenyediaBarang ||
-                            "(Perusahaan Penyedia Barang)"}
-                        </div>
-
-                        {/* Signature Preview */}
-                        <div
-                          className={`${
-                            isCompactMode ? "h-16 mb-4" : "h-20 mb-4"
-                          } flex items-center`}
-                        >
-                          {getPenyediaBarangSignature() ? (
-                            <img
-                              width={200}
-                              height={200}
-                              src={getPenyediaBarangSignature()!}
-                              alt="TTD Penyedia Barang"
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          ) : (
-                            <div className="text-gray-400 text-sm">
-                              (Tanda Tangan)
-                            </div>
-                          )}
-                        </div>
-
-                        <div
-                          className={`font-bold  ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          }`}
-                        >
-                          {formData.namaPenanggungJawab ||
-                            "(Nama Penanggung Jawab)"}
-                        </div>
+                {/* Signatures - only on last page */}
+                {showSignature && (
+                  <div className="flex justify-between mb-8">
+                    {/* Penyedia Barang */}
+                    <div className="text-left items-center flex flex-col">
+                      <div
+                        className={`mb-2 font-semibold ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        Penyedia Barang
+                      </div>
+                      <div
+                        className={`font-bold mb-4 ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        {formData.perusahaanPenyediaBarang ||
+                          "(Perusahaan Penyedia Barang)"}
                       </div>
 
-                      {/* Pemeriksa Barang */}
-                      <div className="text-left items-center flex flex-col">
-                        <div
-                          className={`mb-2 font-semibold ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          }`}
-                        >
-                          Pemeriksa Barang
-                        </div>
-                        <div
-                          className={`font-bold mb-4 ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          }`}
-                        >
-                          {pemeriksaBarang.departemenPemeriksa ||
-                            "(Departemen Pemeriksa)"}
-                        </div>
+                      {/* Signature Preview */}
+                      <div
+                        className={`${
+                          isCompactMode ? "h-16 mb-4" : "h-20 mb-4"
+                        } flex items-center`}
+                      >
+                        {getPenyediaBarangSignature() ? (
+                          <img
+                            width={200}
+                            height={200}
+                            src={getPenyediaBarangSignature()!}
+                            alt="TTD Penyedia Barang"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-sm">
+                            (Tanda Tangan)
+                          </div>
+                        )}
+                      </div>
 
-                        {/* List Mengetahui */}
-                        {pemeriksaBarang.mengetahui &&
-                          pemeriksaBarang.mengetahui.length > 0 && (
-                            <div
-                              className={
-                                isCompactMode ? "space-y-2" : "space-y-3"
-                              }
-                            >
-                              {pemeriksaBarang.mengetahui.map(
-                                (mengetahui, index) => (
+                      <div
+                        className={`font-bold  ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        {formData.namaPenanggungJawab ||
+                          "(Nama Penanggung Jawab)"}
+                      </div>
+                    </div>
+
+                    {/* Pemeriksa Barang */}
+                    <div className="text-left items-center flex flex-col">
+                      <div
+                        className={`mb-2 font-semibold ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        Pemeriksa Barang
+                      </div>
+                      <div
+                        className={`font-bold mb-4 ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        {pemeriksaBarang.departemenPemeriksa ||
+                          "(Departemen Pemeriksa)"}
+                      </div>
+
+                      {/* List Mengetahui */}
+                      {pemeriksaBarang.mengetahui &&
+                        pemeriksaBarang.mengetahui.length > 0 && (
+                          <div
+                            className={
+                              isCompactMode ? "space-y-2" : "space-y-3"
+                            }
+                          >
+                            {pemeriksaBarang.mengetahui.map(
+                              (mengetahui, index) => (
+                                <div
+                                  key={mengetahui.id}
+                                  className={`flex items-center ${
+                                    isCompactMode ? "pb-1" : "pb-2"
+                                  }`}
+                                >
                                   <div
-                                    key={mengetahui.id}
-                                    className={`flex items-center ${
-                                      isCompactMode ? "pb-1" : "pb-2"
-                                    }`}
+                                    className={`${
+                                      isCompactMode ? "text-sm" : "text-base"
+                                    } font-semibold flex items-center`}
+                                    style={{ width: `${maxNamaWidthPage}px` }}
                                   >
+                                    <span className="mr-2">{index + 1}</span>
+                                    <span className="flex-1">
+                                      {mengetahui.namaMengetahui ||
+                                        "(Nama Mengetahui)"}
+                                    </span>
+                                    <span className="ml-auto">:</span>
+                                  </div>
+                                  <div className="flex items-center ml-2">
                                     <div
                                       className={`${
-                                        isCompactMode ? "text-sm" : "text-base"
-                                      } font-semibold flex items-center`}
-                                      style={{ width: `${maxNamaWidthPage}px` }}
+                                        isCompactMode
+                                          ? "w-28 h-10"
+                                          : "w-32 h-12"
+                                      } flex items-center justify-center border-b-2 border-gray-800`}
                                     >
-                                      <span className="mr-2">{index + 1}</span>
-                                      <span className="flex-1">
-                                        {mengetahui.namaMengetahui ||
-                                          "(Nama Mengetahui)"}
-                                      </span>
-                                      <span className="ml-auto">:</span>
-                                    </div>
-                                    <div className="flex items-center ml-2">
-                                      <div
-                                        className={`${
-                                          isCompactMode
-                                            ? "w-28 h-10"
-                                            : "w-32 h-12"
-                                        } flex items-center justify-center border-b-2 border-gray-800`}
-                                      >
-                                        {getMengetahuiSignature(mengetahui) ? (
-                                          <img
-                                            width={120}
-                                            height={60}
-                                            src={
-                                              getMengetahuiSignature(
-                                                mengetahui
-                                              )!
-                                            }
-                                            alt={`TTD Mengetahui ${index + 1}`}
-                                            className="max-h-full max-w-full object-contain"
-                                          />
-                                        ) : (
-                                          <div className="text-gray-400 text-xs">
-                                            (Tanda Tangan)
-                                          </div>
-                                        )}
-                                      </div>
+                                      {getMengetahuiSignature(mengetahui) ? (
+                                        <img
+                                          width={120}
+                                          height={60}
+                                          src={
+                                            getMengetahuiSignature(
+                                              mengetahui
+                                            )!
+                                          }
+                                          alt={`TTD Mengetahui ${index + 1}`}
+                                          className="max-h-full max-w-full object-contain"
+                                        />
+                                      ) : (
+                                        <div className="text-gray-400 text-xs">
+                                          (Tanda Tangan)
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                )
-                              )}
-                            </div>
-                          )}
-                      </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             );
@@ -660,9 +773,25 @@ export default function PreviewBeritaPemeriksaan({
         }}
       >
         <div id="hidden-preview-content">
-          {materialPages.map((pageMaterials, pageIndex) => {
+          {materialPages.map((pageData, pageIndex) => {
+            const {
+              materials: pageMaterials,
+              showIntro,
+              showKelengkapan,
+              showClosing,
+              showSignature,
+              isFirstPage,
+              isLastPage,
+            } = pageData;
+
             const isCompactMode = pageMaterials.length <= 3;
             const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
+
+            // Hitung index global untuk material numbering
+            let startIndex = 0;
+            for (let i = 0; i < pageIndex; i++) {
+              startIndex += materialPages[i].materials.length;
+            }
 
             return (
               <div
@@ -706,78 +835,82 @@ export default function PreviewBeritaPemeriksaan({
                   }`}
                 />
 
-                {/* Title */}
-                <div
-                  className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}
-                >
-                  <h1
-                    className={`${
-                      isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
-                    } font-bold text-gray-900`}
+                {/* Title - only on first page */}
+                {isFirstPage && (
+                  <div
+                    className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}
                   >
-                    BERITA ACARA
-                  </h1>
-                  <h1
-                    className={`${
-                      isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
-                    } font-bold text-gray-900`}
-                  >
-                    HASIL PEMERIKSAAN MUTU BARANG
-                  </h1>
+                    <h1
+                      className={`${
+                        isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                      } font-bold text-gray-900`}
+                    >
+                      BERITA ACARA
+                    </h1>
+                    <h1
+                      className={`${
+                        isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                      } font-bold text-gray-900`}
+                    >
+                      HASIL PEMERIKSAAN MUTU BARANG
+                    </h1>
+                    <div
+                      className={`${
+                        isCompactMode ? "text-xl" : "text-2xl"
+                      } text-blue-600 font-bold`}
+                    >
+                      {formData.nomorBeritaAcara || "(No Berita Acara)"}
+                    </div>
+                  </div>
+                )}
+
+                {/* Introduction - only on first page */}
+                {showIntro && (
                   <div
                     className={`${
-                      isCompactMode ? "text-xl" : "text-2xl"
-                    } text-blue-600 font-bold`}
+                      isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"
+                    } text-justify`}
                   >
-                    {formData.nomorBeritaAcara || "(No Berita Acara)"}
+                    <p className="mb-2">
+                      Pada hari{" "}
+                      <span className="font-semibold">
+                        {formatDateWithDay(
+                          formData.tanggalPelaksanaan ||
+                            formData.tanggalKontrak ||
+                            new Date().toISOString()
+                        )}
+                      </span>{" "}
+                      kami yang bertanda tangan di bawah ini telah bersama - sama
+                      melaksanakan pemeriksaan terhadap barang sesuai dengan
+                      Kontrak Rinci{" "}
+                      <span className="font-semibold">
+                        {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
+                      </span>{" "}
+                      tanggal{" "}
+                      <span className="font-semibold">
+                        {formatDate(formData.tanggalKontrak)}
+                      </span>{" "}
+                      perihal{" "}
+                      <span className="font-semibold">
+                        {formData.perihalKontrak || "(Perihal Kontrak)"}
+                      </span>
+                      .
+                    </p>
+                    <p className="">
+                      Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
+                      mutu barang. Adapun hasil dari pemeriksaan{" "}
+                      <span className="font-semibold">
+                        {formData.perihalKontrak || "(Perihal Kontrak)"}
+                      </span>{" "}
+                      dapat diterima /{" "}
+                      <span className="line-through">tidak diterima</span> dengan
+                      kelengkapan dokumen sebagai berikut:
+                    </p>
                   </div>
-                </div>
+                )}
 
-                {/* Introduction */}
-                <div
-                  className={`${
-                    isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"
-                  } text-justify`}
-                >
-                  <p className="mb-2">
-                    Pada hari{" "}
-                    <span className="font-semibold">
-                      {formatDateWithDay(
-                        formData.tanggalPelaksanaan ||
-                          formData.tanggalKontrak ||
-                          new Date().toISOString()
-                      )}
-                    </span>{" "}
-                    kami yang bertanda tangan di bawah ini telah bersama - sama
-                    melaksanakan pemeriksaan terhadap barang sesuai dengan
-                    Kontrak Rinci{" "}
-                    <span className="font-semibold">
-                      {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
-                    </span>{" "}
-                    tanggal{" "}
-                    <span className="font-semibold">
-                      {formatDate(formData.tanggalKontrak)}
-                    </span>{" "}
-                    perihal{" "}
-                    <span className="font-semibold">
-                      {formData.perihalKontrak || "(Perihal Kontrak)"}
-                    </span>
-                    .
-                  </p>
-                  <p className="">
-                    Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
-                    mutu barang. Adapun hasil dari pemeriksaan{" "}
-                    <span className="font-semibold">
-                      {formData.perihalKontrak || "(Perihal Kontrak)"}
-                    </span>{" "}
-                    dapat diterima /{" "}
-                    <span className="line-through">tidak diterima</span> dengan
-                    kelengkapan dokumen sebagai berikut:
-                  </p>
-                </div>
-
-                {/* Kelengkapan Dokumen */}
-                {kelengkapanDokumen.length > 0 && (
+                {/* Kelengkapan Dokumen - only on first page */}
+                {showKelengkapan && kelengkapanDokumen.length > 0 && (
                   <div
                     className={`${
                       isCompactMode ? "mb-3" : "mb-4"
@@ -845,7 +978,7 @@ export default function PreviewBeritaPemeriksaan({
                         className={isCompactMode ? "text-base" : "text-lg"}
                       >
                         {pageMaterials.map((material, index) => {
-                          const globalIndex = pageIndex * 3 + index;
+                          const globalIndex = startIndex + index;
                           return (
                             <tr key={material.id}>
                               <td
@@ -912,161 +1045,161 @@ export default function PreviewBeritaPemeriksaan({
                   </div>
                 )}
 
-                {/* Closing Statement */}
-                {pageIndex === materialPages.length - 1 && (
-                  <>
-                    <div
-                      className={`${isCompactMode ? "mb-3" : "mb-4"} ${
-                        isCompactMode ? "text-base" : "text-lg"
-                      }`}
-                    >
-                      <p>
-                        Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
-                        dengan sesungguhnya untuk dapat dipergunakan sebagai
-                        mana mestinya.
-                      </p>
-                    </div>
+                {/* Closing Statement - only on last page */}
+                {showClosing && (
+                  <div
+                    className={`${isCompactMode ? "mb-3" : "mb-4"} ${
+                      isCompactMode ? "text-base" : "text-lg"
+                    }`}
+                  >
+                    <p>
+                      Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
+                      dengan sesungguhnya untuk dapat dipergunakan sebagai
+                      mana mestinya.
+                    </p>
+                  </div>
+                )}
 
-                    {/* Signatures */}
-                    <div
-                      className={`flex justify-between ${
-                        isCompactMode ? "mb-2" : "mb-4"
-                      }`}
-                    >
-                      {/* Penyedia Barang */}
-                      <div className="text-center">
-                        <div
-                          className={`${isCompactMode ? "mb-1" : "mb-2"} ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          } font-semibold`}
-                        >
-                          Penyedia Barang
-                        </div>
-                        <div
-                          className={`font-bold ${
-                            isCompactMode ? "mb-2" : "mb-4"
-                          } ${isCompactMode ? "text-base" : "text-lg"}`}
-                        >
-                          {formData.perusahaanPenyediaBarang ||
-                            "(Perusahaan Penyedia Barang)"}
-                        </div>
-
-                        {/* Signature Preview */}
-                        <div
-                          className={`${
-                            isCompactMode ? "h-16 mb-2" : "h-20 mb-4"
-                          } flex items-center`}
-                        >
-                          {getPenyediaBarangSignature() ? (
-                            <img
-                              width={200}
-                              height={200}
-                              src={getPenyediaBarangSignature()!}
-                              alt="TTD Penyedia Barang"
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          ) : (
-                            <div className="text-gray-400 text-sm">
-                              (Tanda Tangan)
-                            </div>
-                          )}
-                        </div>
-
-                        <div
-                          className={`${
-                            isCompactMode ? "text-base" : "text-lg"
-                          } font-bold `}
-                        >
-                          {formData.namaPenanggungJawab ||
-                            "(Nama Penanggung Jawab)"}
-                        </div>
+                {/* Signatures - only on last page */}
+                {showSignature && (
+                  <div
+                    className={`flex justify-between ${
+                      isCompactMode ? "mb-2" : "mb-4"
+                    }`}
+                  >
+                    {/* Penyedia Barang */}
+                    <div className="text-center">
+                      <div
+                        className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        } font-semibold`}
+                      >
+                        Penyedia Barang
+                      </div>
+                      <div
+                        className={`font-bold ${
+                          isCompactMode ? "mb-2" : "mb-4"
+                        } ${isCompactMode ? "text-base" : "text-lg"}`}
+                      >
+                        {formData.perusahaanPenyediaBarang ||
+                          "(Perusahaan Penyedia Barang)"}
                       </div>
 
-                      {/* Pemeriksa Barang */}
-                      <div className="text-left">
-                        <div
-                          className={`${isCompactMode ? "mb-1" : "mb-2"} ${
-                            isCompactMode ? "text-base" : "text-lg"
-                          } font-semibold`}
-                        >
-                          Pemeriksa Barang
-                        </div>
-                        <div
-                          className={`font-bold ${
-                            isCompactMode ? "mb-2" : "mb-4"
-                          } ${isCompactMode ? "text-base" : "text-lg"}`}
-                        >
-                          {pemeriksaBarang.departemenPemeriksa ||
-                            "(Departemen Pemeriksa)"}
-                        </div>
+                      {/* Signature Preview */}
+                      <div
+                        className={`${
+                          isCompactMode ? "h-16 mb-2" : "h-20 mb-4"
+                        } flex items-center`}
+                      >
+                        {getPenyediaBarangSignature() ? (
+                          <img
+                            width={200}
+                            height={200}
+                            src={getPenyediaBarangSignature()!}
+                            alt="TTD Penyedia Barang"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-sm">
+                            (Tanda Tangan)
+                          </div>
+                        )}
+                      </div>
 
-                        {/* List Mengetahui */}
-                        {pemeriksaBarang.mengetahui &&
-                          pemeriksaBarang.mengetahui.length > 0 && (
-                            <div
-                              className={
-                                isCompactMode ? "space-y-2" : "space-y-3"
-                              }
-                            >
-                              {pemeriksaBarang.mengetahui.map(
-                                (mengetahui, index) => (
+                      <div
+                        className={`${
+                          isCompactMode ? "text-base" : "text-lg"
+                        } font-bold `}
+                      >
+                        {formData.namaPenanggungJawab ||
+                          "(Nama Penanggung Jawab)"}
+                      </div>
+                    </div>
+
+                    {/* Pemeriksa Barang */}
+                    <div className="text-left">
+                      <div
+                        className={`${isCompactMode ? "mb-1" : "mb-2"} ${
+                          isCompactMode ? "text-base" : "text-lg"
+                        } font-semibold`}
+                      >
+                        Pemeriksa Barang
+                      </div>
+                      <div
+                        className={`font-bold ${
+                          isCompactMode ? "mb-2" : "mb-4"
+                        } ${isCompactMode ? "text-base" : "text-lg"}`}
+                      >
+                        {pemeriksaBarang.departemenPemeriksa ||
+                          "(Departemen Pemeriksa)"}
+                      </div>
+
+                      {/* List Mengetahui */}
+                      {pemeriksaBarang.mengetahui &&
+                        pemeriksaBarang.mengetahui.length > 0 && (
+                          <div
+                            className={
+                              isCompactMode ? "space-y-2" : "space-y-3"
+                            }
+                          >
+                            {pemeriksaBarang.mengetahui.map(
+                              (mengetahui, index) => (
+                                <div
+                                  key={mengetahui.id}
+                                  className={`flex items-center ${
+                                    isCompactMode ? "pb-1" : "pb-2"
+                                  }`}
+                                >
                                   <div
-                                    key={mengetahui.id}
-                                    className={`flex items-center ${
-                                      isCompactMode ? "pb-1" : "pb-2"
-                                    }`}
+                                    className={`${
+                                      isCompactMode ? "text-sm" : "text-base"
+                                    } font-semibold min-w-[200px]`}
                                   >
+                                    {index + 1}{" "}
+                                    {mengetahui.namaMengetahui ||
+                                      "(Nama Mengetahui)"}
+                                  </div>
+                                  <div
+                                    className={`${
+                                      isCompactMode ? "text-sm" : "text-base"
+                                    } font-semibold`}
+                                  >
+                                    :
+                                  </div>
+                                  <div className="flex items-center ml-2">
                                     <div
                                       className={`${
-                                        isCompactMode ? "text-sm" : "text-base"
-                                      } font-semibold min-w-[200px]`}
+                                        isCompactMode
+                                          ? "w-28 h-10"
+                                          : "w-32 h-12"
+                                      } flex items-center justify-center border-b-2 border-gray-800`}
                                     >
-                                      {index + 1}{" "}
-                                      {mengetahui.namaMengetahui ||
-                                        "(Nama Mengetahui)"}
-                                    </div>
-                                    <div
-                                      className={`${
-                                        isCompactMode ? "text-sm" : "text-base"
-                                      } font-semibold`}
-                                    >
-                                      :
-                                    </div>
-                                    <div className="flex items-center ml-2">
-                                      <div
-                                        className={`${
-                                          isCompactMode
-                                            ? "w-28 h-10"
-                                            : "w-32 h-12"
-                                        } flex items-center justify-center border-b-2 border-gray-800`}
-                                      >
-                                        {getMengetahuiSignature(mengetahui) ? (
-                                          <img
-                                            width={120}
-                                            height={60}
-                                            src={
-                                              getMengetahuiSignature(
-                                                mengetahui
-                                              )!
-                                            }
-                                            alt={`TTD Mengetahui ${index + 1}`}
-                                            className="max-h-full max-w-full object-contain"
-                                          />
-                                        ) : (
-                                          <div className="text-gray-400 text-xs">
-                                            (Tanda Tangan)
-                                          </div>
-                                        )}
-                                      </div>
+                                      {getMengetahuiSignature(mengetahui) ? (
+                                        <img
+                                          width={120}
+                                          height={60}
+                                          src={
+                                            getMengetahuiSignature(
+                                              mengetahui
+                                            )!
+                                          }
+                                          alt={`TTD Mengetahui ${index + 1}`}
+                                          className="max-h-full max-w-full object-contain"
+                                        />
+                                      ) : (
+                                        <div className="text-gray-400 text-xs">
+                                          (Tanda Tangan)
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                )
-                              )}
-                            </div>
-                          )}
-                      </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             );

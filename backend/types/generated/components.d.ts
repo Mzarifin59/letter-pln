@@ -13,7 +13,7 @@ export interface GlobalMaterial extends Struct.ComponentSchema {
     lokasi: Schema.Attribute.String;
     nama: Schema.Attribute.String;
     satuan: Schema.Attribute.Enumeration<
-      ['Keping', 'PCS ', 'Kg ', 'Meter', 'Liter', 'Bh', 'Set', 'Unit']
+      ['Keping', 'PCS', 'Kg', 'Meter', 'Liter', 'Bh', 'Set', 'Unit']
     >;
     serial_number: Schema.Attribute.String;
     tipe: Schema.Attribute.String;

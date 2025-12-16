@@ -15,8 +15,8 @@
       "type": "enumeration",
       "enum": [
         "Keping",
-        "PCS ",
-        "Kg ",
+        "PCS",
+        "Kg",
         "Meter",
         "Liter",
         "Bh",
