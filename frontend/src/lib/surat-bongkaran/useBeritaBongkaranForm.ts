@@ -337,7 +337,7 @@ export const useBeritaBongkaranForm = () => {
             connect: [`${resultEmail.data.documentId}`],
           },
           user: {
-            connect: [process.env.NEXT_PUBLIC_GI_ID],
+            connect: [`${receipt?.documentId}`],
           },
         };
 
