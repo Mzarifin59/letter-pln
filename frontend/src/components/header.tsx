@@ -61,7 +61,7 @@ async function getEmail() {
         fields: ["name", "email"],
       },
       email_statuses: {
-        fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at"],
+        fields: ["is_read", "is_bookmarked", "read_at", "bookmarked_at", "isDelete"],
         populate: {
           user: {
             fields: ["name", "email"],
@@ -243,6 +243,7 @@ export default function Header() {
 
     return (
       userStatus?.is_read === false &&
+      userStatus?.isDelete !== true &&
       email.surat_jalan.status_entry !== "Draft"
     );
   });

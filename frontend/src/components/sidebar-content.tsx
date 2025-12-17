@@ -56,16 +56,15 @@ export default function SidebarContent({
         // Untuk tracking, tidak semua case memerlukan userEmailStatus
         // Tapi kita tetap filter untuk memastikan email relevan dengan user
         const userEmailStatus = item.email_statuses?.find(
-          (emailStatus) =>
-            emailStatus.user.name === user?.name &&
-            emailStatus.isDelete == false
+          (emailStatus) => emailStatus.user.name === user?.name
         );
 
         const isPublished = item.surat_jalan?.status_entry === "Published";
 
         switch (filterType) {
           case "inbox":
-            if (!userEmailStatus) return false;
+            // Pastikan userEmailStatus ada dan tidak di-delete
+            if (!userEmailStatus || userEmailStatus.isDelete === true) return false;
 
             let condition = isPublished && userEmailStatus.is_read === false;
 
@@ -87,6 +86,11 @@ export default function SidebarContent({
           case "tracking":
             // Admin dan Vendor tidak perlu notifikasi tracking
             if (user?.role?.name === "Admin" || user?.role?.name === "Vendor") {
+              return false;
+            }
+
+            // Pastikan userEmailStatus ada dan tidak di-delete
+            if (!userEmailStatus || userEmailStatus.isDelete === true) {
               return false;
             }
 
@@ -133,14 +137,14 @@ export default function SidebarContent({
             );
 
           case "draft":
-            if (!userEmailStatus) return false;
+            if (!userEmailStatus || userEmailStatus.isDelete === true) return false;
             return (
               item.surat_jalan.status_entry === "Draft" &&
               userEmailStatus.is_read === false
             );
 
           case "sent":
-            if (!userEmailStatus) return false;
+            if (!userEmailStatus || userEmailStatus.isDelete === true) return false;
             return (
               isPublished &&
               item.surat_jalan.status_surat === "In Progress" &&
@@ -148,7 +152,7 @@ export default function SidebarContent({
             );
 
           case "reject":
-            if (!userEmailStatus) return false;
+            if (!userEmailStatus || userEmailStatus.isDelete === true) return false;
             return (
               isPublished &&
               item.surat_jalan.status_surat === "Reject" &&

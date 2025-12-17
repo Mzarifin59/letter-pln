@@ -270,9 +270,14 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
   if (user?.role?.name === "Admin") {
     emailListFiltered = emailList.filter((item) => {
-      const hasAdminGudangStatus = item.email_statuses.some(
-        (status) => status.user.name === user.name && status.isDelete == false
+      const userEmailStatus = item.email_statuses.find(
+        (status) => status.user.name === user.name
       );
+
+      // Pastikan email status ada dan tidak di-delete
+      if (!userEmailStatus || userEmailStatus.isDelete === true) {
+        return false;
+      }
 
       const kategori = item.surat_jalan.kategori_surat;
       const isAllowedKategori = 
@@ -281,7 +286,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         isBeritaBongkaranComplete(item);
 
       return (
-        hasAdminGudangStatus &&
         isAllowedKategori &&
         ((item.recipient.name === user.name &&
           item.surat_jalan.status_entry !== "Draft") ||
@@ -290,9 +294,14 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     });
   } else if (user?.role?.name === "Spv") {
     emailListFiltered = emailList.filter((item) => {
-      const hasSpvStatus = item.email_statuses.some(
-        (status) => status.user.name === user.name && status.isDelete == false
+      const userEmailStatus = item.email_statuses.find(
+        (status) => status.user.name === user.name
       );
+
+      // Pastikan email status ada dan tidak di-delete
+      if (!userEmailStatus || userEmailStatus.isDelete === true) {
+        return false;
+      }
 
       const kategori = item.surat_jalan.kategori_surat;
 
@@ -316,7 +325,6 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         kategori === "Berita Acara Material Bongkaran";
 
       return (
-        hasSpvStatus &&
         isAllowedKategori &&
         ((knowsIfNotSuratJalan(item) &&
           item.recipient.name === user.name &&
@@ -326,24 +334,32 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
     });
   } else if (user?.role?.name === "Vendor") {
     emailListFiltered = emailList.filter((item) => {
-      const hasVendorStatus = item.email_statuses.some(
-        (status) => status.user.name === user?.name && status.isDelete == false
+      const userEmailStatus = item.email_statuses.find(
+        (status) => status.user.name === user?.name
       );
 
+      // Pastikan email status ada dan tidak di-delete
+      if (!userEmailStatus || userEmailStatus.isDelete === true) {
+        return false;
+      }
+
       return (
-        hasVendorStatus &&
         item.isHaveStatus === true &&
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
     });
   } else {
     emailListFiltered = emailList.filter((item) => {
-      const hasGIStatus = item.email_statuses.some(
-        (status) => status.user.name === user?.name && status.isDelete == false
+      const userEmailStatus = item.email_statuses.find(
+        (status) => status.user.name === user?.name
       );
 
+      // Pastikan email status ada dan tidak di-delete
+      if (!userEmailStatus || userEmailStatus.isDelete === true) {
+        return false;
+      }
+
       return (
-        hasGIStatus &&
         item.surat_jalan.status_entry !== "Draft" &&
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
       );
@@ -361,6 +377,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
     return (
       userStatus?.is_read === false &&
+      userStatus?.isDelete === false &&
       email.surat_jalan.status_entry !== "Draft"
     );
   }).length;
