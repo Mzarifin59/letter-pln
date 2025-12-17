@@ -17,6 +17,7 @@ import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "31 Januari 2025";
@@ -273,7 +274,13 @@ export const EmailDetailBeritaPemeriksaan = ({
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
+    let toastId: string | number;
+
     const generatePDF = async () => {
+      toastId = toast.loading("Generating PDF...", {
+        position: "top-center",
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Gunakan hidden div untuk PDF generation
@@ -284,6 +291,10 @@ export const EmailDetailBeritaPemeriksaan = ({
       
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Preview element tidak ditemukan!", {
+          position: "top-center",
+        });
         setIsGeneratingPDF(false);
         return;
       }
@@ -327,9 +338,17 @@ export const EmailDetailBeritaPemeriksaan = ({
             beritaPemeriksaan.no_berita_acara || "berita-acara-pemeriksaan"
           }.pdf`
         );
+
+        toast.dismiss(toastId);
+        toast.success("PDF generated successfully!", {
+          position: "top-center",
+        });
       } catch (error) {
         console.error("Error generating PDF:", error);
-        alert("Gagal generate PDF. Silakan coba lagi.");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Silakan coba lagi.", {
+          position: "top-center",
+        });
       } finally {
         setIsGeneratingPDF(false);
       }

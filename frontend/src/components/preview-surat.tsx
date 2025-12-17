@@ -9,6 +9,7 @@ import {
   SignatureData,
 } from "@/lib/surat-jalan/surat-jalan.type";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 interface PreviewSectionProps {
   formData: FormData;
@@ -40,11 +41,27 @@ export default function PreviewSection({
   useEffect(() => {
     if (autoDownload) {
       const timer = setTimeout(() => {
-        onDownloadPDF();
+        handleDownloadClick();
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [autoDownload, onDownloadPDF]);
+
+  const handleDownloadClick = () => {
+    const toastId = toast.loading("Generating PDF...", {
+      position: "top-center",
+    });
+    
+    onDownloadPDF();
+    
+    // Hide loading after 5 seconds (sufficient time for PDF generation)
+    setTimeout(() => {
+      toast.dismiss(toastId);
+      toast.success("PDF generated successfully!", {
+        position: "top-center",
+      });
+    }, 5000);
+  };
 
   const getPenerimaSignature = () => {
     return (
@@ -622,7 +639,7 @@ export default function PreviewSection({
               <StickyNote className="w-4 h-4 mr-2" />
               Draft
             </Button>
-            <Button variant="outline" onClick={onDownloadPDF}>
+            <Button variant="outline" onClick={handleDownloadClick}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>

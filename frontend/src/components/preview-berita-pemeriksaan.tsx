@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+import { toast } from "sonner";
 
 interface PreviewSectionProps {
   formData: FormData;
@@ -133,7 +134,13 @@ export default function PreviewBeritaPemeriksaan({
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
+    let toastId: string | number;
+
     const generatePDF = async () => {
+      toastId = toast.loading("Generating PDF...", {
+        position: "top-center",
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Gunakan hidden div untuk PDF generation (tidak terpengaruh responsive scale)
@@ -144,6 +151,10 @@ export default function PreviewBeritaPemeriksaan({
       
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Preview element tidak ditemukan!", {
+          position: "top-center",
+        });
         setIsGeneratingPDF(false);
         return;
       }
@@ -185,9 +196,17 @@ export default function PreviewBeritaPemeriksaan({
         pdf.save(
           `${formData.nomorBeritaAcara || "berita-acara-pemeriksaan"}.pdf`
         );
+
+        toast.dismiss(toastId);
+        toast.success("PDF generated successfully!", {
+          position: "top-center",
+        });
       } catch (error) {
         console.error("Error generating PDF:", error);
-        alert("Gagal generate PDF. Silakan coba lagi.");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Silakan coba lagi.", {
+          position: "top-center",
+        });
       } finally {
         setIsGeneratingPDF(false);
       }
@@ -336,7 +355,9 @@ export default function PreviewBeritaPemeriksaan({
   };
 
   return (
-    <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9">
+    <>
+      {/* Loading Overlay */}
+      <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9">
       <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -1207,5 +1228,6 @@ export default function PreviewBeritaPemeriksaan({
         </div>
       </div>
     </div>
+    </>
   );
 }

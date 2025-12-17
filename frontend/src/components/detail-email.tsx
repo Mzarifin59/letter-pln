@@ -40,6 +40,7 @@ import {
 
 import { Button } from "./ui/button";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "31 Januari 2025";
@@ -296,12 +297,22 @@ export const EmailDetail = ({
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
+    let toastId: string | number;
+
     const generatePDF = async () => {
+      toastId = toast.loading("Generating PDF...", {
+        position: "top-center",
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const pages = document.querySelectorAll(".surat");
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Preview element tidak ditemukan!", {
+          position: "top-center",
+        });
         setIsGeneratingPDF(false);
         return;
       }
@@ -343,9 +354,17 @@ export const EmailDetail = ({
         }
 
         pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
+        
+        toast.dismiss(toastId);
+        toast.success("PDF generated successfully!", {
+          position: "top-center",
+        });
       } catch (error) {
         console.error("Error generating PDF:", error);
-        alert("Gagal generate PDF. Silakan coba lagi.");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Silakan coba lagi.", {
+          position: "top-center",
+        });
       } finally {
         // Selesai generate, hide preview
         setIsGeneratingPDF(false);
@@ -858,6 +877,7 @@ export const EmailDetail = ({
 
   return (
     <>
+      {/* Loading Overlay */}
       <div className="plus-jakarta-sans h-full bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-y-auto">
         {/* Header */}
         {isSend || isCanceled ? (
@@ -2314,12 +2334,22 @@ export const EmailDetailBeritaBongkaran = ({
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
+    let toastId: string | number;
+
     const generatePDF = async () => {
+      toastId = toast.loading("Generating PDF...", {
+        position: "top-center",
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const pages = document.querySelectorAll(".surat");
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Preview element tidak ditemukan!", {
+          position: "top-center",
+        });
         setIsGeneratingPDF(false);
         return;
       }
@@ -2363,9 +2393,17 @@ export const EmailDetailBeritaBongkaran = ({
             formData.nomorBeritaAcara || "Berita Acara Pemeriksaan Tim Mutu"
           }.pdf`
         );
+
+        toast.dismiss(toastId);
+        toast.success("PDF generated successfully!", {
+          position: "top-center",
+        });
       } catch (error) {
         console.error("Error generating PDF:", error);
-        alert("Gagal generate PDF. Silakan coba lagi.");
+        toast.dismiss(toastId);
+        toast.error("Gagal generate PDF. Silakan coba lagi.", {
+          position: "top-center",
+        });
       } finally {
         setIsGeneratingPDF(false);
       }
@@ -2380,6 +2418,7 @@ export const EmailDetailBeritaBongkaran = ({
 
   return (
     <>
+      {/* Loading Overlay */}
       <div className="plus-jakarta-sans h-full bg-white rounded-xl w-full shadow-md py-6 px-4 max-w-full overflow-y-auto">
         {/* Header - KODE YANG SAMA SEPERTI SEBELUMNYA */}
         {isSend || isCanceled ? (

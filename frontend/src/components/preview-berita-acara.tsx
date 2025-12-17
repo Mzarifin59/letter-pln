@@ -9,6 +9,7 @@ import {
   SignatureData,
 } from "@/lib/surat-bongkaran/berita-bongkaran.type";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 interface PreviewSectionProps {
   formData: FormData;
@@ -52,11 +53,27 @@ export default function PreviewSectionBeritaBongkaran({
   useEffect(() => {
     if (autoDownload) {
       const timer = setTimeout(() => {
-        onDownloadPDF();
+        handleDownloadClick();
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [autoDownload, onDownloadPDF]);
+
+  const handleDownloadClick = () => {
+    const toastId = toast.loading("Generating PDF...", {
+      position: "top-center",
+    });
+    
+    onDownloadPDF();
+    
+    // Hide loading after 5 seconds (sufficient time for PDF generation)
+    setTimeout(() => {
+      toast.dismiss(toastId);
+      toast.success("PDF generated successfully!", {
+        position: "top-center",
+      });
+    }, 5000);
+  };
 
   const getPenerimaSignature = () => {
     return (
@@ -745,7 +762,7 @@ export default function PreviewSectionBeritaBongkaran({
               <StickyNote className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Draft</span>
             </Button>
-            <Button variant="outline" onClick={onDownloadPDF} size="sm" className="text-xs sm:text-sm">
+            <Button variant="outline" onClick={handleDownloadClick} size="sm" className="text-xs sm:text-sm">
               <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Download PDF</span>
             </Button>
