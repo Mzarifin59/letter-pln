@@ -18,10 +18,10 @@ export const metadata: Metadata = {
   description: "Aplikasi Gudang Surat jalan dan Pengelolaan Bongkaran Logistik",
   icons: {
     icon: [
-      { rel: "icon", url: "/images/PLN-logo.png" },
-      { rel: "shortcut icon", url: "/images/PLN-logo.png" },
+      { rel: "icon", url: "/images/PLN-logo_32x32.png" },
+      { rel: "shortcut icon", url: "/images/PLN-logo_32x32.png" },
     ],
-    apple: [{ rel: "apple-touch-icon", url: "/images/PLN-logo.png" }],
+    apple: [{ rel: "apple-touch-icon", url: "/images/PLN-logo_32x32.png" }],
   },
 };
 
