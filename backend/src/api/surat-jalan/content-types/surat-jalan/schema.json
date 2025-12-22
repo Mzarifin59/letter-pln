@@ -96,11 +96,31 @@
     },
     "penerima": {
       "type": "component",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      },
       "component": "global.penerima",
       "repeatable": false
     },
     "pengirim": {
       "type": "component",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "kategori_surat"
+            },
+            "Berita Acara Pemeriksaan Tim Mutu"
+          ]
+        }
+      },
       "component": "global.pengirim",
       "repeatable": false
     },

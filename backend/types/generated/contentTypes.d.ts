@@ -430,35 +430,6 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiCategorySuratCategorySurat
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'category_surats';
-  info: {
-    displayName: 'Category Surat';
-    pluralName: 'category-surats';
-    singularName: 'category-surat';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::category-surat.category-surat'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiEmailStatusEmailStatus extends Struct.CollectionTypeSchema {
   collectionName: 'email_statuses';
   info: {
@@ -1137,7 +1108,6 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::category-surat.category-surat': ApiCategorySuratCategorySurat;
       'api::email-status.email-status': ApiEmailStatusEmailStatus;
       'api::email.email': ApiEmailEmail;
       'api::surat-jalan.surat-jalan': ApiSuratJalanSuratJalan;
