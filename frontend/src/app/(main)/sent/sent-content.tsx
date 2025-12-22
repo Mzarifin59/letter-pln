@@ -215,7 +215,7 @@ export default function SentContent({ data, token }: SentContentProps) {
         const updatedEmail = prevEmails.find(
           (email) => email.documentId === emailDocumentId
         );
-        
+
         if (updatedEmail?.id) {
           emailIdToDispatch = updatedEmail.id;
         }
@@ -349,8 +349,8 @@ export default function SentContent({ data, token }: SentContentProps) {
       );
 
       const kategori = item.surat_jalan.kategori_surat;
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu";
 
       return (
@@ -369,8 +369,8 @@ export default function SentContent({ data, token }: SentContentProps) {
       );
 
       const kategori = item.surat_jalan.kategori_surat;
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
         kategori === "Berita Acara Material Bongkaran";
 
@@ -391,7 +391,8 @@ export default function SentContent({ data, token }: SentContentProps) {
 
       return (
         hasVendorStatus &&
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.sender.email === user?.email
       );
     });
   }
@@ -590,27 +591,28 @@ export default function SentContent({ data, token }: SentContentProps) {
           {/* Email Detail Panel */}
           {openedEmail && (
             <div className="w-full h-full overflow-hidden">
-              {user?.role?.name === "Admin" && (() => {
-                const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
-                if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+              {user?.role?.name === "Admin" &&
+                (() => {
+                  const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+                  if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
+                    return (
+                      <EmailDetailBeritaPemeriksaan
+                        email={openedEmail as EmailDataOther}
+                        handleCloseDetail={handleCloseDetail}
+                        isSend={true}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                      />
+                    );
+                  }
                   return (
-                    <EmailDetailBeritaPemeriksaan
-                      email={openedEmail as EmailDataOther}
+                    <EmailDetail
+                      email={openedEmail}
                       handleCloseDetail={handleCloseDetail}
                       isSend={true}
                       markEmailAsBookmarked={markEmailAsBookmarked}
                     />
                   );
-                }
-                return (
-                  <EmailDetail
-                    email={openedEmail}
-                    handleCloseDetail={handleCloseDetail}
-                    isSend={true}
-                    markEmailAsBookmarked={markEmailAsBookmarked}
-                  />
-                );
-              })()}
+                })()}
 
               {user?.role?.name === "Vendor" && (
                 <EmailDetailBeritaBongkaran
@@ -621,38 +623,43 @@ export default function SentContent({ data, token }: SentContentProps) {
                 />
               )}
 
-              {user?.role?.name === "Spv" && (() => {
-                const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
-                if (kategoriSurat === "Surat Jalan") {
-                  return (
-                    <EmailDetail
-                      email={openedEmail}
-                      handleCloseDetail={handleCloseDetail}
-                      isSend={true}
-                      markEmailAsBookmarked={markEmailAsBookmarked}
-                    />
-                  );
-                } else if (kategoriSurat === "Berita Acara Material Bongkaran") {
-                  return (
-                    <EmailDetailBeritaBongkaran
-                      email={openedEmail as EmailDataVendor}
-                      handleCloseDetail={handleCloseDetail}
-                      isSend={true}
-                      markEmailAsBookmarked={markEmailAsBookmarked}
-                    />
-                  );
-                } else if (kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu") {
-                  return (
-                    <EmailDetailBeritaPemeriksaan
-                      email={openedEmail as EmailDataOther}
-                      handleCloseDetail={handleCloseDetail}
-                      isSend={true}
-                      markEmailAsBookmarked={markEmailAsBookmarked}
-                    />
-                  );
-                }
-                return null;
-              })()}
+              {user?.role?.name === "Spv" &&
+                (() => {
+                  const kategoriSurat = openedEmail.surat_jalan.kategori_surat;
+                  if (kategoriSurat === "Surat Jalan") {
+                    return (
+                      <EmailDetail
+                        email={openedEmail}
+                        handleCloseDetail={handleCloseDetail}
+                        isSend={true}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                      />
+                    );
+                  } else if (
+                    kategoriSurat === "Berita Acara Material Bongkaran"
+                  ) {
+                    return (
+                      <EmailDetailBeritaBongkaran
+                        email={openedEmail as EmailDataVendor}
+                        handleCloseDetail={handleCloseDetail}
+                        isSend={true}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                      />
+                    );
+                  } else if (
+                    kategoriSurat === "Berita Acara Pemeriksaan Tim Mutu"
+                  ) {
+                    return (
+                      <EmailDetailBeritaPemeriksaan
+                        email={openedEmail as EmailDataOther}
+                        handleCloseDetail={handleCloseDetail}
+                        isSend={true}
+                        markEmailAsBookmarked={markEmailAsBookmarked}
+                      />
+                    );
+                  }
+                  return null;
+                })()}
             </div>
           )}
         </div>
@@ -676,7 +683,9 @@ export default function SentContent({ data, token }: SentContentProps) {
                 Apakah Anda yakin ingin menghapus email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
+                  {selectedToDelete
+                    ? getPerihal(selectedToDelete)
+                    : "Tanpa perihal"}
                 </span>
               </>
             )}

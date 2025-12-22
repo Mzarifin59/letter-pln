@@ -108,7 +108,7 @@ export default function LoginContentPage() {
               SIGASPOL
             </h2>
             <p className="text-[#003367] text-[10px] leading-tight mt-1 w-3/4">
-              Aplikasi Gudang Surat jalan dan Pengelolaan Bongkaran Logistik
+              Aplikasi Gudang Surat Jalan dan Pengelolaan Bongkaran Logistik
             </p>
           </div>
         </div>

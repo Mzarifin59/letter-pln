@@ -79,8 +79,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
       );
 
       const kategori = item.surat_jalan.kategori_surat;
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu";
 
       return (
@@ -121,8 +121,8 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         return item.surat_jalan.status_surat === "Reject";
       };
 
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
         kategori === "Berita Acara Material Bongkaran";
 
@@ -142,9 +142,9 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
       return (
         hasVendorStatus &&
-        item.surat_jalan.kategori_surat ===
-          "Berita Acara Material Bongkaran" &&
-        item.surat_jalan.status_surat === "Reject" 
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.surat_jalan.status_surat === "Reject" &&
+        item.sender.email === user?.email
       );
     });
   } else {
@@ -155,10 +155,10 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
 
       return (
         hasGarduIndukStatus &&
-        item.surat_jalan.kategori_surat ===
-          "Berita Acara Material Bongkaran" &&
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
-          item.isHaveStatus === true)
+          item.isHaveStatus === true) &&
+        item.recipient.email === user?.email
       );
     });
   }
@@ -349,7 +349,7 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         const updatedEmail = prevEmails.find(
           (email) => email.documentId === emailDocumentId
         );
-        
+
         if (updatedEmail?.id) {
           emailIdToDispatch = updatedEmail.id;
         }
@@ -726,7 +726,9 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
+                  {selectedToDelete
+                    ? getPerihal(selectedToDelete)
+                    : "Tanpa perihal"}
                 </span>
               </>
             )}

@@ -259,8 +259,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
   const sortedInitialData = useMemo(() => {
     return [...data].sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() -
-        new Date(a.updatedAt).getTime()
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
   }, [data]);
 
@@ -280,8 +279,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       }
 
       const kategori = item.surat_jalan.kategori_surat;
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
         isBeritaBongkaranComplete(item);
 
@@ -319,8 +318,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         return true;
       };
 
-      const isAllowedKategori = 
-        kategori === "Surat Jalan" || 
+      const isAllowedKategori =
+        kategori === "Surat Jalan" ||
         kategori === "Berita Acara Pemeriksaan Tim Mutu" ||
         kategori === "Berita Acara Material Bongkaran";
 
@@ -345,7 +344,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
       return (
         item.isHaveStatus === true &&
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.sender.email === user?.email
       );
     });
   } else {
@@ -361,7 +361,8 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
 
       return (
         item.surat_jalan.status_entry !== "Draft" &&
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.recipient.email === user?.email
       );
     });
   }
@@ -482,7 +483,7 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
         const updatedEmail = prevEmails.find(
           (email) => email.documentId === emailDocumentId
         );
-        
+
         if (updatedEmail?.id) {
           emailIdToDispatch = updatedEmail.id;
         }
@@ -1095,7 +1096,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
                 Apakah Anda yakin ingin menghapus draft email ini?
                 <br />
                 <span className="font-semibold">
-                  {selectedToDelete ? getPerihal(selectedToDelete) : "Tanpa perihal"}
+                  {selectedToDelete
+                    ? getPerihal(selectedToDelete)
+                    : "Tanpa perihal"}
                 </span>
               </>
             )}

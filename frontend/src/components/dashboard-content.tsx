@@ -185,14 +185,18 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Material Bongkaran" &&
+          item.sender.email === user?.email
       );
 
     suratData = suratData
       .sort(sortByDate)
       .filter(
         (item) =>
-          item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+          item.surat_jalan.kategori_surat ===
+            "Berita Acara Material Bongkaran" &&
+          item.sender.email === user?.email
       );
   } else if (user?.role?.name === "Gardu Induk") {
     suratDataThisMonth = suratDataThisMonth
@@ -201,7 +205,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         (item) =>
           item.surat_jalan.kategori_surat ===
             "Berita Acara Material Bongkaran" &&
-          item.surat_jalan.status_entry !== "Draft"
+          item.surat_jalan.status_entry !== "Draft" &&
+          item.recipient.email === user?.email
       );
 
     suratData = suratData
@@ -210,7 +215,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
         (item) =>
           item.surat_jalan.kategori_surat ===
             "Berita Acara Material Bongkaran" &&
-          item.surat_jalan.status_entry !== "Draft"
+          item.surat_jalan.status_entry !== "Draft" &&
+          item.recipient.email === user?.email
       );
   } else {
     const canShow = (item: DynamicEmailData) => {

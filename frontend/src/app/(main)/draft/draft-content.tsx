@@ -186,7 +186,8 @@ export default function DraftPageContent({ data, token }: DraftContentProps) {
       return (
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
         item.surat_jalan.status_entry === "Draft" &&
-        hasVendorStatus
+        hasVendorStatus &&
+        item.sender.email === user?.email
       );
     });
   }

@@ -99,11 +99,11 @@ export default function TrackingContentPage({
     if (kategori === "Berita Acara Material Bongkaran") {
       return (item as EmailDataVendor).surat_jalan.no_berita_acara ?? null;
     }
-    
+
     if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
       return (item as EmailDataOther).surat_jalan.no_berita_acara ?? null;
     }
-    
+
     return (item as EmailDataAdmin).surat_jalan.no_surat_jalan ?? null;
   };
 
@@ -156,12 +156,18 @@ export default function TrackingContentPage({
   } else if (user?.role?.name === "Spv") {
     const canShow = (item: DynamicEmailData) => {
       const kategori = item.surat_jalan.kategori_surat;
-      
+
       // Surat Jalan dan Berita Pemeriksaan - sama seperti Surat Jalan
-      if (kategori === "Surat Jalan" || kategori === "Berita Acara Pemeriksaan Tim Mutu") {
-        return item.surat_jalan.status_surat === "In Progress" && item.surat_jalan.status_entry !== "Draft";
+      if (
+        kategori === "Surat Jalan" ||
+        kategori === "Berita Acara Pemeriksaan Tim Mutu"
+      ) {
+        return (
+          item.surat_jalan.status_surat === "In Progress" &&
+          item.surat_jalan.status_entry !== "Draft"
+        );
       }
-      
+
       // Berita Acara Material Bongkaran - perlu cek mengetahui
       const mengetahuiLengkap =
         hasMengetahui(item.surat_jalan) &&
@@ -178,7 +184,8 @@ export default function TrackingContentPage({
   } else if (user?.role?.name === "Vendor") {
     currentData = dataEmail.filter(
       (item) =>
-        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran"
+        item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
+        item.sender.email === user?.email
     );
   } else {
     currentData = dataEmail.filter(
@@ -187,7 +194,8 @@ export default function TrackingContentPage({
         item.surat_jalan.status_entry !== "Draft" &&
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
         hasMengetahui(item.surat_jalan) &&
-        !item.surat_jalan.mengetahui?.ttd_mengetahui
+        !item.surat_jalan.mengetahui?.ttd_mengetahui &&
+        item.recipient.email === user?.email
     );
   }
 
@@ -279,7 +287,10 @@ export default function TrackingContentPage({
         });
         return;
       }
-    } else if (userRole === "Spv" && kategoriSurat === "Berita Acara Material Bongkaran") {
+    } else if (
+      userRole === "Spv" &&
+      kategoriSurat === "Berita Acara Material Bongkaran"
+    ) {
       // Spv hanya perlu signature untuk Berita Acara Material Bongkaran
       if (!signaturePenerima.upload && !signaturePenerima.signature) {
         toast.error("Mohon berikan tanda tangan terlebih dahulu", {
@@ -322,7 +333,9 @@ export default function TrackingContentPage({
             throw new Error("Gagal mengupdate status berita pemeriksaan");
           }
 
-          toast.success("Berita berhasil disetujui", { position: "top-center" });
+          toast.success("Berita berhasil disetujui", {
+            position: "top-center",
+          });
         }
         // Spv dengan Berita Acara Material Bongkaran - perlu signature
         else if (kategoriSurat === "Berita Acara Material Bongkaran") {
@@ -767,7 +780,8 @@ export default function TrackingContentPage({
               {isSPV
                 ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                   ? "Detail Surat Jalan"
-                  : selectedItem?.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+                  : selectedItem?.surat_jalan.kategori_surat ===
+                    "Berita Acara Pemeriksaan Tim Mutu"
                   ? "Detail Berita Acara Pemeriksaan Tim Mutu"
                   : "Detail Berita Acara Material Bongkaran"
                 : isGI
@@ -786,7 +800,8 @@ export default function TrackingContentPage({
                 {isSPV
                   ? selectedItem?.surat_jalan.kategori_surat === "Surat Jalan"
                     ? "No Surat Jalan"
-                    : selectedItem?.surat_jalan.kategori_surat === "Berita Acara Pemeriksaan Tim Mutu"
+                    : selectedItem?.surat_jalan.kategori_surat ===
+                      "Berita Acara Pemeriksaan Tim Mutu"
                     ? "No Berita Acara Pemeriksaan Tim Mutu"
                     : "No Berita Acara Material Bongkaran"
                   : isGI
@@ -804,7 +819,8 @@ export default function TrackingContentPage({
                 Tanggal
               </label>
               <p className="text-base text-[#545454]">
-                {selectedItem && formatDateTime(getTanggalSuratLocal(selectedItem))}
+                {selectedItem &&
+                  formatDateTime(getTanggalSuratLocal(selectedItem))}
               </p>
             </div>
 
