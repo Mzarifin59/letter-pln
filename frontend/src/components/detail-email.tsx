@@ -130,6 +130,7 @@ export const EmailDetail = ({
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [localEmail, setLocalEmail] = useState<DynamicEmailData>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -374,8 +375,130 @@ export const EmailDetail = ({
     generatePDF();
   }, [isGeneratingPDF, formData.nomorSuratJalan]);
 
-  const handlePrintClick = () => {
-    setIsGeneratingPDF(true);
+  // Fungsi untuk memastikan semua gambar sudah load
+  const waitForImagesToLoad = (): Promise<void> => {
+    return new Promise((resolve) => {
+      // Tunggu DOM update dulu
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Tunggu sedikit lagi untuk memastikan React sudah render semua
+          setTimeout(() => {
+            const printContent = document.getElementById('print-content');
+            if (!printContent) {
+              resolve();
+              return;
+            }
+
+            // Cari semua gambar di print content
+            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
+            
+            if (images.length === 0) {
+              resolve();
+              return;
+            }
+
+            let loadedCount = 0;
+            const totalImages = images.length;
+            let resolved = false;
+            const imagePromises: Promise<void>[] = [];
+
+            const checkComplete = () => {
+              if (resolved) return;
+              
+              loadedCount++;
+              if (loadedCount === totalImages) {
+                resolved = true;
+                clearTimeout(timeout);
+                // Tambahkan delay kecil untuk memastikan render selesai
+                setTimeout(() => {
+                  resolve();
+                }, 300);
+              }
+            };
+
+            // Set timeout untuk mencegah hang jika ada gambar yang tidak load
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                console.warn('Some images failed to load within timeout');
+                resolve();
+              }
+            }, 10000);
+
+            images.forEach((img, index) => {
+              // Pastikan gambar tidak lazy load dan force eager loading
+              img.loading = 'eager';
+              img.decoding = 'sync';
+              
+              const imagePromise = new Promise<void>((imgResolve) => {
+                // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
+                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                  imgResolve();
+                } else {
+                  // Tambahkan event listener untuk load dan error
+                  const onLoad = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    imgResolve();
+                  };
+                  
+                  const onError = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    console.warn(`Image ${index} failed to load:`, img.src);
+                    imgResolve(); // Resolve anyway untuk tidak block
+                  };
+
+                  img.addEventListener('load', onLoad, { once: true });
+                  img.addEventListener('error', onError, { once: true });
+                  
+                  // Force reload jika src sudah ada tapi belum load
+                  if (img.src && !img.complete) {
+                    const currentSrc = img.src;
+                    // Hapus dan set ulang src untuk force reload
+                    img.src = '';
+                    setTimeout(() => {
+                      img.src = currentSrc;
+                    }, 10);
+                  }
+                }
+              });
+
+              imagePromise.then(() => {
+                checkComplete();
+              });
+              
+              imagePromises.push(imagePromise);
+            });
+          }, 100);
+        });
+      });
+    });
+  };
+
+  const handlePrintClick = async () => {
+    setIsPrinting(true);
+    
+    // Tunggu sedikit untuk memastikan React sudah render print content
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Tunggu semua gambar load sebelum buka print dialog
+    await waitForImagesToLoad();
+    
+    // Trigger print dialog setelah semua gambar sudah load
+    window.print();
+    
+    // Reset setelah print dialog ditutup (user bisa cancel atau print)
+    // Gunakan beforeprint dan afterprint events jika tersedia
+    const handleAfterPrint = () => {
+      setIsPrinting(false);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    // Fallback jika afterprint tidak didukung
+    setTimeout(() => {
+      setIsPrinting(false);
+    }, 1000);
   };
 
   const MATERIALS_PER_PAGE = 15;
@@ -1632,6 +1755,283 @@ export const EmailDetail = ({
           </div>
         </div>
       )}
+
+      {/* Print Content - Hidden until printing */}
+      {isPrinting && (
+        <div id="print-content" className="print-only">
+          {/* Loop untuk setiap lembar (4 lembar) */}
+          {[0, 1, 2, 3].map((lembarIndex) => (
+            <div key={lembarIndex}>
+              {/* Loop untuk setiap halaman material */}
+              {materialPages.map((pageData, pageIndex) => {
+                const {
+                  materials: pageMaterials,
+                  showFooter,
+                  footerParts = {
+                    keterangan: false,
+                    kendaraan: false,
+                    tandaTangan: false,
+                    lampiran: false,
+                  },
+                  isFirstPage,
+                } = pageData;
+
+                // Hitung nomor awal untuk halaman ini
+                let startIndex = 0;
+                for (let i = 0; i < pageIndex; i++) {
+                  startIndex += materialPages[i].materials.length;
+                }
+
+                return (
+                  <div
+                    key={`${lembarIndex}-${pageIndex}`}
+                    className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                    data-lembar={lembarIndex}
+                    data-page={pageIndex}
+                    style={{
+                      padding: "10mm 10mm 10mm 10mm",
+                      boxSizing: "border-box",
+                      pageBreakAfter: "always",
+                      pageBreakInside: "avoid",
+                    }}
+                  >
+                    {/* Header - ada di setiap halaman */}
+                    {renderHeader(lembarIndex, lembarLabels)}
+
+                    {/* Title dan Info - hanya di halaman pertama */}
+                    {isFirstPage && renderTitleAndInfo()}
+
+                    {/* Materials Table - jika ada material di halaman ini */}
+                    {pageMaterials.length > 0 && (
+                      <div className="mb-3">
+                        <table
+                          className="w-full border-collapse"
+                          style={{ fontSize: "14px" }}
+                        >
+                          <thead className="bg-gray-100">
+                            <tr className="text-center">
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "5%" }}
+                              >
+                                NO
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "30%" }}
+                              >
+                                NAMA MATERIAL
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "12%" }}
+                              >
+                                KATALOG
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "10%" }}
+                              >
+                                SATUAN
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "10%" }}
+                              >
+                                JUMLAH
+                              </th>
+                              <th
+                                className="border-2 border-gray-800 px-1.5 py-1"
+                                style={{ width: "33%" }}
+                              >
+                                KETERANGAN (LOKASI TYPE, S/N DLL)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageMaterials.map((material, idx) => (
+                              <tr key={material.id || idx}>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {startIndex + idx + 1}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1">
+                                  {material.namaMaterial || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.katalog || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.satuan || "-"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.jumlah || "0"}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                                  {material.keterangan || "-"}
+                                </td>
+                              </tr>
+                            ))}
+
+                            {/* Total row jika showFooter */}
+                            {showFooter && (
+                              <tr className="bg-gray-100 font-semibold">
+                                <td
+                                  colSpan={4}
+                                  className="border-2 border-gray-800 px-1.5 py-1.5 text-center"
+                                >
+                                  TOTAL
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5 text-center">
+                                  {calculateTotal()}
+                                </td>
+                                <td className="border-2 border-gray-800 px-1.5 py-1.5"></td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Footer - render bagian yang sesuai */}
+                    {showFooter && (
+                      <>
+                        {footerParts.keterangan && renderFooterKeterangan()}
+                        {footerParts.kendaraan && renderFooterKendaraan()}
+                        {footerParts.tandaTangan && renderFooterTandaTangan()}
+                        {footerParts.lampiran && renderFooterLampiran()}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Halaman Lampiran - setelah semua halaman material */}
+              {(() => {
+                // Versi khusus untuk print
+                if (materials.length > MATERIAL_THRESHOLD) {
+                  return null;
+                }
+
+                const imageLampiran = getLampiranImages();
+                if (imageLampiran.length === 0) return null;
+
+                return (
+                  <div
+                    key={`${lembarIndex}-lampiran-print`}
+                    className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                    data-lembar={lembarIndex}
+                    data-page="lampiran"
+                    style={{
+                      padding: "10mm 10mm 10mm 10mm",
+                      boxSizing: "border-box",
+                      pageBreakAfter: "always",
+                      pageBreakInside: "avoid",
+                    }}
+                  >
+                    {/* Header */}
+                    {renderHeader(lembarIndex, lembarLabels)}
+                    
+                    {/* Title Lampiran */}
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
+                        LAMPIRAN
+                      </h2>
+                    </div>
+
+                    {/* Grid Lampiran - 3 kolom untuk banyak foto */}
+                    <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 150px)' }}>
+                      {imageLampiran.map((attachment: FileAttachment, index: number) => {
+                        const imageUrl = attachment.url.startsWith("http")
+                          ? attachment.url
+                          : `${apiUrl}${attachment.url}`;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex flex-col items-center justify-start"
+                          >
+                            <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
+                              <img
+                                src={imageUrl}
+                                alt={`Lampiran ${index + 1}`}
+                                className="w-full h-full object-contain"
+                                crossOrigin="anonymous"
+                                loading="eager"
+                                decoding="sync"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+        
+        @page {
+          margin: 0;
+          size: A4;
+        }
+        
+        @media print {
+          /* Hide everything except print content */
+          body * {
+            visibility: hidden;
+          }
+          
+          #print-content,
+          #print-content * {
+            visibility: visible;
+          }
+          
+          #print-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white;
+          }
+          
+          .surat-print {
+            page-break-after: always;
+            page-break-inside: avoid;
+            break-after: page;
+            break-inside: avoid;
+          }
+          
+          .surat-print:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+          
+          /* Ensure images load in print */
+          img {
+            max-width: 100%;
+            height: auto;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure borders print */
+          table, th, td {
+            border-collapse: collapse;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `}</style>
     </>
   );
 };
@@ -1651,6 +2051,7 @@ export const EmailDetailBeritaBongkaran = ({
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [localEmail, setLocalEmail] = useState<EmailDataVendor>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -2412,8 +2813,126 @@ export const EmailDetailBeritaBongkaran = ({
     generatePDF();
   }, [isGeneratingPDF, formData.nomorBeritaAcara]);
 
-  const handlePrintClick = () => {
-    setIsGeneratingPDF(true);
+  // Fungsi untuk memastikan semua gambar sudah load
+  const waitForImagesToLoad = (): Promise<void> => {
+    return new Promise((resolve) => {
+      // Tunggu DOM update dulu
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Tunggu sedikit lagi untuk memastikan React sudah render semua
+          setTimeout(() => {
+            const printContent = document.getElementById('print-content-bongkaran');
+            if (!printContent) {
+              resolve();
+              return;
+            }
+
+            // Cari semua gambar di print content
+            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
+            
+            if (images.length === 0) {
+              resolve();
+              return;
+            }
+
+            let loadedCount = 0;
+            const totalImages = images.length;
+            let resolved = false;
+
+            const checkComplete = () => {
+              if (resolved) return;
+              
+              loadedCount++;
+              if (loadedCount === totalImages) {
+                resolved = true;
+                // Tambahkan delay kecil untuk memastikan render selesai
+                setTimeout(() => {
+                  resolve();
+                }, 300);
+              }
+            };
+
+            // Set timeout untuk mencegah hang jika ada gambar yang tidak load
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                console.warn('Some images failed to load within timeout');
+                resolve();
+              }
+            }, 10000);
+
+            images.forEach((img, index) => {
+              // Pastikan gambar tidak lazy load dan force eager loading
+              img.loading = 'eager';
+              img.decoding = 'sync';
+              
+              const imagePromise = new Promise<void>((imgResolve) => {
+                // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
+                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                  imgResolve();
+                } else {
+                  // Tambahkan event listener untuk load dan error
+                  const onLoad = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    imgResolve();
+                  };
+                  
+                  const onError = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    console.warn(`Image ${index} failed to load:`, img.src);
+                    imgResolve(); // Resolve anyway untuk tidak block
+                  };
+
+                  img.addEventListener('load', onLoad, { once: true });
+                  img.addEventListener('error', onError, { once: true });
+                  
+                  // Force reload jika src sudah ada tapi belum load
+                  if (img.src && !img.complete) {
+                    const currentSrc = img.src;
+                    // Hapus dan set ulang src untuk force reload
+                    img.src = '';
+                    setTimeout(() => {
+                      img.src = currentSrc;
+                    }, 10);
+                  }
+                }
+              });
+
+              imagePromise.then(() => {
+                checkComplete();
+              });
+            });
+          }, 100);
+        });
+      });
+    });
+  };
+
+  const handlePrintClick = async () => {
+    setIsPrinting(true);
+    
+    // Tunggu sedikit untuk memastikan React sudah render print content
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Tunggu semua gambar load sebelum buka print dialog
+    await waitForImagesToLoad();
+    
+    // Trigger print dialog setelah semua gambar sudah load
+    window.print();
+    
+    // Reset setelah print dialog ditutup (user bisa cancel atau print)
+    // Gunakan beforeprint dan afterprint events jika tersedia
+    const handleAfterPrint = () => {
+      setIsPrinting(false);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    // Fallback jika afterprint tidak didukung
+    setTimeout(() => {
+      setIsPrinting(false);
+    }, 1000);
   };
 
   return (
@@ -3120,6 +3639,316 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
         </div>
       )}
+
+      {/* Print Content - Hidden until printing */}
+      {isPrinting && (
+        <div id="print-content-bongkaran" className="print-only">
+          {/* Loop untuk setiap halaman material */}
+          {materialPages.map((pageData, pageIndex) => {
+            const {
+              materials: pageMaterials,
+              showFooter,
+              footerParts = {
+                keterangan: false,
+                kendaraan: false,
+                tandaTangan: false,
+                lampiran: false,
+              },
+              isFirstPage,
+            } = pageData;
+
+            // Hitung nomor awal untuk halaman ini
+            let startIndex = 0;
+            for (let i = 0; i < pageIndex; i++) {
+              startIndex += materialPages[i].materials.length;
+            }
+
+            return (
+              <div
+                key={pageIndex}
+                className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                data-page={pageIndex}
+                style={{
+                  padding: "10mm 10mm 10mm 10mm",
+                  boxSizing: "border-box",
+                  pageBreakAfter: "always",
+                  pageBreakInside: "avoid",
+                }}
+              >
+                {/* Header - ada di setiap halaman dengan cop surat */}
+                {renderHeaderPDF(isFirstPage)}
+
+                {/* Title dan Info - hanya di halaman pertama */}
+                {isFirstPage && renderTitleAndInfoPDF()}
+
+                {/* Materials Table - jika ada material di halaman ini */}
+                {pageMaterials.length > 0 && (
+                  <div className="mb-2">
+                    <table
+                      className="w-full border-collapse"
+                      style={{ fontSize: "14px" }}
+                    >
+                      <thead className="bg-gray-100">
+                        <tr className="text-center">
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "5%" }}
+                          >
+                            NO
+                          </th>
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "30%" }}
+                          >
+                            NAMA MATERIAL
+                          </th>
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "12%" }}
+                          >
+                            KATALOG
+                          </th>
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "10%" }}
+                          >
+                            SATUAN
+                          </th>
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "10%" }}
+                          >
+                            JUMLAH
+                          </th>
+                          <th
+                            className="border-2 border-gray-800 px-1.5 py-1"
+                            style={{ width: "33%" }}
+                          >
+                            KETERANGAN (LOKASI TYPE, S/N DLL)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pageMaterials.map((material, idx) => (
+                          <tr key={material.id || idx}>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {startIndex + idx + 1}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1">
+                              {material.namaMaterial || "-"}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {material.katalog || "-"}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {material.satuan || "-"}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {material.jumlah || "0"}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {material.keterangan || "-"}
+                            </td>
+                          </tr>
+                        ))}
+
+                        {/* Total row jika showFooter */}
+                        {showFooter && (
+                          <tr className="bg-gray-100 font-semibold">
+                            <td
+                              colSpan={4}
+                              className="border-2 border-gray-800 px-1.5 py-1 text-center"
+                            >
+                              TOTAL
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1 text-center">
+                              {calculateTotal()}
+                            </td>
+                            <td className="border-2 border-gray-800 px-1.5 py-1"></td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Footer - render bagian yang sesuai */}
+                {showFooter && (
+                  <>
+                    {footerParts.keterangan && renderFooterKeteranganPDF()}
+                    {footerParts.kendaraan && renderFooterKendaraanPDF()}
+                    {footerParts.tandaTangan && renderFooterTandaTanganPDF()}
+                    {footerParts.lampiran && (
+                      (() => {
+                        // Jika ini halaman terakhir dengan footer, tampilkan lampiran terbatas
+                        const imageLampiran = getImageLampiran();
+                        const LAMPIRAN_PER_PAGE = 6; // Maksimal 6 lampiran di footer (2x3 grid)
+                        const lampiranToShow = imageLampiran.slice(0, LAMPIRAN_PER_PAGE);
+                        return renderFooterLampiranPDF(lampiranToShow);
+                      })()
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Halaman Lampiran terpisah - untuk lampiran yang tidak muat atau jika material <= threshold */}
+          {(() => {
+            const imageLampiran = getImageLampiran();
+            if (imageLampiran.length === 0) return null;
+
+            // Tentukan lampiran mana yang sudah ditampilkan di footer
+            let lampiranAlreadyShown = 0;
+            
+            if (materials.length <= MATERIAL_THRESHOLD) {
+              lampiranAlreadyShown = 0;
+            } else {
+              const lastPage = materialPages[materialPages.length - 1];
+              if (lastPage?.footerParts?.lampiran) {
+                lampiranAlreadyShown = 6;
+              } else {
+                lampiranAlreadyShown = 0;
+              }
+            }
+
+            // Ambil sisa lampiran yang belum ditampilkan
+            const lampiranToRender = imageLampiran.slice(lampiranAlreadyShown);
+            
+            if (lampiranToRender.length === 0) return null;
+
+            // Bagi lampiran ke beberapa halaman jika banyak (15 per halaman: 3 kolom x 5 baris)
+            const lampiranPages = [];
+            const LAMPIRAN_PER_PAGE = 15;
+            
+            for (let i = 0; i < lampiranToRender.length; i += LAMPIRAN_PER_PAGE) {
+              lampiranPages.push(lampiranToRender.slice(i, i + LAMPIRAN_PER_PAGE));
+            }
+
+            return lampiranPages.map((pageLampiran, pageIndex) => {
+              const startIndex = lampiranAlreadyShown + pageIndex * LAMPIRAN_PER_PAGE;
+              
+              return (
+                <div
+                  key={`lampiran-print-${pageIndex}`}
+                  className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                  data-page={`lampiran-${pageIndex}`}
+                  style={{
+                    padding: "10mm 10mm 10mm 10mm",
+                    boxSizing: "border-box",
+                    pageBreakAfter: "always",
+                    pageBreakInside: "avoid",
+                  }}
+                >
+                  {/* Header dengan cop surat */}
+                  {renderHeaderPDF(false)}
+                  
+                  {/* Title Lampiran */}
+                  <div className="text-center mb-6">
+                    <h2 className="text-sm font-semibold text-gray-900 mb-2">
+                      LAMPIRAN
+                    </h2>
+                    {lampiranPages.length > 1 && (
+                      <p className="text-sm text-gray-600">
+                        Halaman {pageIndex + 1} dari {lampiranPages.length}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Grid Lampiran - 3 kolom */}
+                  <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 200px)' }}>
+                    {pageLampiran.map((attachment, index) => {
+                      const globalIndex = startIndex + index;
+                      const imageUrl = attachment.url.startsWith("http")
+                        ? attachment.url
+                        : `${apiUrl}${attachment.url}`;
+                      
+                      return (
+                        <div 
+                          key={globalIndex} 
+                          className="flex flex-col items-center justify-start"
+                        >
+                          <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
+                            <img
+                              src={imageUrl}
+                              alt={`Lampiran ${globalIndex + 1}`}
+                              className="w-full h-full object-contain"
+                              crossOrigin="anonymous"
+                              loading="eager"
+                              decoding="sync"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* Print Styles for Bongkaran */}
+      <style jsx global>{`
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+        
+        @page {
+          margin: 0;
+          size: A4;
+        }
+        
+        @media print {
+          /* Hide everything except print content */
+          body * {
+            visibility: hidden;
+          }
+          
+          #print-content-bongkaran,
+          #print-content-bongkaran * {
+            visibility: visible;
+          }
+          
+          #print-content-bongkaran {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white;
+          }
+          
+          .surat-print {
+            page-break-after: always;
+            page-break-inside: avoid;
+            break-after: page;
+            break-inside: avoid;
+          }
+          
+          .surat-print:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+          
+          /* Ensure images load in print */
+          img {
+            max-width: 100%;
+            height: auto;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure borders print */
+          table, th, td {
+            border-collapse: collapse;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `}</style>
     </>
   );
 };

@@ -108,6 +108,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 }) => {
   const { user } = useUserLogin();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [localEmail, setLocalEmail] = useState<EmailDataOther>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -195,8 +196,10 @@ export const EmailDetailBeritaPemeriksaan = ({
       materialsFirstPage = 3; // Lebih banyak material jika kelengkapan sedikit
     } else if (kelengkapanCount <= 5) {
       materialsFirstPage = 2;
-    } else {
+    } else if (kelengkapanCount <= 10) {
       materialsFirstPage = 2; // Kelengkapan banyak, material sedikit di halaman 1
+    } else {
+      materialsFirstPage = 1; // Kelengkapan sangat banyak (> 10), hanya 1 material di halaman 1
     }
 
     // Halaman pertama
@@ -357,8 +360,126 @@ export const EmailDetailBeritaPemeriksaan = ({
     generatePDF();
   }, [isGeneratingPDF, beritaPemeriksaan.no_berita_acara]);
 
-  const handlePrintClick = () => {
-    setIsGeneratingPDF(true);
+  // Fungsi untuk memastikan semua gambar sudah load
+  const waitForImagesToLoad = (): Promise<void> => {
+    return new Promise((resolve) => {
+      // Tunggu DOM update dulu
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Tunggu sedikit lagi untuk memastikan React sudah render semua
+          setTimeout(() => {
+            const printContent = document.getElementById('print-content-berita-pemeriksaan');
+            if (!printContent) {
+              resolve();
+              return;
+            }
+
+            // Cari semua gambar di print content
+            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
+            
+            if (images.length === 0) {
+              resolve();
+              return;
+            }
+
+            let loadedCount = 0;
+            const totalImages = images.length;
+            let resolved = false;
+
+            const checkComplete = () => {
+              if (resolved) return;
+              
+              loadedCount++;
+              if (loadedCount === totalImages) {
+                resolved = true;
+                // Tambahkan delay kecil untuk memastikan render selesai
+                setTimeout(() => {
+                  resolve();
+                }, 300);
+              }
+            };
+
+            // Set timeout untuk mencegah hang jika ada gambar yang tidak load
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                console.warn('Some images failed to load within timeout');
+                resolve();
+              }
+            }, 10000);
+
+            images.forEach((img, index) => {
+              // Pastikan gambar tidak lazy load dan force eager loading
+              img.loading = 'eager';
+              img.decoding = 'sync';
+              
+              const imagePromise = new Promise<void>((imgResolve) => {
+                // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
+                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                  imgResolve();
+                } else {
+                  // Tambahkan event listener untuk load dan error
+                  const onLoad = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    imgResolve();
+                  };
+                  
+                  const onError = () => {
+                    img.removeEventListener('load', onLoad);
+                    img.removeEventListener('error', onError);
+                    console.warn(`Image ${index} failed to load:`, img.src);
+                    imgResolve(); // Resolve anyway untuk tidak block
+                  };
+
+                  img.addEventListener('load', onLoad, { once: true });
+                  img.addEventListener('error', onError, { once: true });
+                  
+                  // Force reload jika src sudah ada tapi belum load
+                  if (img.src && !img.complete) {
+                    const currentSrc = img.src;
+                    // Hapus dan set ulang src untuk force reload
+                    img.src = '';
+                    setTimeout(() => {
+                      img.src = currentSrc;
+                    }, 10);
+                  }
+                }
+              });
+
+              imagePromise.then(() => {
+                checkComplete();
+              });
+            });
+          }, 100);
+        });
+      });
+    });
+  };
+
+  const handlePrintClick = async () => {
+    setIsPrinting(true);
+    
+    // Tunggu sedikit untuk memastikan React sudah render print content
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Tunggu semua gambar load sebelum buka print dialog
+    await waitForImagesToLoad();
+    
+    // Trigger print dialog setelah semua gambar sudah load
+    window.print();
+    
+    // Reset setelah print dialog ditutup (user bisa cancel atau print)
+    // Gunakan beforeprint dan afterprint events jika tersedia
+    const handleAfterPrint = () => {
+      setIsPrinting(false);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    // Fallback jika afterprint tidak didukung
+    setTimeout(() => {
+      setIsPrinting(false);
+    }, 1000);
   };
 
   return (
@@ -1234,6 +1355,560 @@ export const EmailDetailBeritaPemeriksaan = ({
           </div>
         </div>
       )}
+
+      {/* Print Content - Hidden until printing */}
+      {isPrinting && (
+        <div id="print-content-berita-pemeriksaan" className="print-only">
+          {materialPages.map((pageData, pageIndex) => {
+            const {
+              materials: pageMaterials,
+              showIntro,
+              showKelengkapan,
+              showClosing,
+              showSignature,
+              isFirstPage,
+              isLastPage,
+            } = pageData;
+
+            const isCompactModePage = pageMaterials.length <= 3;
+
+            // Hitung index global untuk material numbering
+            let startIndex = 0;
+            for (let i = 0; i < pageIndex; i++) {
+              startIndex += materialPages[i].materials.length;
+            }
+
+            return (
+              <div
+                key={pageIndex}
+                className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                style={{
+                  padding: "10mm 10mm 10mm 10mm",
+                  boxSizing: "border-box",
+                  pageBreakAfter: "always",
+                  pageBreakInside: "avoid",
+                }}
+              >
+                {/* Company Header */}
+                <div
+                  className={`flex items-center gap-4 ${
+                    isCompactModePage ? "mb-4" : "mb-6"
+                  }`}
+                >
+                  <div className="flex items-center justify-center">
+                    <Image
+                      src={`/images/PLN-logo.png`}
+                      alt="PLN Logo"
+                      width={104}
+                      height={104}
+                      className="w-[104px] h-[104px] object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                    </div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      UNIT PELAKSANA TRANSMISI BANDUNG
+                    </div>
+                  </div>
+                </div>
+
+                <hr
+                  className={`border-t-2 border-gray-800 ${
+                    isCompactModePage ? "mb-3" : "mb-4"
+                  }`}
+                />
+
+                {/* Title - only on first page */}
+                {isFirstPage && (
+                  <div className={`text-center ${isCompactModePage ? "mb-4" : "mb-6"}`}>
+                    <h1
+                      className={`${
+                        isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-2"
+                      } font-bold text-gray-900`}
+                    >
+                      BERITA ACARA
+                    </h1>
+                    <h1
+                      className={`${
+                        isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-2"
+                      } font-bold text-gray-900`}
+                    >
+                      HASIL PEMERIKSAAN MUTU BARANG
+                    </h1>
+                    <div
+                      className={`${
+                        isCompactModePage ? "text-xl" : "text-2xl"
+                      } text-blue-600 font-bold`}
+                    >
+                      {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
+                    </div>
+                  </div>
+                )}
+
+                {/* Introduction - only on first page */}
+                {showIntro && (
+                  <div
+                    className={`${isCompactModePage ? "mb-3 text-base" : "mb-4 text-lg"} text-justify`}
+                  >
+                    <p className="mb-2">
+                      Pada hari{" "}
+                      <span className="font-semibold">
+                        {formatDateWithDay(
+                          beritaPemeriksaan.tanggal_pelaksanaan ||
+                            beritaPemeriksaan.tanggal_kontrak ||
+                            beritaPemeriksaan.createdAt
+                        )}
+                      </span>{" "}
+                      kami yang bertanda tangan di bawah ini telah bersama - sama
+                      melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
+                      Rinci{" "}
+                      <span className="font-semibold">
+                        {beritaPemeriksaan.no_perjanjian_kontrak || "(No Kontrak)"}
+                      </span>{" "}
+                      tanggal{" "}
+                      <span className="font-semibold">
+                        {formatDate(beritaPemeriksaan.tanggal_kontrak)}
+                      </span>{" "}
+                      perihal{" "}
+                      <span className="font-semibold">
+                        {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                      </span>
+                      .
+                    </p>
+                    <p className="">
+                      Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
+                      mutu barang. Adapun hasil dari pemeriksaan{" "}
+                      <span className="font-semibold">
+                        {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                      </span>{" "}
+                      dapat diterima /{" "}
+                      <span className="line-through">tidak diterima</span> dengan
+                      kelengkapan dokumen sebagai berikut:
+                    </p>
+                  </div>
+                )}
+
+                {/* Kelengkapan Dokumen - only on first page */}
+                {showKelengkapan && kelengkapanDokumen.length > 0 && (
+                  <div className={`${isCompactModePage ? "mb-3" : "mb-4"} text-justify`}>
+                    <ul
+                      className={`space-y-1 ${
+                        isCompactModePage ? "text-base" : "text-lg"
+                      } ml-4`}
+                    >
+                      {kelengkapanDokumen.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Materials Table */}
+                {pageMaterials.length > 0 && (
+                  <div
+                    className={`${
+                      isCompactModePage ? "mb-3" : "mb-4"
+                    }`}
+                    style={{ display: "block", width: "100%" }}
+                  >
+                    <p
+                      className={`${
+                        isCompactModePage ? "text-base mb-1" : "text-lg mb-2"
+                      }`}
+                    >
+                      Adapun hasil pemeriksaan sebagai berikut:
+                    </p>
+                    <table
+                      className="border-t border-b border-gray-300 text-sm w-full"
+                      style={{
+                        display: "table",
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "14px",
+                        tableLayout: "fixed",
+                      }}
+                    >
+                      <thead className="bg-gray-100">
+                        <tr
+                          className={`${
+                            isCompactModePage ? "text-base" : "text-lg"
+                          } text-center`}
+                        >
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "5%" }}
+                          >
+                            No.
+                          </th>
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "35%" }}
+                          >
+                            Material Description
+                          </th>
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "8%" }}
+                          >
+                            QTY
+                          </th>
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "8%" }}
+                          >
+                            SAT
+                          </th>
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "22%" }}
+                          >
+                            Serial Number
+                          </th>
+                          <th 
+                            className="border-2 border-gray-800 px-2 py-2"
+                            style={{ width: "22%" }}
+                          >
+                            Keterangan
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className={isCompactModePage ? "text-base" : "text-lg"}>
+                        {pageMaterials.map((item, index) => {
+                          const material = item as any;
+                          const globalIndex = startIndex + index;
+                          return (
+                            <tr key={globalIndex}>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                } text-center`}
+                              >
+                                {globalIndex + 1}
+                              </td>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                }`}
+                                style={{
+                                  wordWrap: "break-word",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                <div className="text-left">
+                                  <div className="font-semibold">{material.nama}</div>
+                                  {material.katalog && (
+                                    <div className="">
+                                      <span className="font-bold">MERK:</span>{" "}
+                                      {material.katalog}
+                                    </div>
+                                  )}
+                                  {material.tipe && (
+                                    <div className="">
+                                      <span className="font-bold">TYPE:</span>{" "}
+                                      {material.tipe}
+                                    </div>
+                                  )}
+                                  {material.lokasi && (
+                                    <div className="">LOKASI: {material.lokasi}</div>
+                                  )}
+                                </div>
+                              </td>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                } text-center`}
+                                style={{
+                                  wordWrap: "break-word",
+                                  overflowWrap: "break-word",
+                                }}
+                              >
+                                {item.jumlah}
+                              </td>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                } text-center`}
+                                style={{
+                                  wordWrap: "break-word",
+                                  overflowWrap: "break-word",
+                                }}
+                              >
+                                {item.satuan}
+                              </td>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                } `}
+                                style={{
+                                  wordWrap: "break-word",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {material.serial_number || "-"}
+                              </td>
+                              <td
+                                className={`border-2 border-gray-800 px-2 ${
+                                  isCompactModePage ? "py-1" : "py-2"
+                                } text-center`}
+                                style={{
+                                  wordWrap: "break-word",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {material.keterangan || "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Closing Statement - only on last page */}
+                {showClosing && (
+                  <div
+                    className={`${isCompactModePage ? "mb-3" : "mb-4"} ${
+                      isCompactModePage ? "text-base" : "text-lg"
+                    }`}
+                  >
+                    <p>
+                      Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat dengan
+                      sesungguhnya untuk dapat dipergunakan sebagai mana mestinya.
+                    </p>
+                  </div>
+                )}
+
+                {/* Signatures - only on last page */}
+                {showSignature && (
+                  <div
+                    className={`flex justify-between ${isCompactModePage ? "mb-2" : "mb-4"}`}
+                  >
+                    {/* Penyedia Barang */}
+                    <div className="text-center">
+                      <div
+                        className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        } font-semibold`}
+                      >
+                        Penyedia Barang
+                      </div>
+                      <div
+                        className={`font-bold ${isCompactModePage ? "mb-2" : "mb-4"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        {beritaPemeriksaan.penyedia_barang
+                          ?.perusahaan_penyedia_barang ||
+                          "(Perusahaan Penyedia Barang)"}
+                      </div>
+
+                      {/* Signature Preview */}
+                      <div
+                        className={`${
+                          isCompactModePage ? "h-16 mb-2" : "h-20 mb-4"
+                        } flex items-center`}
+                      >
+                        {beritaPemeriksaan.penyedia_barang?.ttd_penerima ? (
+                          <img
+                            width={200}
+                            height={200}
+                            src={getFileUrl(
+                              beritaPemeriksaan.penyedia_barang.ttd_penerima,
+                              apiUrl
+                            )}
+                            alt="TTD Penyedia Barang"
+                            className="max-h-full max-w-full object-contain"
+                            loading="eager"
+                            decoding="sync"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+                        )}
+                      </div>
+
+                      <div
+                        className={`${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        } font-bold `}
+                      >
+                        {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
+                          "(Nama Penanggung Jawab)"}
+                      </div>
+                    </div>
+
+                    {/* Pemeriksa Barang */}
+                    <div className="text-left">
+                      <div
+                        className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        } font-semibold`}
+                      >
+                        Pemeriksa Barang
+                      </div>
+                      <div
+                        className={`font-bold ${isCompactModePage ? "mb-2" : "mb-4"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        }`}
+                      >
+                        {beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
+                          "(Departemen Pemeriksa)"}
+                      </div>
+
+                      {/* List Mengetahui */}
+                      {beritaPemeriksaan.pemeriksa_barang?.mengetahui &&
+                        beritaPemeriksaan.pemeriksa_barang.mengetahui.length > 0 && (
+                          <div className={isCompactModePage ? "space-y-2" : "space-y-3"}>
+                            {beritaPemeriksaan.pemeriksa_barang.mengetahui.map(
+                              (mengetahui, index) => (
+                                <div
+                                  key={index}
+                                  className={`flex items-center ${
+                                    isCompactModePage ? "pb-1" : "pb-2"
+                                  }`}
+                                >
+                                  <div
+                                    className={`${
+                                      isCompactModePage ? "text-sm" : "text-base"
+                                    } font-semibold min-w-[200px]`}
+                                  >
+                                    {index + 1}{" "}
+                                    {mengetahui.nama_mengetahui ||
+                                      "(Nama Mengetahui)"}
+                                  </div>
+                                  <div
+                                    className={`${
+                                      isCompactModePage ? "text-sm" : "text-base"
+                                    } font-semibold`}
+                                  >
+                                    :
+                                  </div>
+                                  <div className="flex items-center ml-2">
+                                    <div
+                                      className={`${
+                                        isCompactModePage ? "w-28 h-10" : "w-32 h-12"
+                                      } flex items-center justify-center border-b-2 border-gray-800`}
+                                    >
+                                      {mengetahui.ttd_mengetahui ? (
+                                        <img
+                                          width={120}
+                                          height={60}
+                                          src={getFileUrl(
+                                            mengetahui.ttd_mengetahui,
+                                            apiUrl
+                                          )}
+                                          alt={`TTD Mengetahui ${index + 1}`}
+                                          className="max-h-full max-w-full object-contain"
+                                          loading="eager"
+                                          decoding="sync"
+                                        />
+                                      ) : (
+                                        <div className="text-gray-400 text-xs">
+                                          (Tanda Tangan)
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+        
+        @page {
+          margin: 0;
+          size: A4;
+        }
+        
+        @media print {
+          /* Hide everything except print content */
+          body * {
+            visibility: hidden;
+          }
+          
+          #print-content-berita-pemeriksaan,
+          #print-content-berita-pemeriksaan * {
+            visibility: visible;
+          }
+          
+          #print-content-berita-pemeriksaan {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white;
+          }
+          
+          .surat-print {
+            page-break-after: always;
+            page-break-inside: avoid;
+            break-after: page;
+            break-inside: avoid;
+          }
+          
+          .surat-print:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+          
+          /* Ensure images load in print */
+          img {
+            max-width: 100%;
+            height: auto;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Ensure borders print */
+          table, th, td {
+            border-collapse: collapse;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Prevent overflow in print */
+          .surat-print {
+            overflow: visible !important;
+          }
+          
+          .surat-print * {
+            overflow: visible !important;
+          }
+          
+          /* Ensure table cells wrap properly */
+          table {
+            table-layout: fixed;
+            width: 100%;
+          }
+          
+          td, th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+          }
+        }
+      `}</style>
     </>
   );
 };
