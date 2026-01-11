@@ -11,7 +11,7 @@ import {
   INITIAL_FORM_DATA,
   INITIAL_MATERIAL,
 } from "@/lib/surat-jalan/form.constants";
-import { SuratJalan } from "../interface";
+import { SuratJalan, User } from "../interface";
 import { useUserLogin } from "@/lib/user";
 
 export async function getAllSuratJalan() {
@@ -66,6 +66,16 @@ export async function getAllSuratJalan() {
   if (!res.ok) throw new Error("Gagal mengambil data surat jalan");
   const { data } = await res.json();
   return data;
+}
+
+async function getAllUsers(): Promise<User[]> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users?populate=role`
+  );
+
+  if (!res.ok) throw new Error("Gagal mengambil data users");
+  const response = await res.json();
+  return response || [];
 }
 
 export const useSuratJalanForm = () => {
@@ -124,13 +134,13 @@ export const useSuratJalanForm = () => {
       if (signaturePengirim.upload) {
         const uploaded = await StrapiAPIService.uploadFile(
           signaturePengirim.upload,
-          `${formData.namaPengirim}_ttd.png` 
+          `${formData.namaPengirim}_ttd.png`
         );
         ttdPengirimId = uploaded.id;
       } else if (signaturePengirim.signature) {
         const file = await FileUtils.dataURLToFile(
           signaturePengirim.signature,
-          `${formData.namaPengirim}_ttd.png` 
+          `${formData.namaPengirim}_ttd.png`
         );
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPengirimId = uploaded.id;
@@ -149,7 +159,7 @@ export const useSuratJalanForm = () => {
         nama_pengemudi: formData.namaPengemudi,
         status_surat: "In Progress",
         status_entry: isDraft ? "Draft" : "Published",
-        kategori_surat : "Surat Jalan",
+        kategori_surat: "Surat Jalan",
         materials: materials.map((m) => ({
           nama: m.namaMaterial,
           katalog: m.katalog,
@@ -212,6 +222,9 @@ export const useSuratJalanForm = () => {
         (item) => item.no_surat_jalan === submissionData.no_surat_jalan
       );
 
+      const users = await getAllUsers();
+      const receipt = users.find((user) => user.role.name == "Spv");
+
       let result;
 
       if (existingSurat) {
@@ -238,10 +251,7 @@ export const useSuratJalanForm = () => {
         // Loop semua email yang terkait dengan surat jalan ini
         for (const email of emails) {
           // Cek apakah email.isHaveStatus === true dan status_surat sebelumnya adalah "Reject"
-          if (
-            email.isHaveStatus === true &&
-            previousStatusSurat === "Reject"
-          ) {
+          if (email.isHaveStatus === true && previousStatusSurat === "Reject") {
             // Update email.isHaveStatus menjadi false
             await StrapiAPIService.updateEmail(email.documentId, {
               isHaveStatus: false,
@@ -280,7 +290,7 @@ export const useSuratJalanForm = () => {
             connect: [`${user?.documentId}`],
           },
           recipient: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
+            connect: [`${receipt?.documentId}`],
           },
         };
 
@@ -301,7 +311,7 @@ export const useSuratJalanForm = () => {
             connect: [`${resultEmail.data.documentId}`],
           },
           user: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
+            connect: [`${receipt?.documentId}`],
           },
         };
 

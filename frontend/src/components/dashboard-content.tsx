@@ -11,6 +11,7 @@ import {
   getTanggalSurat,
 } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
+import { BeritaBongkaran } from "@/lib/interface";
 import { JSX } from "react";
 
 function formatDateTime(isoString: string): string {
@@ -206,7 +207,9 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           item.surat_jalan.kategori_surat ===
             "Berita Acara Material Bongkaran" &&
           item.surat_jalan.status_entry !== "Draft" &&
-          item.recipient.email === user?.email
+          hasMengetahui(item.surat_jalan) &&
+          (item.surat_jalan as BeritaBongkaran).mengetahui
+            ?.departemen_mengetahui === user?.name
       );
 
     suratData = suratData
@@ -216,7 +219,8 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
           item.surat_jalan.kategori_surat ===
             "Berita Acara Material Bongkaran" &&
           item.surat_jalan.status_entry !== "Draft" &&
-          item.recipient.email === user?.email
+          (item.surat_jalan as BeritaBongkaran).mengetahui
+            ?.departemen_mengetahui === user?.name
       );
   } else {
     const canShow = (item: DynamicEmailData) => {
@@ -239,10 +243,7 @@ export default function DashboardContentPage({ allData }: HomeContentProps) {
       const mengetahuiLengkap =
         hasMengetahui(item.surat_jalan) &&
         item.surat_jalan.status_surat !== "Reject" &&
-        Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui) &&
-        ("penerima" in item.surat_jalan && item.surat_jalan.penerima
-          ? Boolean(item.surat_jalan.penerima.ttd_penerima)
-          : false);
+        Boolean(item.surat_jalan.mengetahui?.ttd_mengetahui);
 
       return mengetahuiLengkap;
     };

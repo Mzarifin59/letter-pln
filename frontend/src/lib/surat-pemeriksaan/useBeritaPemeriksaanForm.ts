@@ -12,7 +12,7 @@ import {
   INITIAL_FORM_DATA,
   INITIAL_MATERIAL,
 } from "@/lib/surat-pemeriksaan/form.constants";
-import { BeritaPemeriksaan } from "@/lib/interface";
+import { BeritaPemeriksaan, User } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 
 // Helper untuk get token dari localStorage (client-side)
@@ -28,6 +28,16 @@ const getAuthToken = (): string => {
   };
   return getCookie("token");
 };
+
+async function getAllUsers(): Promise<User[]> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users?populate=role`
+  );
+
+  if (!res.ok) throw new Error("Gagal mengambil data users");
+  const response = await res.json();
+  return response || [];
+}
 
 export const useBeritaPemeriksaanForm = () => {
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
@@ -225,6 +235,9 @@ export const useBeritaPemeriksaanForm = () => {
         (item) => item.no_berita_acara === submissionData.no_berita_acara
       );
 
+      const users = await getAllUsers();
+      const receipt = users.find((user) => user.role.name == "Spv");
+
       let result;
 
       if (existingSurat) {
@@ -310,7 +323,7 @@ export const useBeritaPemeriksaanForm = () => {
             connect: [`${user?.documentId}`],
           },
           recipient: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
+            connect: [`${receipt?.documentId}`],
           },
         };
 
@@ -331,7 +344,7 @@ export const useBeritaPemeriksaanForm = () => {
             connect: [`${resultEmail.data.documentId}`],
           },
           user: {
-            connect: [process.env.NEXT_PUBLIC_SPV_ID],
+            connect: [`${receipt?.documentId}`],
           },
         };
 

@@ -37,6 +37,7 @@ import {
   isVendorEmailData,
   getPerihal,
   getTanggalSurat,
+  BeritaBongkaran,
 } from "@/lib/interface";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -362,7 +363,9 @@ export default function InboxContentPage({ data, token }: InboxContentProps) {
       return (
         item.surat_jalan.status_entry !== "Draft" &&
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
-        item.recipient.email === user?.email
+        hasMengetahui(item.surat_jalan) &&
+        (item.surat_jalan as BeritaBongkaran).mengetahui
+          ?.departemen_mengetahui === user?.name
       );
     });
   }

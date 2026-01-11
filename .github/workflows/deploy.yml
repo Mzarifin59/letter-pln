@@ -96,8 +96,6 @@ jobs:
           BACKEND_DATABASE_USERNAME: ${{ vars.BACKEND_DATABASE_USERNAME }}
           BACKEND_DATABASE_PASSWORD: ${{ vars.BACKEND_DATABASE_PASSWORD }}
           BACKEND_JWT_SECRET: ${{ vars.BACKEND_JWT_SECRET }}
-          BACKEND_ADMIN_ID: ${{ vars.BACKEND_ADMIN_ID }}
-          BACKEND_SPV_ID: ${{ vars.BACKEND_SPV_ID }}
         run: |
           envsubst < backend/.env.temp > backend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.env $SSH_USER@$SSH_HOST:/home/sigaspol/backend/.env.temp
@@ -125,9 +123,6 @@ jobs:
           SSH_PORT: ${{ vars.SSH_PORT }}
           FRONTEND_API_URL: ${{ vars.FRONTEND_API_URL }}
           FRONTEND_NEXT_PUBLIC_API_URL: ${{ vars.FRONTEND_NEXT_PUBLIC_API_URL }}
-          FRONTEND_NEXT_PUBLIC_ADMIN_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_ADMIN_ID }}
-          FRONTEND_NEXT_PUBLIC_SPV_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_SPV_ID }}
-          FRONTEND_NEXT_PUBLIC_GI_ID: ${{ vars.FRONTEND_NEXT_PUBLIC_GI_ID }}
         run: |
           envsubst < frontend/.env.temp > frontend.env
           scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.env $SSH_USER@$SSH_HOST:/home/sigaspol/frontend/.env.temp

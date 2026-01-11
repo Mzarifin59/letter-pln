@@ -27,6 +27,7 @@ import {
   EmailDataOther,
   EmailDataAdmin,
   getPerihal,
+  BeritaBongkaran,
 } from "@/lib/interface";
 import { useUserLogin } from "@/lib/user";
 import { EmailRow } from "@/components/email-row";
@@ -158,7 +159,9 @@ export default function RejectPageContent({ data, token }: RejectContentProps) {
         item.surat_jalan.kategori_surat === "Berita Acara Material Bongkaran" &&
         (item.surat_jalan.status_entry !== "Draft" ||
           item.isHaveStatus === true) &&
-        item.recipient.email === user?.email
+        hasMengetahui(item.surat_jalan) &&
+        (item.surat_jalan as BeritaBongkaran).mengetahui
+          ?.departemen_mengetahui === user?.name
       );
     });
   }

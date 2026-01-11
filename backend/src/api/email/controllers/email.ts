@@ -272,10 +272,10 @@ export default factories.createCoreController(
             email_statuses: {
               populate: {
                 user: {
-                  populate: ['role']
-                }
-              }
-            }
+                  populate: ["role"],
+                },
+              },
+            },
           },
         });
 
@@ -305,7 +305,10 @@ export default factories.createCoreController(
         // Reset is_read status pada semua email_status user Admin untuk email ini
         if (email.email_statuses && email.email_statuses.length > 0) {
           const adminStatusList = email.email_statuses.filter(
-            (status) => status.user && status.user.role && status.user.role.name === "Admin"
+            (status) =>
+              status.user &&
+              status.user.role &&
+              status.user.role.name === "Admin"
           );
 
           for (const adminStatus of adminStatusList) {
@@ -368,6 +371,17 @@ export default factories.createCoreController(
           },
         });
 
+        const users = await strapi
+          .documents("plugin::users-permissions.user")
+          .findMany({
+            populate: {
+              role: true,
+            },
+          });
+
+        const adminUser = users.find((item) => item.role.name == "Admin");
+        const spvUser = users.find((item) => item.role.name == "Spv");
+
         if (!email) {
           console.log("❌ Email tidak ditemukan");
           return ctx.notFound("Email not found");
@@ -377,7 +391,7 @@ export default factories.createCoreController(
         await strapi.documents("api::email.email").update({
           documentId: documentId,
           data: {
-            recipient: process.env.ADMIN_ID,
+            recipient: `${adminUser.documentId}`,
             isHaveStatus: true,
           },
           status: "published",
@@ -385,11 +399,19 @@ export default factories.createCoreController(
 
         // ===== PERBAIKAN UTAMA: Ambil data existing dulu =====
         const existingMengetahui = email.surat_jalan.mengetahui || {};
+        console.log("Existing mengetahui", existingMengetahui);
         const existingPenerima = email.surat_jalan.penerima || {};
 
         // Cek apakah existingMengetahui dan existingPenerima benar-benar ada (bukan empty object)
-        const hasMengetahui = existingMengetahui && Object.keys(existingMengetahui).length > 0 && !existingPenerima;
-        const hasPenerima = signaturePenerima && Object.keys(existingPenerima).length > 0 && !signature;
+        const hasMengetahui =
+          existingMengetahui &&
+          Object.keys(existingMengetahui).length > 0 &&
+          !signaturePenerima;
+        console.log("Has Mnegetahui", hasMengetahui);
+        const hasPenerima =
+          signaturePenerima &&
+          Object.keys(existingPenerima).length > 0 &&
+          !signature;
 
         // Tentukan status_surat berdasarkan kondisi:
         // - Jika existingMengetahui ada → "In Progress"
@@ -439,25 +461,29 @@ export default factories.createCoreController(
 
         // Create new email status for Spv (jika belum ada)
         const hasSpvStatus = email.email_statuses.find(
-          (item) => item.user.documentId === process.env.SPV_ID
+          (item) => item.user.documentId === spvUser.documentId
         );
 
-        if (!hasSpvStatus && process.env.SPV_ID) {
+        if (!hasSpvStatus && spvUser) {
           await strapi.documents("api::email-status.email-status").create({
             data: {
               email: email.documentId,
-              user: process.env.SPV_ID,
+              user: `${spvUser.documentId}`,
             },
             status: "published",
           });
         }
 
         // Hanya create email status untuk Admin jika existingMengetahui ada
-        if (hasMengetahui) {
+        const hasAdminStatus = email.email_statuses.find(
+          (item) => item.user.documentId === adminUser.documentId
+        );
+
+        if (!hasAdminStatus && hasMengetahui) {
           await strapi.documents("api::email-status.email-status").create({
             data: {
               email: email.documentId,
-              user: process.env.ADMIN_ID,
+              user: `${adminUser.documentId}`,
             },
             status: "published",
           });
@@ -492,6 +518,16 @@ export default factories.createCoreController(
           );
         }
 
+        const users = await strapi
+          .documents("plugin::users-permissions.user")
+          .findMany({
+            populate: {
+              role: true,
+            },
+          });
+
+        const adminUser = users.find((item) => item.role.name == "Admin");
+
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
           populate: {
@@ -507,7 +543,7 @@ export default factories.createCoreController(
                 documentId: email.documentId,
               },
               user: {
-                documentId: process.env.ADMIN_ID,
+                documentId: `${adminUser.documentId}`,
               },
             },
           });
@@ -648,6 +684,16 @@ export default factories.createCoreController(
           );
         }
 
+        const users = await strapi
+          .documents("plugin::users-permissions.user")
+          .findMany({
+            populate: {
+              role: true,
+            },
+          });
+
+        const spvUser = users.find((item) => item.role.name == "Spv");
+
         const email = await strapi.documents("api::email.email").findOne({
           documentId: documentId,
           populate: {
@@ -713,14 +759,14 @@ export default factories.createCoreController(
 
         // Create new email status for Spv (jika belum ada)
         const hasSpvStatus = email.email_statuses.find(
-          (item) => item.user.documentId === process.env.SPV_ID
+          (item) => item.user.documentId === spvUser.documentId
         );
 
-        if (!hasSpvStatus && process.env.SPV_ID) {
+        if (!hasSpvStatus && spvUser) {
           await strapi.documents("api::email-status.email-status").create({
             data: {
               email: email.documentId,
-              user: process.env.SPV_ID,
+              user: spvUser.documentId,
             },
             status: "published",
           });
