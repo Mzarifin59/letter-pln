@@ -22,6 +22,7 @@ import {
   getPerihal,
   getPerusahaanPenerima,
   getTanggalSurat,
+  getCatatan,
 } from "@/lib/interface";
 import { EmailDetailBeritaPemeriksaan } from "./detail-email-berita-pemeriksaan";
 import { useUserLogin } from "@/lib/user";
@@ -205,7 +206,7 @@ export const EmailDetail = ({
       isSuratJalan && "pengirim" in (email as EmailDataAdmin).surat_jalan
         ? (email as EmailDataAdmin).surat_jalan.pengirim.nama_pengirim
         : "",
-    catatanTambahan: getPerihal(email),
+    catatanTambahan: getCatatan(email),
   };
 
   const materials: SuratJalanMaterialForm[] = email.surat_jalan.materials.map(
@@ -1339,7 +1340,7 @@ export const EmailDetail = ({
               </div>
               <div className="py-3 pl-3 text-sm flex items-center gap-3 border-b-2 border-gray-800">
                 <div className="mt-1 text-lg font-semibold">
-                  {getPerihal(email) || "(Perihal)"}
+                  {getCatatan(email) || "(Perihal)"}
                 </div>
               </div>
 

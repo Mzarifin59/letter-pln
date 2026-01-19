@@ -231,6 +231,21 @@ export function getPerihal(data: DynamicEmailData): string {
   return "";
 }
 
+export function getCatatan(data: DynamicEmailData): string {
+  const kategori = data.surat_jalan.kategori_surat;
+  
+  if (kategori === "Berita Acara Pemeriksaan Tim Mutu") {
+    return (data as EmailDataOther).surat_jalan.perihal_kontrak || "";
+  }
+  
+  // Untuk SuratJalan dan BeritaBongkaran, gunakan catatan_tambahan
+  if ("catatan_tambahan" in data.surat_jalan) {
+    return data.surat_jalan.catatan_tambahan || "";
+  }
+  
+  return "";
+}
+
 // Helper function untuk mendapatkan perusahaan penerima/penyedia dengan aman
 export function getPerusahaanPenerima(data: DynamicEmailData): string {
   const kategori = data.surat_jalan.kategori_surat;
