@@ -167,30 +167,36 @@ export default function PreviewBeritaPemeriksaan({
           compress: true,
         });
 
+        // Deteksi mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i] as HTMLElement;
 
-          scaleToFit(page);
+          // Reset transform sebelum capture
+          page.style.transform = "";
+          page.style.transformOrigin = "";
 
           const canvas = await html2canvas(page, {
-            scale: 2,
+            scale: isMobile ? 3 : 2, // Scale lebih tinggi untuk mobile
             useCORS: true,
             backgroundColor: "#ffffff",
             logging: false,
             imageTimeout: 0,
+            windowWidth: 794, // A4 width in pixels at 96 DPI (210mm)
+            windowHeight: 1123, // A4 height in pixels at 96 DPI (297mm)
+            width: 794,
+            height: 1123,
+            scrollX: 0,
+            scrollY: 0,
           });
-
-          page.style.transform = "";
 
           const imgData = canvas.toDataURL("image/png");
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
 
-          const imgWidth = pageWidth;
-          const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
           if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+          pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
         }
 
         pdf.save(
@@ -222,7 +228,6 @@ export default function PreviewBeritaPemeriksaan({
   const splitMaterialsIntoPages = () => {
     const totalMaterials = materials.length;
     const kelengkapanCount = kelengkapanDokumen.length;
-    const mengetahuiCount = pemeriksaBarang.mengetahui?.length || 0;
 
     // Logika baru:
     // - Jika kelengkapan <= 2: tetap satu halaman kecuali material >= 4
@@ -266,8 +271,10 @@ export default function PreviewBeritaPemeriksaan({
       materialsFirstPage = 3; // Lebih banyak material jika kelengkapan sedikit
     } else if (kelengkapanCount <= 5) {
       materialsFirstPage = 2;
-    } else {
+    } else if (kelengkapanCount <= 10) {
       materialsFirstPage = 2; // Kelengkapan banyak, material sedikit di halaman 1
+    } else {
+      materialsFirstPage = 1; // Kelengkapan sangat banyak (> 10), hanya 1 material di halaman 1
     }
 
     // Halaman pertama
@@ -791,9 +798,10 @@ export default function PreviewBeritaPemeriksaan({
           top: 0,
           backgroundColor: "#ffffff",
           zIndex: -1,
+          width: "794px", // A4 width in pixels
         }}
       >
-        <div id="hidden-preview-content">
+        <div id="hidden-preview-content" style={{ width: "794px" }}>
           {materialPages.map((pageData, pageIndex) => {
             const {
               materials: pageMaterials,
@@ -805,8 +813,7 @@ export default function PreviewBeritaPemeriksaan({
               isLastPage,
             } = pageData;
 
-            const isCompactMode = pageMaterials.length <= 3;
-            const maxNamaWidthPage = calculateMaxNamaWidth(isCompactMode);
+            const isCompactModePage = pageMaterials.length <= 3;
 
             // Hitung index global untuk material numbering
             let startIndex = 0;
@@ -817,9 +824,11 @@ export default function PreviewBeritaPemeriksaan({
             return (
               <div
                 key={pageIndex}
-                className="surat-berita-pemeriksaan w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                className="surat-berita-pemeriksaan bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
                 style={{
-                  padding: "15mm 15mm 15mm 15mm",
+                  width: "794px",
+                  minHeight: "1123px",
+                  padding: "40px 56.7px 30px 56.7px", // Top, Right, Bottom, Left - Kurangi padding bottom
                   boxSizing: "border-box",
                   whiteSpace: "normal",
                   wordSpacing: "normal",
@@ -828,7 +837,7 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Company Header */}
                 <div
                   className={`flex items-center gap-4 ${
-                    isCompactMode ? "mb-4" : "mb-6"
+                    isCompactModePage ? "mb-3" : "mb-5"
                   }`}
                 >
                   <div className="flex items-center justify-center">
@@ -852,32 +861,32 @@ export default function PreviewBeritaPemeriksaan({
 
                 <hr
                   className={`border-t-2 border-gray-800 ${
-                    isCompactMode ? "mb-3" : "mb-4"
+                    isCompactModePage ? "mb-2" : "mb-3"
                   }`}
                 />
 
                 {/* Title - only on first page */}
                 {isFirstPage && (
                   <div
-                    className={`text-center ${isCompactMode ? "mb-4" : "mb-6"}`}
+                    className={`text-center ${isCompactModePage ? "mb-3" : "mb-5"}`}
                   >
                     <h1
                       className={`${
-                        isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                        isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-1"
                       } font-bold text-gray-900`}
                     >
                       BERITA ACARA
                     </h1>
                     <h1
                       className={`${
-                        isCompactMode ? "text-2xl mb-1" : "text-3xl mb-2"
+                        isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-1"
                       } font-bold text-gray-900`}
                     >
                       HASIL PEMERIKSAAN MUTU BARANG
                     </h1>
                     <div
                       className={`${
-                        isCompactMode ? "text-xl" : "text-2xl"
+                        isCompactModePage ? "text-xl" : "text-2xl"
                       } text-blue-600 font-bold`}
                     >
                       {formData.nomorBeritaAcara || "(No Berita Acara)"}
@@ -888,9 +897,7 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Introduction - only on first page */}
                 {showIntro && (
                   <div
-                    className={`${
-                      isCompactMode ? "mb-3 text-base" : "mb-4 text-lg"
-                    } text-justify`}
+                    className={`${isCompactModePage ? "mb-2 text-base" : "mb-3 text-lg"} text-justify`}
                   >
                     <p className="mb-2">
                       Pada hari{" "}
@@ -901,9 +908,9 @@ export default function PreviewBeritaPemeriksaan({
                             new Date().toISOString()
                         )}
                       </span>{" "}
-                      kami yang bertanda tangan di bawah ini telah bersama - sama
-                      melaksanakan pemeriksaan terhadap barang sesuai dengan
-                      Kontrak Rinci{" "}
+                      kami yang bertanda tangan di bawah ini telah bersama -
+                      sama melaksanakan pemeriksaan terhadap barang sesuai
+                      dengan Kontrak Rinci{" "}
                       <span className="font-semibold">
                         {formData.nomorPerjanjianKontrak || "(No Kontrak)"}
                       </span>{" "}
@@ -918,14 +925,14 @@ export default function PreviewBeritaPemeriksaan({
                       .
                     </p>
                     <p className="">
-                      Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
-                      mutu barang. Adapun hasil dari pemeriksaan{" "}
+                      Sesuai dengan lembar kerja pemeriksaan dokumen tim
+                      pemeriksa mutu barang. Adapun hasil dari pemeriksaan{" "}
                       <span className="font-semibold">
                         {formData.perihalKontrak || "(Perihal Kontrak)"}
                       </span>{" "}
                       dapat diterima /{" "}
-                      <span className="line-through">tidak diterima</span> dengan
-                      kelengkapan dokumen sebagai berikut:
+                      <span className="line-through">tidak diterima</span>{" "}
+                      dengan kelengkapan dokumen sebagai berikut:
                     </p>
                   </div>
                 )}
@@ -933,13 +940,11 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Kelengkapan Dokumen - only on first page */}
                 {showKelengkapan && kelengkapanDokumen.length > 0 && (
                   <div
-                    className={`${
-                      isCompactMode ? "mb-3" : "mb-4"
-                    } text-justify`}
+                    className={`${isCompactModePage ? "mb-2" : "mb-3"} text-justify`}
                   >
                     <ul
                       className={`space-y-1 ${
-                        isCompactMode ? "text-base" : "text-lg"
+                        isCompactModePage ? "text-base" : "text-lg"
                       } ml-4`}
                     >
                       {kelengkapanDokumen.map((item, index) => (
@@ -953,13 +958,13 @@ export default function PreviewBeritaPemeriksaan({
                 {pageMaterials.length > 0 && (
                   <div
                     className={`${
-                      isCompactMode ? "mb-3" : "mb-4"
+                      isCompactModePage ? "mb-2" : "mb-3"
                     } min-w-[300px] overflow-x-auto`}
                     style={{ display: "block" }}
                   >
                     <p
                       className={`${
-                        isCompactMode ? "text-base mb-1" : "text-lg mb-2"
+                        isCompactModePage ? "text-base mb-1" : "text-lg mb-2"
                       }`}
                     >
                       Adapun hasil pemeriksaan sebagai berikut:
@@ -975,7 +980,7 @@ export default function PreviewBeritaPemeriksaan({
                       <thead className="bg-gray-100">
                         <tr
                           className={`${
-                            isCompactMode ? "text-base" : "text-lg"
+                            isCompactModePage ? "text-base" : "text-lg"
                           } text-center`}
                         >
                           <th className="border-2 border-gray-800 px-2 py-2">
@@ -996,7 +1001,7 @@ export default function PreviewBeritaPemeriksaan({
                         </tr>
                       </thead>
                       <tbody
-                        className={isCompactMode ? "text-base" : "text-lg"}
+                        className={isCompactModePage ? "text-base" : "text-lg"}
                       >
                         {pageMaterials.map((material, index) => {
                           const globalIndex = startIndex + index;
@@ -1004,14 +1009,14 @@ export default function PreviewBeritaPemeriksaan({
                             <tr key={material.id}>
                               <td
                                 className={`border-2 border-gray-800 px-2 ${
-                                  isCompactMode ? "py-1" : "py-2"
+                                  isCompactModePage ? "py-1" : "py-2"
                                 } text-center`}
                               >
                                 {globalIndex + 1}
                               </td>
                               <td
                                 className={`border-2 border-gray-800 px-2 ${
-                                  isCompactMode ? "py-1" : "py-2"
+                                  isCompactModePage ? "py-1" : "py-2"
                                 }`}
                               >
                                 <div className="text-left">
@@ -1039,21 +1044,21 @@ export default function PreviewBeritaPemeriksaan({
                               </td>
                               <td
                                 className={`border-2 border-gray-800 px-2 ${
-                                  isCompactMode ? "py-1" : "py-2"
+                                  isCompactModePage ? "py-1" : "py-2"
                                 } text-center`}
                               >
                                 {material.jumlah || "0"}
                               </td>
                               <td
                                 className={`border-2 border-gray-800 px-2 ${
-                                  isCompactMode ? "py-1" : "py-2"
+                                  isCompactModePage ? "py-1" : "py-2"
                                 } text-center`}
                               >
                                 {material.satuan || "-"}
                               </td>
                               <td
                                 className={`border-2 border-gray-800 px-2 ${
-                                  isCompactMode ? "py-1" : "py-2"
+                                  isCompactModePage ? "py-1" : "py-2"
                                 } `}
                               >
                                 {material.serial_number || "-"}
@@ -1069,8 +1074,8 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Closing Statement - only on last page */}
                 {showClosing && (
                   <div
-                    className={`${isCompactMode ? "mb-3" : "mb-4"} ${
-                      isCompactMode ? "text-base" : "text-lg"
+                    className={`${isCompactModePage ? "mb-2" : "mb-3"} ${
+                      isCompactModePage ? "text-base" : "text-lg"
                     }`}
                   >
                     <p>
@@ -1084,23 +1089,21 @@ export default function PreviewBeritaPemeriksaan({
                 {/* Signatures - only on last page */}
                 {showSignature && (
                   <div
-                    className={`flex justify-between ${
-                      isCompactMode ? "mb-2" : "mb-4"
-                    }`}
+                    className={`flex justify-between ${isCompactModePage ? "mb-2" : "mb-3"}`}
                   >
                     {/* Penyedia Barang */}
-                    <div className="text-center">
+                    <div className="text-center items-center flex flex-col">
                       <div
-                        className={`${isCompactMode ? "mb-1" : "mb-2"} ${
-                          isCompactMode ? "text-base" : "text-lg"
+                        className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
                         } font-semibold`}
                       >
                         Penyedia Barang
                       </div>
                       <div
-                        className={`font-bold ${
-                          isCompactMode ? "mb-2" : "mb-4"
-                        } ${isCompactMode ? "text-base" : "text-lg"}`}
+                        className={`font-bold ${isCompactModePage ? "mb-2" : "mb-3"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        }`}
                       >
                         {formData.perusahaanPenyediaBarang ||
                           "(Perusahaan Penyedia Barang)"}
@@ -1109,8 +1112,8 @@ export default function PreviewBeritaPemeriksaan({
                       {/* Signature Preview */}
                       <div
                         className={`${
-                          isCompactMode ? "h-16 mb-2" : "h-20 mb-4"
-                        } flex items-center`}
+                          isCompactModePage ? "h-14 mb-2" : "h-16 mb-3"
+                        } flex items-center justify-start`}
                       >
                         {getPenyediaBarangSignature() ? (
                           <img
@@ -1129,8 +1132,8 @@ export default function PreviewBeritaPemeriksaan({
 
                       <div
                         className={`${
-                          isCompactMode ? "text-base" : "text-lg"
-                        } font-bold `}
+                          isCompactModePage ? "text-base" : "text-lg"
+                        } font-bold`}
                       >
                         {formData.namaPenanggungJawab ||
                           "(Nama Penanggung Jawab)"}
@@ -1138,18 +1141,18 @@ export default function PreviewBeritaPemeriksaan({
                     </div>
 
                     {/* Pemeriksa Barang */}
-                    <div className="text-left">
+                    <div className="text-center items-center flex flex-col">
                       <div
-                        className={`${isCompactMode ? "mb-1" : "mb-2"} ${
-                          isCompactMode ? "text-base" : "text-lg"
+                        className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
                         } font-semibold`}
                       >
                         Pemeriksa Barang
                       </div>
                       <div
-                        className={`font-bold ${
-                          isCompactMode ? "mb-2" : "mb-4"
-                        } ${isCompactMode ? "text-base" : "text-lg"}`}
+                        className={`font-bold ${isCompactModePage ? "mb-2" : "mb-3"} ${
+                          isCompactModePage ? "text-base" : "text-lg"
+                        }`}
                       >
                         {pemeriksaBarang.departemenPemeriksa ||
                           "(Departemen Pemeriksa)"}
@@ -1160,7 +1163,7 @@ export default function PreviewBeritaPemeriksaan({
                         pemeriksaBarang.mengetahui.length > 0 && (
                           <div
                             className={
-                              isCompactMode ? "space-y-2" : "space-y-3"
+                              isCompactModePage ? "space-y-1" : "space-y-2"
                             }
                           >
                             {pemeriksaBarang.mengetahui.map(
@@ -1168,12 +1171,12 @@ export default function PreviewBeritaPemeriksaan({
                                 <div
                                   key={mengetahui.id}
                                   className={`flex items-center ${
-                                    isCompactMode ? "pb-1" : "pb-2"
+                                    isCompactModePage ? "pb-1" : "pb-1"
                                   }`}
                                 >
                                   <div
                                     className={`${
-                                      isCompactMode ? "text-sm" : "text-base"
+                                      isCompactModePage ? "text-sm" : "text-base"
                                     } font-semibold min-w-[200px]`}
                                   >
                                     {index + 1}{" "}
@@ -1182,7 +1185,7 @@ export default function PreviewBeritaPemeriksaan({
                                   </div>
                                   <div
                                     className={`${
-                                      isCompactMode ? "text-sm" : "text-base"
+                                      isCompactModePage ? "text-sm" : "text-base"
                                     } font-semibold`}
                                   >
                                     :
@@ -1190,9 +1193,7 @@ export default function PreviewBeritaPemeriksaan({
                                   <div className="flex items-center ml-2">
                                     <div
                                       className={`${
-                                        isCompactMode
-                                          ? "w-28 h-10"
-                                          : "w-32 h-12"
+                                        isCompactModePage ? "w-24 h-9" : "w-28 h-10"
                                       } flex items-center justify-center border-b-2 border-gray-800`}
                                     >
                                       {getMengetahuiSignature(mengetahui) ? (
@@ -1200,9 +1201,7 @@ export default function PreviewBeritaPemeriksaan({
                                           width={120}
                                           height={60}
                                           src={
-                                            getMengetahuiSignature(
-                                              mengetahui
-                                            )!
+                                            getMengetahuiSignature(mengetahui)!
                                           }
                                           alt={`TTD Mengetahui ${index + 1}`}
                                           className="max-h-full max-w-full object-contain"

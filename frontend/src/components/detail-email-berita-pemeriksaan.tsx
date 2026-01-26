@@ -2,11 +2,7 @@
 
 import { MouseEventHandler, useEffect, useState } from "react";
 import Image from "next/image";
-import {
-  Star,
-  X,
-  Printer,
-} from "lucide-react";
+import { Star, X, Printer, Download } from "lucide-react";
 import {
   EmailDataOther,
   FileAttachment,
@@ -86,7 +82,7 @@ const parseKelengkapanFromMarkdown = (markdown: string): string[] => {
 // Helper function untuk get file URL
 const getFileUrl = (
   fileAttachment: FileAttachment | null | undefined,
-  apiUrl: string
+  apiUrl: string,
 ): string => {
   if (!fileAttachment?.url) return "";
   if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
@@ -111,6 +107,12 @@ export const EmailDetailBeritaPemeriksaan = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [localEmail, setLocalEmail] = useState<EmailDataOther>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+  const [showMobilePrintDialog, setShowMobilePrintDialog] = useState(false);
+
+  const isMobileDevice = () => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
 
   // Sync localEmail dengan prop email saat email berubah
   useEffect(() => {
@@ -143,7 +145,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
   // Parse kelengkapan dokumen
   const kelengkapanDokumen = parseKelengkapanFromMarkdown(
-    beritaPemeriksaan.kelengkapan_dokumen || ""
+    beritaPemeriksaan.kelengkapan_dokumen || "",
   );
 
   // Check if materials <= 3 for compact spacing
@@ -157,10 +159,10 @@ export const EmailDetailBeritaPemeriksaan = ({
     // Logika break page:
     // - Jika kelengkapan <= 2: tetap satu halaman kecuali material >= 4
     // - Jika kelengkapan > 2: break page jika material >= 2
-    
+
     let shouldBreakPage = false;
     let materialsThreshold = 3;
-    
+
     if (kelengkapanCount <= 2) {
       // Kelengkapan sedikit: bisa muat lebih banyak material di satu halaman
       materialsThreshold = 3; // Tetap satu halaman jika material <= 3
@@ -170,7 +172,7 @@ export const EmailDetailBeritaPemeriksaan = ({
       materialsThreshold = 1; // Break jika material >= 2
       shouldBreakPage = totalMaterials >= 2;
     }
-    
+
     // Jika tidak perlu break page, semua dalam satu halaman
     if (!shouldBreakPage) {
       return [
@@ -219,7 +221,10 @@ export const EmailDetailBeritaPemeriksaan = ({
     // Halaman tengah - 4 materials per halaman
     const MATERIALS_PER_MIDDLE_PAGE = 4;
     while (remainingMaterials.length > MATERIALS_PER_MIDDLE_PAGE) {
-      const nextPageMaterials = remainingMaterials.slice(0, MATERIALS_PER_MIDDLE_PAGE);
+      const nextPageMaterials = remainingMaterials.slice(
+        0,
+        MATERIALS_PER_MIDDLE_PAGE,
+      );
       pages.push({
         materials: nextPageMaterials,
         showIntro: false,
@@ -286,12 +291,13 @@ export const EmailDetailBeritaPemeriksaan = ({
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Gunakan hidden div untuk PDF generation
-      const hiddenContent = document.getElementById("hidden-preview-content-berita");
+      const hiddenContent = document.getElementById(
+        "hidden-preview-content-berita",
+      );
       const pages = hiddenContent
         ? hiddenContent.querySelectorAll(".surat-berita-pemeriksaan")
         : document.querySelectorAll(".surat-berita-pemeriksaan");
-      
+
       if (!pages.length) {
         console.error("Preview element tidak ditemukan!");
         toast.dismiss(toastId);
@@ -310,36 +316,42 @@ export const EmailDetailBeritaPemeriksaan = ({
           compress: true,
         });
 
+        // Deteksi mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i] as HTMLElement;
 
-          scaleToFit(page);
+          // Reset transform sebelum capture
+          page.style.transform = "";
+          page.style.transformOrigin = "";
 
           const canvas = await html2canvas(page, {
-            scale: 2,
+            scale: isMobile ? 3 : 2, // Scale lebih tinggi untuk mobile
             useCORS: true,
             backgroundColor: "#ffffff",
             logging: false,
             imageTimeout: 0,
+            windowWidth: 794, // A4 width in pixels at 96 DPI (210mm)
+            windowHeight: 1123, // A4 height in pixels at 96 DPI (297mm)
+            width: 794,
+            height: 1123,
+            scrollX: 0,
+            scrollY: 0,
           });
-
-          page.style.transform = "";
 
           const imgData = canvas.toDataURL("image/png");
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
 
-          const imgWidth = pageWidth;
-          const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
           if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+          pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
         }
 
         pdf.save(
           `${
             beritaPemeriksaan.no_berita_acara || "berita-acara-pemeriksaan"
-          }.pdf`
+          }.pdf`,
         );
 
         toast.dismiss(toastId);
@@ -368,15 +380,19 @@ export const EmailDetailBeritaPemeriksaan = ({
         requestAnimationFrame(() => {
           // Tunggu sedikit lagi untuk memastikan React sudah render semua
           setTimeout(() => {
-            const printContent = document.getElementById('print-content-berita-pemeriksaan');
+            const printContent = document.getElementById(
+              "print-content-berita-pemeriksaan",
+            );
             if (!printContent) {
               resolve();
               return;
             }
 
             // Cari semua gambar di print content
-            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
-            
+            const images = Array.from(
+              printContent.querySelectorAll("img"),
+            ) as HTMLImageElement[];
+
             if (images.length === 0) {
               resolve();
               return;
@@ -388,7 +404,7 @@ export const EmailDetailBeritaPemeriksaan = ({
 
             const checkComplete = () => {
               if (resolved) return;
-              
+
               loadedCount++;
               if (loadedCount === totalImages) {
                 resolved = true;
@@ -403,43 +419,47 @@ export const EmailDetailBeritaPemeriksaan = ({
             const timeout = setTimeout(() => {
               if (!resolved) {
                 resolved = true;
-                console.warn('Some images failed to load within timeout');
+                console.warn("Some images failed to load within timeout");
                 resolve();
               }
             }, 10000);
 
             images.forEach((img, index) => {
               // Pastikan gambar tidak lazy load dan force eager loading
-              img.loading = 'eager';
-              img.decoding = 'sync';
-              
+              img.loading = "eager";
+              img.decoding = "sync";
+
               const imagePromise = new Promise<void>((imgResolve) => {
                 // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
-                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                if (
+                  img.complete &&
+                  img.naturalHeight !== 0 &&
+                  img.naturalWidth !== 0
+                ) {
                   imgResolve();
                 } else {
                   // Tambahkan event listener untuk load dan error
                   const onLoad = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     imgResolve();
                   };
-                  
+
                   const onError = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     console.warn(`Image ${index} failed to load:`, img.src);
                     imgResolve(); // Resolve anyway untuk tidak block
                   };
 
-                  img.addEventListener('load', onLoad, { once: true });
-                  img.addEventListener('error', onError, { once: true });
-                  
+                  img.addEventListener("load", onLoad, { once: true });
+                  img.addEventListener("error", onError, { once: true });
+
                   // Force reload jika src sudah ada tapi belum load
                   if (img.src && !img.complete) {
                     const currentSrc = img.src;
                     // Hapus dan set ulang src untuk force reload
-                    img.src = '';
+                    img.src = "";
                     setTimeout(() => {
                       img.src = currentSrc;
                     }, 10);
@@ -457,29 +477,40 @@ export const EmailDetailBeritaPemeriksaan = ({
     });
   };
 
-  const handlePrintClick = async () => {
+  const handlePrintClick = () => {
+    if (isMobileDevice()) {
+      setShowMobilePrintDialog(true);
+      return;
+    }
+    handleDesktopPrint();
+  };
+
+  const handleDesktopPrint = async () => {
     setIsPrinting(true);
-    
-    // Tunggu sedikit untuk memastikan React sudah render print content
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Tunggu semua gambar load sebelum buka print dialog
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await waitForImagesToLoad();
-    
-    // Trigger print dialog setelah semua gambar sudah load
+
     window.print();
-    
-    // Reset setelah print dialog ditutup (user bisa cancel atau print)
-    // Gunakan beforeprint dan afterprint events jika tersedia
+
     const handleAfterPrint = () => {
       setIsPrinting(false);
-      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
     };
-    window.addEventListener('afterprint', handleAfterPrint);
-    // Fallback jika afterprint tidak didukung
+    window.addEventListener("afterprint", handleAfterPrint);
+
     setTimeout(() => {
       setIsPrinting(false);
     }, 1000);
+  };
+
+  const handleMobilePrintPreview = async () => {
+    setShowMobilePrintDialog(false);
+    await handleDesktopPrint();
+  };
+
+  const handleMobileDownloadPDF = () => {
+    setShowMobilePrintDialog(false);
+    setIsGeneratingPDF(true);
   };
 
   return (
@@ -514,7 +545,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                 >
                   {getCompanyAbbreviation(
                     beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
-                      ""
+                      "",
                   ) || "GA"}
                 </div>
                 <div>
@@ -539,7 +570,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -567,7 +598,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                 >
                   {getCompanyAbbreviation(
                     beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
-                      ""
+                      "",
                   )}
                 </div>
                 <div>
@@ -592,7 +623,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -631,7 +662,7 @@ export const EmailDetailBeritaPemeriksaan = ({
               {formatDateTimeEN(
                 beritaPemeriksaan.tanggal_pelaksanaan ||
                   beritaPemeriksaan.tanggal_kontrak ||
-                  beritaPemeriksaan.createdAt
+                  beritaPemeriksaan.createdAt,
               )}
             </span>
           </div>
@@ -643,9 +674,12 @@ export const EmailDetailBeritaPemeriksaan = ({
         <hr className="border-t-4 border-gray-800 mb-6" />
 
         {/* Document Preview */}
-        <div className="mb-6 md:mb-8 w-full flex justify-center" style={{ height: "auto" }}>
+        <div
+          className="mb-6 md:mb-8 w-full flex justify-center"
+          style={{ height: "auto" }}
+        >
           <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
-            <div className="bg-white py-4" style={{ width: '210mm' }}>
+            <div className="bg-white py-4" style={{ width: "210mm" }}>
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
@@ -690,7 +724,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                     {formatDateWithDay(
                       beritaPemeriksaan.tanggal_pelaksanaan ||
                         beritaPemeriksaan.tanggal_kontrak ||
-                        beritaPemeriksaan.createdAt
+                        beritaPemeriksaan.createdAt,
                     )}
                   </span>{" "}
                   kami yang bertanda tangan di bawah ini telah bersama - sama
@@ -841,7 +875,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                         height={200}
                         src={getFileUrl(
                           beritaPemeriksaan.penyedia_barang.ttd_penerima,
-                          apiUrl
+                          apiUrl,
                         )}
                         alt="TTD Penyedia Barang"
                         className="max-h-full max-w-full object-contain"
@@ -891,7 +925,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                       height={60}
                                       src={getFileUrl(
                                         mengetahui.ttd_mengetahui,
-                                        apiUrl
+                                        apiUrl,
                                       )}
                                       alt={`TTD Mengetahui ${index + 1}`}
                                       className="max-h-full max-w-full object-contain"
@@ -904,7 +938,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                 </div>
                               </div>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     )}
@@ -936,9 +970,10 @@ export const EmailDetailBeritaPemeriksaan = ({
             top: 0,
             backgroundColor: "#ffffff",
             zIndex: -1,
+            width: "794px", // A4 width in pixels
           }}
         >
-          <div id="hidden-preview-content-berita">
+          <div id="hidden-preview-content-berita" style={{ width: "794px" }}>
             {materialPages.map((pageData, pageIndex) => {
               const {
                 materials: pageMaterials,
@@ -961,9 +996,11 @@ export const EmailDetailBeritaPemeriksaan = ({
               return (
                 <div
                   key={pageIndex}
-                  className="surat-berita-pemeriksaan w-[210mm] h-[297mm] bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                  className="surat-berita-pemeriksaan bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
                   style={{
-                    padding: "15mm 15mm 15mm 15mm",
+                    width: "794px",
+                    minHeight: "1123px",
+                    padding: "40px 56.7px 30px 56.7px", // Top, Right, Bottom, Left - Kurangi padding bottom
                     boxSizing: "border-box",
                     whiteSpace: "normal",
                     wordSpacing: "normal",
@@ -972,7 +1009,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   {/* Company Header */}
                   <div
                     className={`flex items-center gap-4 ${
-                      isCompactModePage ? "mb-4" : "mb-6"
+                      isCompactModePage ? "mb-3" : "mb-5"
                     }`}
                   >
                     <div className="flex items-center justify-center">
@@ -996,23 +1033,25 @@ export const EmailDetailBeritaPemeriksaan = ({
 
                   <hr
                     className={`border-t-2 border-gray-800 ${
-                      isCompactModePage ? "mb-3" : "mb-4"
+                      isCompactModePage ? "mb-2" : "mb-3"
                     }`}
                   />
 
                   {/* Title - only on first page */}
                   {isFirstPage && (
-                    <div className={`text-center ${isCompactModePage ? "mb-4" : "mb-6"}`}>
+                    <div
+                      className={`text-center ${isCompactModePage ? "mb-3" : "mb-5"}`}
+                    >
                       <h1
                         className={`${
-                          isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-2"
+                          isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-1"
                         } font-bold text-gray-900`}
                       >
                         BERITA ACARA
                       </h1>
                       <h1
                         className={`${
-                          isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-2"
+                          isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-1"
                         } font-bold text-gray-900`}
                       >
                         HASIL PEMERIKSAAN MUTU BARANG
@@ -1022,7 +1061,8 @@ export const EmailDetailBeritaPemeriksaan = ({
                           isCompactModePage ? "text-xl" : "text-2xl"
                         } text-blue-600 font-bold`}
                       >
-                        {beritaPemeriksaan.no_berita_acara || "(No Berita Acara)"}
+                        {beritaPemeriksaan.no_berita_acara ||
+                          "(No Berita Acara)"}
                       </div>
                     </div>
                   )}
@@ -1030,7 +1070,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   {/* Introduction - only on first page */}
                   {showIntro && (
                     <div
-                      className={`${isCompactModePage ? "mb-3 text-base" : "mb-4 text-lg"} text-justify`}
+                      className={`${isCompactModePage ? "mb-2 text-base" : "mb-3 text-lg"} text-justify`}
                     >
                       <p className="mb-2">
                         Pada hari{" "}
@@ -1038,14 +1078,15 @@ export const EmailDetailBeritaPemeriksaan = ({
                           {formatDateWithDay(
                             beritaPemeriksaan.tanggal_pelaksanaan ||
                               beritaPemeriksaan.tanggal_kontrak ||
-                              beritaPemeriksaan.createdAt
+                              beritaPemeriksaan.createdAt,
                           )}
                         </span>{" "}
-                        kami yang bertanda tangan di bawah ini telah bersama - sama
-                        melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
-                        Rinci{" "}
+                        kami yang bertanda tangan di bawah ini telah bersama -
+                        sama melaksanakan pemeriksaan terhadap barang sesuai
+                        dengan Kontrak Rinci{" "}
                         <span className="font-semibold">
-                          {beritaPemeriksaan.no_perjanjian_kontrak || "(No Kontrak)"}
+                          {beritaPemeriksaan.no_perjanjian_kontrak ||
+                            "(No Kontrak)"}
                         </span>{" "}
                         tanggal{" "}
                         <span className="font-semibold">
@@ -1053,26 +1094,30 @@ export const EmailDetailBeritaPemeriksaan = ({
                         </span>{" "}
                         perihal{" "}
                         <span className="font-semibold">
-                          {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                          {beritaPemeriksaan.perihal_kontrak ||
+                            "(Perihal Kontrak)"}
                         </span>
                         .
                       </p>
                       <p className="">
-                        Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
-                        mutu barang. Adapun hasil dari pemeriksaan{" "}
+                        Sesuai dengan lembar kerja pemeriksaan dokumen tim
+                        pemeriksa mutu barang. Adapun hasil dari pemeriksaan{" "}
                         <span className="font-semibold">
-                          {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                          {beritaPemeriksaan.perihal_kontrak ||
+                            "(Perihal Kontrak)"}
                         </span>{" "}
                         dapat diterima /{" "}
-                        <span className="line-through">tidak diterima</span> dengan
-                        kelengkapan dokumen sebagai berikut:
+                        <span className="line-through">tidak diterima</span>{" "}
+                        dengan kelengkapan dokumen sebagai berikut:
                       </p>
                     </div>
                   )}
 
                   {/* Kelengkapan Dokumen - only on first page */}
                   {showKelengkapan && kelengkapanDokumen.length > 0 && (
-                    <div className={`${isCompactModePage ? "mb-3" : "mb-4"} text-justify`}>
+                    <div
+                      className={`${isCompactModePage ? "mb-2" : "mb-3"} text-justify`}
+                    >
                       <ul
                         className={`space-y-1 ${
                           isCompactModePage ? "text-base" : "text-lg"
@@ -1089,7 +1134,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                   {pageMaterials.length > 0 && (
                     <div
                       className={`${
-                        isCompactModePage ? "mb-3" : "mb-4"
+                        isCompactModePage ? "mb-2" : "mb-3"
                       } min-w-[300px] overflow-x-auto`}
                       style={{ display: "block" }}
                     >
@@ -1114,21 +1159,28 @@ export const EmailDetailBeritaPemeriksaan = ({
                               isCompactModePage ? "text-base" : "text-lg"
                             } text-center`}
                           >
-                            <th className="border-2 border-gray-800 px-2 py-2">No.</th>
+                            <th className="border-2 border-gray-800 px-2 py-2">
+                              No.
+                            </th>
                             <th className="border-2 border-gray-800 px-2 py-2">
                               Material Description
                             </th>
-                            <th className="border-2 border-gray-800 px-2 py-2">QTY</th>
-                            <th className="border-2 border-gray-800 px-2 py-2">SAT</th>
+                            <th className="border-2 border-gray-800 px-2 py-2">
+                              QTY
+                            </th>
+                            <th className="border-2 border-gray-800 px-2 py-2">
+                              SAT
+                            </th>
                             <th className="border-2 border-gray-800 px-2 py-2">
                               Serial Number
                             </th>
-                            <th className="border-2 border-gray-800 px-2 py-2">
-                              Keterangan
-                            </th>
                           </tr>
                         </thead>
-                        <tbody className={isCompactModePage ? "text-base" : "text-lg"}>
+                        <tbody
+                          className={
+                            isCompactModePage ? "text-base" : "text-lg"
+                          }
+                        >
                           {pageMaterials.map((item, index) => {
                             const material = item as any;
                             const globalIndex = startIndex + index;
@@ -1147,7 +1199,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                   }`}
                                 >
                                   <div className="text-left">
-                                    <div className="font-semibold">{material.nama}</div>
+                                    <div className="font-semibold">
+                                      {material.nama}
+                                    </div>
                                     {material.katalog && (
                                       <div className="">
                                         <span className="font-bold">MERK:</span>{" "}
@@ -1161,7 +1215,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                       </div>
                                     )}
                                     {material.lokasi && (
-                                      <div className="">LOKASI: {material.lokasi}</div>
+                                      <div className="">
+                                        LOKASI: {material.lokasi}
+                                      </div>
                                     )}
                                   </div>
                                 </td>
@@ -1186,13 +1242,6 @@ export const EmailDetailBeritaPemeriksaan = ({
                                 >
                                   {material.serial_number || "-"}
                                 </td>
-                                <td
-                                  className={`border-2 border-gray-800 px-2 ${
-                                    isCompactModePage ? "py-1" : "py-2"
-                                  } text-center`}
-                                >
-                                  {material.keterangan || "-"}
-                                </td>
                               </tr>
                             );
                           })}
@@ -1204,13 +1253,14 @@ export const EmailDetailBeritaPemeriksaan = ({
                   {/* Closing Statement - only on last page */}
                   {showClosing && (
                     <div
-                      className={`${isCompactModePage ? "mb-3" : "mb-4"} ${
+                      className={`${isCompactModePage ? "mb-2" : "mb-3"} ${
                         isCompactModePage ? "text-base" : "text-lg"
                       }`}
                     >
                       <p>
-                        Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat dengan
-                        sesungguhnya untuk dapat dipergunakan sebagai mana mestinya.
+                        Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
+                        dengan sesungguhnya untuk dapat dipergunakan sebagai
+                        mana mestinya.
                       </p>
                     </div>
                   )}
@@ -1218,10 +1268,10 @@ export const EmailDetailBeritaPemeriksaan = ({
                   {/* Signatures - only on last page */}
                   {showSignature && (
                     <div
-                      className={`flex justify-between ${isCompactModePage ? "mb-2" : "mb-4"}`}
+                      className={`flex justify-between ${isCompactModePage ? "mb-2" : "mb-3"}`}
                     >
                       {/* Penyedia Barang */}
-                      <div className="text-center">
+                      <div className="text-center items-center flex flex-col">
                         <div
                           className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
                             isCompactModePage ? "text-base" : "text-lg"
@@ -1230,7 +1280,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                           Penyedia Barang
                         </div>
                         <div
-                          className={`font-bold ${isCompactModePage ? "mb-2" : "mb-4"} ${
+                          className={`font-bold ${isCompactModePage ? "mb-2" : "mb-3"} ${
                             isCompactModePage ? "text-base" : "text-lg"
                           }`}
                         >
@@ -1242,8 +1292,8 @@ export const EmailDetailBeritaPemeriksaan = ({
                         {/* Signature Preview */}
                         <div
                           className={`${
-                            isCompactModePage ? "h-16 mb-2" : "h-20 mb-4"
-                          } flex items-center`}
+                            isCompactModePage ? "h-14 mb-2" : "h-16 mb-3"
+                          } flex items-center justify-start`}
                         >
                           {beritaPemeriksaan.penyedia_barang?.ttd_penerima ? (
                             <img
@@ -1251,28 +1301,31 @@ export const EmailDetailBeritaPemeriksaan = ({
                               height={200}
                               src={getFileUrl(
                                 beritaPemeriksaan.penyedia_barang.ttd_penerima,
-                                apiUrl
+                                apiUrl,
                               )}
                               alt="TTD Penyedia Barang"
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (
-                            <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+                            <div className="text-gray-400 text-sm">
+                              (Tanda Tangan)
+                            </div>
                           )}
                         </div>
 
                         <div
                           className={`${
                             isCompactModePage ? "text-base" : "text-lg"
-                          } font-bold `}
+                          } font-bold`}
                         >
-                          {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
+                          {beritaPemeriksaan.penyedia_barang
+                            ?.nama_penanggung_jawab ||
                             "(Nama Penanggung Jawab)"}
                         </div>
                       </div>
 
                       {/* Pemeriksa Barang */}
-                      <div className="text-left">
+                      <div className="text-center items-center flex flex-col">
                         <div
                           className={`${isCompactModePage ? "mb-1" : "mb-2"} ${
                             isCompactModePage ? "text-base" : "text-lg"
@@ -1281,29 +1334,36 @@ export const EmailDetailBeritaPemeriksaan = ({
                           Pemeriksa Barang
                         </div>
                         <div
-                          className={`font-bold ${isCompactModePage ? "mb-2" : "mb-4"} ${
+                          className={`font-bold ${isCompactModePage ? "mb-2" : "mb-3"} ${
                             isCompactModePage ? "text-base" : "text-lg"
                           }`}
                         >
-                          {beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
-                            "(Departemen Pemeriksa)"}
+                          {beritaPemeriksaan.pemeriksa_barang
+                            ?.departemen_pemeriksa || "(Departemen Pemeriksa)"}
                         </div>
 
                         {/* List Mengetahui */}
                         {beritaPemeriksaan.pemeriksa_barang?.mengetahui &&
-                          beritaPemeriksaan.pemeriksa_barang.mengetahui.length > 0 && (
-                            <div className={isCompactModePage ? "space-y-2" : "space-y-3"}>
+                          beritaPemeriksaan.pemeriksa_barang.mengetahui.length >
+                            0 && (
+                            <div
+                              className={
+                                isCompactModePage ? "space-y-1" : "space-y-2"
+                              }
+                            >
                               {beritaPemeriksaan.pemeriksa_barang.mengetahui.map(
                                 (mengetahui, index) => (
                                   <div
                                     key={index}
                                     className={`flex items-center ${
-                                      isCompactModePage ? "pb-1" : "pb-2"
+                                      isCompactModePage ? "pb-1" : "pb-1"
                                     }`}
                                   >
                                     <div
                                       className={`${
-                                        isCompactModePage ? "text-sm" : "text-base"
+                                        isCompactModePage
+                                          ? "text-sm"
+                                          : "text-base"
                                       } font-semibold min-w-[200px]`}
                                     >
                                       {index + 1}{" "}
@@ -1312,7 +1372,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                     </div>
                                     <div
                                       className={`${
-                                        isCompactModePage ? "text-sm" : "text-base"
+                                        isCompactModePage
+                                          ? "text-sm"
+                                          : "text-base"
                                       } font-semibold`}
                                     >
                                       :
@@ -1320,7 +1382,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                     <div className="flex items-center ml-2">
                                       <div
                                         className={`${
-                                          isCompactModePage ? "w-28 h-10" : "w-32 h-12"
+                                          isCompactModePage
+                                            ? "w-24 h-9"
+                                            : "w-28 h-10"
                                         } flex items-center justify-center border-b-2 border-gray-800`}
                                       >
                                         {mengetahui.ttd_mengetahui ? (
@@ -1329,7 +1393,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                             height={60}
                                             src={getFileUrl(
                                               mengetahui.ttd_mengetahui,
-                                              apiUrl
+                                              apiUrl,
                                             )}
                                             alt={`TTD Mengetahui ${index + 1}`}
                                             className="max-h-full max-w-full object-contain"
@@ -1342,7 +1406,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                       </div>
                                     </div>
                                   </div>
-                                )
+                                ),
                               )}
                             </div>
                           )}
@@ -1422,7 +1486,9 @@ export const EmailDetailBeritaPemeriksaan = ({
 
                 {/* Title - only on first page */}
                 {isFirstPage && (
-                  <div className={`text-center ${isCompactModePage ? "mb-4" : "mb-6"}`}>
+                  <div
+                    className={`text-center ${isCompactModePage ? "mb-4" : "mb-6"}`}
+                  >
                     <h1
                       className={`${
                         isCompactModePage ? "text-2xl mb-1" : "text-3xl mb-2"
@@ -1458,14 +1524,15 @@ export const EmailDetailBeritaPemeriksaan = ({
                         {formatDateWithDay(
                           beritaPemeriksaan.tanggal_pelaksanaan ||
                             beritaPemeriksaan.tanggal_kontrak ||
-                            beritaPemeriksaan.createdAt
+                            beritaPemeriksaan.createdAt,
                         )}
                       </span>{" "}
-                      kami yang bertanda tangan di bawah ini telah bersama - sama
-                      melaksanakan pemeriksaan terhadap barang sesuai dengan Kontrak
-                      Rinci{" "}
+                      kami yang bertanda tangan di bawah ini telah bersama -
+                      sama melaksanakan pemeriksaan terhadap barang sesuai
+                      dengan Kontrak Rinci{" "}
                       <span className="font-semibold">
-                        {beritaPemeriksaan.no_perjanjian_kontrak || "(No Kontrak)"}
+                        {beritaPemeriksaan.no_perjanjian_kontrak ||
+                          "(No Kontrak)"}
                       </span>{" "}
                       tanggal{" "}
                       <span className="font-semibold">
@@ -1473,26 +1540,30 @@ export const EmailDetailBeritaPemeriksaan = ({
                       </span>{" "}
                       perihal{" "}
                       <span className="font-semibold">
-                        {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                        {beritaPemeriksaan.perihal_kontrak ||
+                          "(Perihal Kontrak)"}
                       </span>
                       .
                     </p>
                     <p className="">
-                      Sesuai dengan lembar kerja pemeriksaan dokumen tim pemeriksa
-                      mutu barang. Adapun hasil dari pemeriksaan{" "}
+                      Sesuai dengan lembar kerja pemeriksaan dokumen tim
+                      pemeriksa mutu barang. Adapun hasil dari pemeriksaan{" "}
                       <span className="font-semibold">
-                        {beritaPemeriksaan.perihal_kontrak || "(Perihal Kontrak)"}
+                        {beritaPemeriksaan.perihal_kontrak ||
+                          "(Perihal Kontrak)"}
                       </span>{" "}
                       dapat diterima /{" "}
-                      <span className="line-through">tidak diterima</span> dengan
-                      kelengkapan dokumen sebagai berikut:
+                      <span className="line-through">tidak diterima</span>{" "}
+                      dengan kelengkapan dokumen sebagai berikut:
                     </p>
                   </div>
                 )}
 
                 {/* Kelengkapan Dokumen - only on first page */}
                 {showKelengkapan && kelengkapanDokumen.length > 0 && (
-                  <div className={`${isCompactModePage ? "mb-3" : "mb-4"} text-justify`}>
+                  <div
+                    className={`${isCompactModePage ? "mb-3" : "mb-4"} text-justify`}
+                  >
                     <ul
                       className={`space-y-1 ${
                         isCompactModePage ? "text-base" : "text-lg"
@@ -1508,9 +1579,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                 {/* Materials Table */}
                 {pageMaterials.length > 0 && (
                   <div
-                    className={`${
-                      isCompactModePage ? "mb-3" : "mb-4"
-                    }`}
+                    className={`${isCompactModePage ? "mb-3" : "mb-4"}`}
                     style={{ display: "block", width: "100%" }}
                   >
                     <p
@@ -1536,45 +1605,41 @@ export const EmailDetailBeritaPemeriksaan = ({
                             isCompactModePage ? "text-base" : "text-lg"
                           } text-center`}
                         >
-                          <th 
+                          <th
                             className="border-2 border-gray-800 px-2 py-2"
                             style={{ width: "5%" }}
                           >
                             No.
                           </th>
-                          <th 
+                          <th
                             className="border-2 border-gray-800 px-2 py-2"
                             style={{ width: "35%" }}
                           >
                             Material Description
                           </th>
-                          <th 
+                          <th
                             className="border-2 border-gray-800 px-2 py-2"
                             style={{ width: "8%" }}
                           >
                             QTY
                           </th>
-                          <th 
+                          <th
                             className="border-2 border-gray-800 px-2 py-2"
                             style={{ width: "8%" }}
                           >
                             SAT
                           </th>
-                          <th 
+                          <th
                             className="border-2 border-gray-800 px-2 py-2"
                             style={{ width: "22%" }}
                           >
                             Serial Number
                           </th>
-                          <th 
-                            className="border-2 border-gray-800 px-2 py-2"
-                            style={{ width: "22%" }}
-                          >
-                            Keterangan
-                          </th>
                         </tr>
                       </thead>
-                      <tbody className={isCompactModePage ? "text-base" : "text-lg"}>
+                      <tbody
+                        className={isCompactModePage ? "text-base" : "text-lg"}
+                      >
                         {pageMaterials.map((item, index) => {
                           const material = item as any;
                           const globalIndex = startIndex + index;
@@ -1598,7 +1663,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                 }}
                               >
                                 <div className="text-left">
-                                  <div className="font-semibold">{material.nama}</div>
+                                  <div className="font-semibold">
+                                    {material.nama}
+                                  </div>
                                   {material.katalog && (
                                     <div className="">
                                       <span className="font-bold">MERK:</span>{" "}
@@ -1612,7 +1679,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                     </div>
                                   )}
                                   {material.lokasi && (
-                                    <div className="">LOKASI: {material.lokasi}</div>
+                                    <div className="">
+                                      LOKASI: {material.lokasi}
+                                    </div>
                                   )}
                                 </div>
                               </td>
@@ -1650,18 +1719,6 @@ export const EmailDetailBeritaPemeriksaan = ({
                               >
                                 {material.serial_number || "-"}
                               </td>
-                              <td
-                                className={`border-2 border-gray-800 px-2 ${
-                                  isCompactModePage ? "py-1" : "py-2"
-                                } text-center`}
-                                style={{
-                                  wordWrap: "break-word",
-                                  overflowWrap: "break-word",
-                                  wordBreak: "break-word",
-                                }}
-                              >
-                                {material.keterangan || "-"}
-                              </td>
                             </tr>
                           );
                         })}
@@ -1678,8 +1735,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                     }`}
                   >
                     <p>
-                      Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat dengan
-                      sesungguhnya untuk dapat dipergunakan sebagai mana mestinya.
+                      Demikian Berita Acara Pemeriksaan Mutu Barang ini dibuat
+                      dengan sesungguhnya untuk dapat dipergunakan sebagai mana
+                      mestinya.
                     </p>
                   </div>
                 )}
@@ -1720,7 +1778,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                             height={200}
                             src={getFileUrl(
                               beritaPemeriksaan.penyedia_barang.ttd_penerima,
-                              apiUrl
+                              apiUrl,
                             )}
                             alt="TTD Penyedia Barang"
                             className="max-h-full max-w-full object-contain"
@@ -1728,7 +1786,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                             decoding="sync"
                           />
                         ) : (
-                          <div className="text-gray-400 text-sm">(Tanda Tangan)</div>
+                          <div className="text-gray-400 text-sm">
+                            (Tanda Tangan)
+                          </div>
                         )}
                       </div>
 
@@ -1737,8 +1797,8 @@ export const EmailDetailBeritaPemeriksaan = ({
                           isCompactModePage ? "text-base" : "text-lg"
                         } font-bold `}
                       >
-                        {beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab ||
-                          "(Nama Penanggung Jawab)"}
+                        {beritaPemeriksaan.penyedia_barang
+                          ?.nama_penanggung_jawab || "(Nama Penanggung Jawab)"}
                       </div>
                     </div>
 
@@ -1756,14 +1816,19 @@ export const EmailDetailBeritaPemeriksaan = ({
                           isCompactModePage ? "text-base" : "text-lg"
                         }`}
                       >
-                        {beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
-                          "(Departemen Pemeriksa)"}
+                        {beritaPemeriksaan.pemeriksa_barang
+                          ?.departemen_pemeriksa || "(Departemen Pemeriksa)"}
                       </div>
 
                       {/* List Mengetahui */}
                       {beritaPemeriksaan.pemeriksa_barang?.mengetahui &&
-                        beritaPemeriksaan.pemeriksa_barang.mengetahui.length > 0 && (
-                          <div className={isCompactModePage ? "space-y-2" : "space-y-3"}>
+                        beritaPemeriksaan.pemeriksa_barang.mengetahui.length >
+                          0 && (
+                          <div
+                            className={
+                              isCompactModePage ? "space-y-2" : "space-y-3"
+                            }
+                          >
                             {beritaPemeriksaan.pemeriksa_barang.mengetahui.map(
                               (mengetahui, index) => (
                                 <div
@@ -1774,7 +1839,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                 >
                                   <div
                                     className={`${
-                                      isCompactModePage ? "text-sm" : "text-base"
+                                      isCompactModePage
+                                        ? "text-sm"
+                                        : "text-base"
                                     } font-semibold min-w-[200px]`}
                                   >
                                     {index + 1}{" "}
@@ -1783,7 +1850,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                   </div>
                                   <div
                                     className={`${
-                                      isCompactModePage ? "text-sm" : "text-base"
+                                      isCompactModePage
+                                        ? "text-sm"
+                                        : "text-base"
                                     } font-semibold`}
                                   >
                                     :
@@ -1791,7 +1860,9 @@ export const EmailDetailBeritaPemeriksaan = ({
                                   <div className="flex items-center ml-2">
                                     <div
                                       className={`${
-                                        isCompactModePage ? "w-28 h-10" : "w-32 h-12"
+                                        isCompactModePage
+                                          ? "w-28 h-10"
+                                          : "w-32 h-12"
                                       } flex items-center justify-center border-b-2 border-gray-800`}
                                     >
                                       {mengetahui.ttd_mengetahui ? (
@@ -1800,7 +1871,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                           height={60}
                                           src={getFileUrl(
                                             mengetahui.ttd_mengetahui,
-                                            apiUrl
+                                            apiUrl,
                                           )}
                                           alt={`TTD Mengetahui ${index + 1}`}
                                           className="max-h-full max-w-full object-contain"
@@ -1815,7 +1886,7 @@ export const EmailDetailBeritaPemeriksaan = ({
                                     </div>
                                   </div>
                                 </div>
-                              )
+                              ),
                             )}
                           </div>
                         )}
@@ -1835,23 +1906,23 @@ export const EmailDetailBeritaPemeriksaan = ({
             display: none !important;
           }
         }
-        
+
         @page {
           margin: 0;
           size: A4;
         }
-        
+
         @media print {
           /* Hide everything except print content */
           body * {
             visibility: hidden;
           }
-          
+
           #print-content-berita-pemeriksaan,
           #print-content-berita-pemeriksaan * {
             visibility: visible;
           }
-          
+
           #print-content-berita-pemeriksaan {
             position: absolute;
             left: 0;
@@ -1859,19 +1930,19 @@ export const EmailDetailBeritaPemeriksaan = ({
             width: 100%;
             background: white;
           }
-          
+
           .surat-print {
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
           }
-          
+
           .surat-print:last-child {
             page-break-after: auto;
             break-after: auto;
           }
-          
+
           /* Ensure images load in print */
           img {
             max-width: 100%;
@@ -1879,36 +1950,83 @@ export const EmailDetailBeritaPemeriksaan = ({
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          
+
           /* Ensure borders print */
-          table, th, td {
+          table,
+          th,
+          td {
             border-collapse: collapse;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          
+
           /* Prevent overflow in print */
           .surat-print {
             overflow: visible !important;
           }
-          
+
           .surat-print * {
             overflow: visible !important;
           }
-          
+
           /* Ensure table cells wrap properly */
           table {
             table-layout: fixed;
             width: 100%;
           }
-          
-          td, th {
+
+          td,
+          th {
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: break-word;
           }
         }
       `}</style>
+
+      {showMobilePrintDialog && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+          onClick={() => setShowMobilePrintDialog(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Pilih Aksi
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Pilih cara untuk mendapatkan surat Anda
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleMobileDownloadPDF}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#0056B0] text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                <span className="font-medium">Download PDF</span>
+              </button>
+
+              <button
+                onClick={handleMobilePrintPreview}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 hover:bg-gray-500 rounded-lg transition-colors"
+              >
+                <Printer className="w-5 h-5" />
+                <span className="font-medium">Print Preview</span>
+              </button>
+
+              <button
+                onClick={() => setShowMobilePrintDialog(false)}
+                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

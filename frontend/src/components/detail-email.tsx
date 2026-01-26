@@ -135,6 +135,11 @@ export const EmailDetail = ({
   const [localEmail, setLocalEmail] = useState<DynamicEmailData>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+  const [showMobilePrintDialog, setShowMobilePrintDialog] = useState(false);
+  const isMobileDevice = () => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
+
   // Sync localEmail dengan prop email saat email berubah
   useEffect(() => {
     setLocalEmail(email);
@@ -217,7 +222,7 @@ export const EmailDetail = ({
       satuan: m.satuan,
       jumlah: m.jumlah.toString(),
       keterangan: m.keterangan,
-    })
+    }),
   );
 
   // Fix signature structure sesuai SignatureData interface
@@ -260,7 +265,7 @@ export const EmailDetail = ({
 
   const handleDownloadAttachment = async (
     fileUrl: string,
-    fileName: string
+    fileName: string,
   ) => {
     const fullUrl = `${apiUrl}${fileUrl}`;
     try {
@@ -330,7 +335,7 @@ export const EmailDetail = ({
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i] as HTMLElement;
 
-          // 🔹 Auto scale sebelum render
+          // Auto scale sebelum render
           scaleToFit(page);
 
           const canvas = await html2canvas(page, {
@@ -356,9 +361,9 @@ export const EmailDetail = ({
         }
 
         pdf.save(`${formData.nomorSuratJalan || "surat-jalan"}.pdf`);
-        
+
         toast.dismiss(toastId);
-        toast.success("PDF generated successfully!", {
+        toast.success("PDF berhasil diunduh!", {
           position: "top-center",
         });
       } catch (error) {
@@ -368,7 +373,6 @@ export const EmailDetail = ({
           position: "top-center",
         });
       } finally {
-        // Selesai generate, hide preview
         setIsGeneratingPDF(false);
       }
     };
@@ -384,15 +388,17 @@ export const EmailDetail = ({
         requestAnimationFrame(() => {
           // Tunggu sedikit lagi untuk memastikan React sudah render semua
           setTimeout(() => {
-            const printContent = document.getElementById('print-content');
+            const printContent = document.getElementById("print-content");
             if (!printContent) {
               resolve();
               return;
             }
 
             // Cari semua gambar di print content
-            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
-            
+            const images = Array.from(
+              printContent.querySelectorAll("img"),
+            ) as HTMLImageElement[];
+
             if (images.length === 0) {
               resolve();
               return;
@@ -405,7 +411,7 @@ export const EmailDetail = ({
 
             const checkComplete = () => {
               if (resolved) return;
-              
+
               loadedCount++;
               if (loadedCount === totalImages) {
                 resolved = true;
@@ -421,43 +427,47 @@ export const EmailDetail = ({
             const timeout = setTimeout(() => {
               if (!resolved) {
                 resolved = true;
-                console.warn('Some images failed to load within timeout');
+                console.warn("Some images failed to load within timeout");
                 resolve();
               }
             }, 10000);
 
             images.forEach((img, index) => {
               // Pastikan gambar tidak lazy load dan force eager loading
-              img.loading = 'eager';
-              img.decoding = 'sync';
-              
+              img.loading = "eager";
+              img.decoding = "sync";
+
               const imagePromise = new Promise<void>((imgResolve) => {
                 // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
-                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                if (
+                  img.complete &&
+                  img.naturalHeight !== 0 &&
+                  img.naturalWidth !== 0
+                ) {
                   imgResolve();
                 } else {
                   // Tambahkan event listener untuk load dan error
                   const onLoad = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     imgResolve();
                   };
-                  
+
                   const onError = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     console.warn(`Image ${index} failed to load:`, img.src);
                     imgResolve(); // Resolve anyway untuk tidak block
                   };
 
-                  img.addEventListener('load', onLoad, { once: true });
-                  img.addEventListener('error', onError, { once: true });
-                  
+                  img.addEventListener("load", onLoad, { once: true });
+                  img.addEventListener("error", onError, { once: true });
+
                   // Force reload jika src sudah ada tapi belum load
                   if (img.src && !img.complete) {
                     const currentSrc = img.src;
                     // Hapus dan set ulang src untuk force reload
-                    img.src = '';
+                    img.src = "";
                     setTimeout(() => {
                       img.src = currentSrc;
                     }, 10);
@@ -468,7 +478,7 @@ export const EmailDetail = ({
               imagePromise.then(() => {
                 checkComplete();
               });
-              
+
               imagePromises.push(imagePromise);
             });
           }, 100);
@@ -478,34 +488,61 @@ export const EmailDetail = ({
   };
 
   const handlePrintClick = async () => {
+    // Jika mobile, tampilkan dialog pilihan
+    if (isMobileDevice()) {
+      setShowMobilePrintDialog(true);
+      return;
+    }
+
+    // Jika desktop, langsung print seperti biasa
     setIsPrinting(true);
-    
-    // Tunggu sedikit untuk memastikan React sudah render print content
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Tunggu semua gambar load sebelum buka print dialog
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await waitForImagesToLoad();
-    
-    // Trigger print dialog setelah semua gambar sudah load
+
     window.print();
-    
-    // Reset setelah print dialog ditutup (user bisa cancel atau print)
-    // Gunakan beforeprint dan afterprint events jika tersedia
+
     const handleAfterPrint = () => {
       setIsPrinting(false);
-      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
     };
-    window.addEventListener('afterprint', handleAfterPrint);
-    // Fallback jika afterprint tidak didukung
+    window.addEventListener("afterprint", handleAfterPrint);
+
     setTimeout(() => {
       setIsPrinting(false);
-    }, 1000);
+    }, 2000);
+  };
+
+  const handleMobilePrintPreview = async () => {
+    setShowMobilePrintDialog(false);
+    setIsPrinting(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await waitForImagesToLoad();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    window.print();
+
+    const handleAfterPrint = () => {
+      setIsPrinting(false);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+
+    setTimeout(() => {
+      setIsPrinting(false);
+    }, 2000);
+  };
+
+  const handleMobileDownloadPDF = async () => {
+    setShowMobilePrintDialog(false);
+    setIsGeneratingPDF(true);
   };
 
   const MATERIALS_PER_PAGE = 15;
   const hasMaterialData = () => {
     return materials.some(
-      (m) => m.namaMaterial || m.katalog || m.satuan || m.jumlah || m.keterangan
+      (m) =>
+        m.namaMaterial || m.katalog || m.satuan || m.jumlah || m.keterangan,
     );
   };
 
@@ -728,23 +765,21 @@ export const EmailDetail = ({
   // Render bagian Lampiran (bagian 4 dari footer)
   const renderFooterLampiran = () => {
     const imageLampiran = getLampiranImages();
-    
+
     if (imageLampiran.length === 0) return null;
 
     return (
       <div className="mt-6">
-        <div className="text-base font-semibold mb-3 text-center">
-          LAMPIRAN
-        </div>
+        <div className="text-base font-semibold mb-3 text-center">LAMPIRAN</div>
         <div className="grid grid-cols-3 gap-4">
           {imageLampiran.map((attachment: FileAttachment, index: number) => {
             const imageUrl = attachment.url.startsWith("http")
               ? attachment.url
               : `${apiUrl}${attachment.url}`;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex flex-col items-center justify-start"
               >
                 <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -755,9 +790,6 @@ export const EmailDetail = ({
                     crossOrigin="anonymous"
                   />
                 </div>
-                <p className="text-xs text-gray-600 mt-2 text-center truncate max-w-full px-1">
-                  {attachment.name}
-                </p>
               </div>
             );
           })}
@@ -801,7 +833,7 @@ export const EmailDetail = ({
       >
         {/* Header */}
         {renderHeader(lembarIndex, lembarLabels)}
-        
+
         {/* Title Lampiran */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
@@ -810,15 +842,18 @@ export const EmailDetail = ({
         </div>
 
         {/* Grid Lampiran - 3 kolom untuk banyak foto */}
-        <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 150px)' }}>
+        <div
+          className="grid grid-cols-3 gap-4"
+          style={{ maxHeight: "calc(100% - 150px)" }}
+        >
           {imageLampiran.map((attachment: FileAttachment, index: number) => {
             const imageUrl = attachment.url.startsWith("http")
               ? attachment.url
               : `${apiUrl}${attachment.url}`;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex flex-col items-center justify-start"
               >
                 <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -829,9 +864,6 @@ export const EmailDetail = ({
                     crossOrigin="anonymous"
                   />
                 </div>
-                <p className="text-xs text-gray-600 mt-2 text-center truncate max-w-full px-1">
-                  {attachment.name}
-                </p>
               </div>
             );
           })}
@@ -846,7 +878,11 @@ export const EmailDetail = ({
   const hasImageLampiran = imageLampiran.length > 0;
   // Jika ada image lampiran, kurangi lebih banyak untuk memberi ruang foto di bawah signature
   const MATERIAL_THRESHOLD = hasImageLampiran ? 5 : hasLampiran ? 6 : 8;
-  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = hasImageLampiran ? 14 : hasLampiran ? 16 : 18;
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = hasImageLampiran
+    ? 14
+    : hasLampiran
+      ? 16
+      : 18;
 
   // Fungsi untuk membagi materials ke dalam halaman-halaman dengan footer bertahap
   const splitMaterialsIntoPages = () => {
@@ -873,20 +909,24 @@ export const EmailDetail = ({
     // Jika material > 8, cek bagian footer mana yang masih muat di halaman pertama
     const pages = [];
     let remainingMaterials = [...materials];
-    
+
     // Estimasi ruang yang dibutuhkan untuk setiap bagian footer (dalam baris material)
     const SPACE_KETERANGAN = 2;
     const SPACE_KENDARAAN = 3;
     const SPACE_TANDA_TANGAN = 8;
     const SPACE_LAMPIRAN = hasLampiran ? 6 : 0;
-    
+
     // Tentukan berapa banyak material yang akan ditampilkan di halaman pertama
-    let firstPageMaterialCount = Math.min(totalMaterials, MATERIALS_PER_PAGE_WITHOUT_FOOTER);
-    
+    let firstPageMaterialCount = Math.min(
+      totalMaterials,
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER,
+    );
+
     // Hitung berapa ruang yang tersisa di halaman pertama setelah material
     // (jika material < MATERIALS_PER_PAGE_WITHOUT_FOOTER, berarti ada ruang tersisa)
-    const remainingSpace = MATERIALS_PER_PAGE_WITHOUT_FOOTER - firstPageMaterialCount;
-    
+    const remainingSpace =
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER - firstPageMaterialCount;
+
     // Cek bagian footer mana yang masih muat dengan ruang yang tersisa
     let footerPartsFirstPage = {
       keterangan: false,
@@ -897,25 +937,25 @@ export const EmailDetail = ({
 
     // Cek secara bertahap, mulai dari yang paling kecil
     let usedSpace = 0;
-    
+
     // Cek Keterangan (butuh 2 baris)
     if (remainingSpace >= usedSpace + SPACE_KETERANGAN) {
       footerPartsFirstPage.keterangan = true;
       usedSpace += SPACE_KETERANGAN;
     }
-    
+
     // Cek Kendaraan (butuh 3 baris)
     if (remainingSpace >= usedSpace + SPACE_KENDARAAN) {
       footerPartsFirstPage.kendaraan = true;
       usedSpace += SPACE_KENDARAAN;
     }
-    
+
     // Cek Tanda Tangan (butuh 8 baris)
     if (remainingSpace >= usedSpace + SPACE_TANDA_TANGAN) {
       footerPartsFirstPage.tandaTangan = true;
       usedSpace += SPACE_TANDA_TANGAN;
     }
-    
+
     // Cek Lampiran (butuh 6 baris) - hanya jika material > 8
     if (hasLampiran && remainingSpace >= usedSpace + SPACE_LAMPIRAN) {
       footerPartsFirstPage.lampiran = true;
@@ -924,9 +964,13 @@ export const EmailDetail = ({
 
     // Jika ada bagian footer yang muat, kurangi jumlah material di halaman pertama
     // untuk memberi ruang footer (tapi hanya jika material masih banyak)
-    if (totalMaterials > MATERIALS_PER_PAGE_WITHOUT_FOOTER && 
-        (footerPartsFirstPage.keterangan || footerPartsFirstPage.kendaraan || 
-         footerPartsFirstPage.tandaTangan || footerPartsFirstPage.lampiran)) {
+    if (
+      totalMaterials > MATERIALS_PER_PAGE_WITHOUT_FOOTER &&
+      (footerPartsFirstPage.keterangan ||
+        footerPartsFirstPage.kendaraan ||
+        footerPartsFirstPage.tandaTangan ||
+        footerPartsFirstPage.lampiran)
+    ) {
       firstPageMaterialCount -= usedSpace;
       // Pastikan minimal masih ada beberapa material
       firstPageMaterialCount = Math.max(firstPageMaterialCount, 5);
@@ -935,23 +979,25 @@ export const EmailDetail = ({
     // Halaman pertama: material + bagian footer yang muat
     const firstPageMaterials = remainingMaterials.slice(
       0,
-      firstPageMaterialCount
+      firstPageMaterialCount,
     );
     pages.push({
       materials: firstPageMaterials,
-      showFooter: footerPartsFirstPage.keterangan || footerPartsFirstPage.kendaraan || footerPartsFirstPage.tandaTangan || footerPartsFirstPage.lampiran,
+      showFooter:
+        footerPartsFirstPage.keterangan ||
+        footerPartsFirstPage.kendaraan ||
+        footerPartsFirstPage.tandaTangan ||
+        footerPartsFirstPage.lampiran,
       footerParts: footerPartsFirstPage,
       isFirstPage: true,
     });
-    remainingMaterials = remainingMaterials.slice(
-      firstPageMaterialCount
-    );
+    remainingMaterials = remainingMaterials.slice(firstPageMaterialCount);
 
     // Halaman tengah (jika ada) - tanpa footer
     while (remainingMaterials.length > MATERIALS_PER_PAGE_WITHOUT_FOOTER) {
       const nextPageMaterials = remainingMaterials.slice(
         0,
-        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER,
       );
       pages.push({
         materials: nextPageMaterials,
@@ -965,7 +1011,7 @@ export const EmailDetail = ({
         isFirstPage: false,
       });
       remainingMaterials = remainingMaterials.slice(
-        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER,
       );
     }
 
@@ -980,7 +1026,11 @@ export const EmailDetail = ({
     if (remainingMaterials.length > 0) {
       pages.push({
         materials: remainingMaterials,
-        showFooter: footerPartsLastPage.keterangan || footerPartsLastPage.kendaraan || footerPartsLastPage.tandaTangan || footerPartsLastPage.lampiran,
+        showFooter:
+          footerPartsLastPage.keterangan ||
+          footerPartsLastPage.kendaraan ||
+          footerPartsLastPage.tandaTangan ||
+          footerPartsLastPage.lampiran,
         footerParts: footerPartsLastPage,
         isFirstPage: false,
       });
@@ -988,7 +1038,11 @@ export const EmailDetail = ({
       // Jika tidak ada sisa, footer di halaman kosong
       pages.push({
         materials: [],
-        showFooter: footerPartsLastPage.keterangan || footerPartsLastPage.kendaraan || footerPartsLastPage.tandaTangan || footerPartsLastPage.lampiran,
+        showFooter:
+          footerPartsLastPage.keterangan ||
+          footerPartsLastPage.kendaraan ||
+          footerPartsLastPage.tandaTangan ||
+          footerPartsLastPage.lampiran,
         footerParts: footerPartsLastPage,
         isFirstPage: false,
       });
@@ -1038,7 +1092,7 @@ export const EmailDetail = ({
                       "pengirim" in (email as EmailDataAdmin).surat_jalan
                       ? (email as EmailDataAdmin).surat_jalan.pengirim
                           .departemen_pengirim
-                      : ""
+                      : "",
                   ) || "GA"}
                 </div>
                 <div>
@@ -1064,7 +1118,7 @@ export const EmailDetail = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -1096,7 +1150,7 @@ export const EmailDetail = ({
                       ? (email as EmailDataAdmin).surat_jalan.pengirim
                           .departemen_pengirim
                       : beritaPemeriksaan?.pemeriksa_barang
-                          ?.departemen_pemeriksa || ""
+                          ?.departemen_pemeriksa || "",
                   )}
                 </div>
                 <div>
@@ -1123,7 +1177,7 @@ export const EmailDetail = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -1170,10 +1224,13 @@ export const EmailDetail = ({
         <hr className="border-t-4 border-gray-800 mb-6" />
 
         {/* Letter Content */}
-        <div className="mb-6 md:mb-8 w-full flex justify-center" style={{ height: "auto" }}>
+        <div
+          className="mb-6 md:mb-8 w-full flex justify-center"
+          style={{ height: "auto" }}
+        >
           <div className="w-80 sm:w-[210mm] scale-[0.38] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
             {/* Fixed width document preview */}
-            <div className="bg-white py-4" style={{ width: '210mm' }}>
+            <div className="bg-white py-4" style={{ width: "210mm" }}>
               {/* Company Header */}
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex items-center justify-center">
@@ -1326,7 +1383,7 @@ export const EmailDetail = ({
                       <td className="border-2 border-gray-800 px-2 py-2 text-center">
                         {email.surat_jalan.materials.reduce(
                           (acc, item) => acc + item.jumlah,
-                          0
+                          0,
                         )}
                       </td>
                       <td className="border-2 border-gray-800 px-2 py-2"></td>
@@ -1560,7 +1617,7 @@ export const EmailDetail = ({
                         onClick={() =>
                           handleDownloadAttachment(
                             attachment.url,
-                            attachment.name
+                            attachment.name,
                           )
                         }
                       >
@@ -1748,7 +1805,7 @@ export const EmailDetail = ({
                     </div>
                   );
                 })}
-                
+
                 {/* Halaman Lampiran - setelah semua halaman material */}
                 {renderLampiranPage(lembarIndex, lembarLabels)}
               </div>
@@ -1905,7 +1962,7 @@ export const EmailDetail = ({
                   </div>
                 );
               })}
-              
+
               {/* Halaman Lampiran - setelah semua halaman material */}
               {(() => {
                 // Versi khusus untuk print
@@ -1931,7 +1988,7 @@ export const EmailDetail = ({
                   >
                     {/* Header */}
                     {renderHeader(lembarIndex, lembarLabels)}
-                    
+
                     {/* Title Lampiran */}
                     <div className="text-center mb-6">
                       <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
@@ -1940,30 +1997,35 @@ export const EmailDetail = ({
                     </div>
 
                     {/* Grid Lampiran - 3 kolom untuk banyak foto */}
-                    <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 150px)' }}>
-                      {imageLampiran.map((attachment: FileAttachment, index: number) => {
-                        const imageUrl = attachment.url.startsWith("http")
-                          ? attachment.url
-                          : `${apiUrl}${attachment.url}`;
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className="flex flex-col items-center justify-start"
-                          >
-                            <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
-                              <img
-                                src={imageUrl}
-                                alt={`Lampiran ${index + 1}`}
-                                className="w-full h-full object-contain"
-                                crossOrigin="anonymous"
-                                loading="eager"
-                                decoding="sync"
-                              />
+                    <div
+                      className="grid grid-cols-3 gap-4"
+                      style={{ maxHeight: "calc(100% - 150px)" }}
+                    >
+                      {imageLampiran.map(
+                        (attachment: FileAttachment, index: number) => {
+                          const imageUrl = attachment.url.startsWith("http")
+                            ? attachment.url
+                            : `${apiUrl}${attachment.url}`;
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex flex-col items-center justify-start"
+                            >
+                              <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Lampiran ${index + 1}`}
+                                  className="w-full h-full object-contain"
+                                  crossOrigin="anonymous"
+                                  loading="eager"
+                                  decoding="sync"
+                                />
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        },
+                      )}
                     </div>
                   </div>
                 );
@@ -1980,23 +2042,23 @@ export const EmailDetail = ({
             display: none !important;
           }
         }
-        
+
         @page {
           margin: 0;
           size: A4;
         }
-        
+
         @media print {
           /* Hide everything except print content */
           body * {
             visibility: hidden;
           }
-          
+
           #print-content,
           #print-content * {
             visibility: visible;
           }
-          
+
           #print-content {
             position: absolute;
             left: 0;
@@ -2004,19 +2066,19 @@ export const EmailDetail = ({
             width: 100%;
             background: white;
           }
-          
+
           .surat-print {
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
           }
-          
+
           .surat-print:last-child {
             page-break-after: auto;
             break-after: auto;
           }
-          
+
           /* Ensure images load in print */
           img {
             max-width: 100%;
@@ -2024,15 +2086,61 @@ export const EmailDetail = ({
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          
+
           /* Ensure borders print */
-          table, th, td {
+          table,
+          th,
+          td {
             border-collapse: collapse;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
         }
       `}</style>
+
+      {showMobilePrintDialog && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowMobilePrintDialog(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Pilih Aksi
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Pilih cara untuk mendapatkan surat Anda
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleMobileDownloadPDF}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#0056B0] text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                <span className="font-medium">Download PDF</span>
+              </button>
+
+              <button
+                onClick={handleMobilePrintPreview}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 hover:bg-gray-500 rounded-lg transition-colors"
+              >
+                <Printer className="w-5 h-5" />
+                <span className="font-medium">Print Preview</span>
+              </button>
+
+              <button
+                onClick={() => setShowMobilePrintDialog(false)}
+                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -2055,6 +2163,12 @@ export const EmailDetailBeritaBongkaran = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [localEmail, setLocalEmail] = useState<EmailDataVendor>(email);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const [showMobilePrintDialog, setShowMobilePrintDialog] = useState(false);
+
+  const isMobileDevice = () => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
 
   // Sync localEmail dengan prop email saat email berubah
   useEffect(() => {
@@ -2085,7 +2199,7 @@ export const EmailDetailBeritaBongkaran = ({
 
   // Helper function untuk get file URL
   const getFileUrl = (
-    fileAttachment: FileAttachment | null | undefined
+    fileAttachment: FileAttachment | null | undefined,
   ): string => {
     if (!fileAttachment?.url) return "";
     if (
@@ -2125,7 +2239,7 @@ export const EmailDetailBeritaBongkaran = ({
       satuan: m.satuan,
       jumlah: m.jumlah.toString(),
       keterangan: m.keterangan,
-    })
+    }),
   );
 
   const signaturePenerima: BongkaranSignatureData = {
@@ -2177,7 +2291,7 @@ export const EmailDetailBeritaBongkaran = ({
 
   const handleDownloadAttachment = async (
     fileUrl: string,
-    fileName: string
+    fileName: string,
   ) => {
     const fullUrl = `${apiUrl}${fileUrl}`;
     try {
@@ -2225,7 +2339,11 @@ export const EmailDetailBeritaBongkaran = ({
   const hasImageLampiran = imageLampiran.length > 0;
   // Jika ada image lampiran, kurangi lebih banyak untuk memberi ruang foto di bawah signature
   const MATERIAL_THRESHOLD = hasImageLampiran ? 5 : hasLampiran ? 6 : 8;
-  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = hasImageLampiran ? 14 : hasLampiran ? 16 : 18;
+  const MATERIALS_PER_PAGE_WITHOUT_FOOTER = hasImageLampiran
+    ? 14
+    : hasLampiran
+      ? 16
+      : 18;
 
   const splitMaterialsIntoPages = () => {
     const totalMaterials = materials.length;
@@ -2251,19 +2369,23 @@ export const EmailDetailBeritaBongkaran = ({
     // Jika material > threshold, cek bagian footer mana yang masih muat di halaman pertama
     const pages = [];
     let remainingMaterials = [...materials];
-    
+
     // Estimasi ruang yang dibutuhkan untuk setiap bagian footer (dalam baris material)
     const SPACE_KETERANGAN = 2;
     const SPACE_KENDARAAN = 3;
     const SPACE_TANDA_TANGAN = 10; // Lebih besar karena ada 3 tanda tangan
     const SPACE_LAMPIRAN = hasLampiran ? 6 : 0;
-    
+
     // Tentukan berapa banyak material yang akan ditampilkan di halaman pertama
-    let firstPageMaterialCount = Math.min(totalMaterials, MATERIALS_PER_PAGE_WITHOUT_FOOTER);
-    
+    let firstPageMaterialCount = Math.min(
+      totalMaterials,
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER,
+    );
+
     // Hitung berapa ruang yang tersisa di halaman pertama setelah material
-    const remainingSpace = MATERIALS_PER_PAGE_WITHOUT_FOOTER - firstPageMaterialCount;
-    
+    const remainingSpace =
+      MATERIALS_PER_PAGE_WITHOUT_FOOTER - firstPageMaterialCount;
+
     // Cek bagian footer mana yang masih muat dengan ruang yang tersisa
     let footerPartsFirstPage = {
       keterangan: false,
@@ -2274,25 +2396,25 @@ export const EmailDetailBeritaBongkaran = ({
 
     // Cek secara bertahap, mulai dari yang paling kecil
     let usedSpace = 0;
-    
+
     // Cek Keterangan (butuh 2 baris)
     if (remainingSpace >= usedSpace + SPACE_KETERANGAN) {
       footerPartsFirstPage.keterangan = true;
       usedSpace += SPACE_KETERANGAN;
     }
-    
+
     // Cek Kendaraan (butuh 3 baris)
     if (remainingSpace >= usedSpace + SPACE_KENDARAAN) {
       footerPartsFirstPage.kendaraan = true;
       usedSpace += SPACE_KENDARAAN;
     }
-    
+
     // Cek Tanda Tangan (butuh 10 baris karena ada 3 tanda tangan)
     if (remainingSpace >= usedSpace + SPACE_TANDA_TANGAN) {
       footerPartsFirstPage.tandaTangan = true;
       usedSpace += SPACE_TANDA_TANGAN;
     }
-    
+
     // Cek Lampiran (butuh 6 baris)
     if (hasLampiran && remainingSpace >= usedSpace + SPACE_LAMPIRAN) {
       footerPartsFirstPage.lampiran = true;
@@ -2300,9 +2422,13 @@ export const EmailDetailBeritaBongkaran = ({
     }
 
     // Jika ada bagian footer yang muat, kurangi jumlah material di halaman pertama
-    if (totalMaterials > MATERIALS_PER_PAGE_WITHOUT_FOOTER && 
-        (footerPartsFirstPage.keterangan || footerPartsFirstPage.kendaraan || 
-         footerPartsFirstPage.tandaTangan || footerPartsFirstPage.lampiran)) {
+    if (
+      totalMaterials > MATERIALS_PER_PAGE_WITHOUT_FOOTER &&
+      (footerPartsFirstPage.keterangan ||
+        footerPartsFirstPage.kendaraan ||
+        footerPartsFirstPage.tandaTangan ||
+        footerPartsFirstPage.lampiran)
+    ) {
       firstPageMaterialCount -= usedSpace;
       firstPageMaterialCount = Math.max(firstPageMaterialCount, 5);
     }
@@ -2310,23 +2436,25 @@ export const EmailDetailBeritaBongkaran = ({
     // Halaman pertama: material + bagian footer yang muat
     const firstPageMaterials = remainingMaterials.slice(
       0,
-      firstPageMaterialCount
+      firstPageMaterialCount,
     );
     pages.push({
       materials: firstPageMaterials,
-      showFooter: footerPartsFirstPage.keterangan || footerPartsFirstPage.kendaraan || footerPartsFirstPage.tandaTangan || footerPartsFirstPage.lampiran,
+      showFooter:
+        footerPartsFirstPage.keterangan ||
+        footerPartsFirstPage.kendaraan ||
+        footerPartsFirstPage.tandaTangan ||
+        footerPartsFirstPage.lampiran,
       footerParts: footerPartsFirstPage,
       isFirstPage: true,
     });
-    remainingMaterials = remainingMaterials.slice(
-      firstPageMaterialCount
-    );
+    remainingMaterials = remainingMaterials.slice(firstPageMaterialCount);
 
     // Halaman tengah (jika ada) - tanpa footer
     while (remainingMaterials.length > MATERIALS_PER_PAGE_WITHOUT_FOOTER) {
       const nextPageMaterials = remainingMaterials.slice(
         0,
-        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER,
       );
       pages.push({
         materials: nextPageMaterials,
@@ -2340,7 +2468,7 @@ export const EmailDetailBeritaBongkaran = ({
         isFirstPage: false,
       });
       remainingMaterials = remainingMaterials.slice(
-        MATERIALS_PER_PAGE_WITHOUT_FOOTER
+        MATERIALS_PER_PAGE_WITHOUT_FOOTER,
       );
     }
 
@@ -2355,14 +2483,22 @@ export const EmailDetailBeritaBongkaran = ({
     if (remainingMaterials.length > 0) {
       pages.push({
         materials: remainingMaterials,
-        showFooter: footerPartsLastPage.keterangan || footerPartsLastPage.kendaraan || footerPartsLastPage.tandaTangan || footerPartsLastPage.lampiran,
+        showFooter:
+          footerPartsLastPage.keterangan ||
+          footerPartsLastPage.kendaraan ||
+          footerPartsLastPage.tandaTangan ||
+          footerPartsLastPage.lampiran,
         footerParts: footerPartsLastPage,
         isFirstPage: false,
       });
     } else {
       pages.push({
         materials: [],
-        showFooter: footerPartsLastPage.keterangan || footerPartsLastPage.kendaraan || footerPartsLastPage.tandaTangan || footerPartsLastPage.lampiran,
+        showFooter:
+          footerPartsLastPage.keterangan ||
+          footerPartsLastPage.kendaraan ||
+          footerPartsLastPage.tandaTangan ||
+          footerPartsLastPage.lampiran,
         footerParts: footerPartsLastPage,
         isFirstPage: false,
       });
@@ -2585,8 +2721,9 @@ export const EmailDetailBeritaBongkaran = ({
 
   // Render bagian Lampiran (bagian 4 dari footer) - tanpa judul dan nama file
   const renderFooterLampiranPDF = (lampiranToShow: FileAttachment[] = []) => {
-    const imageLampiran = lampiranToShow.length > 0 ? lampiranToShow : getImageLampiran();
-    
+    const imageLampiran =
+      lampiranToShow.length > 0 ? lampiranToShow : getImageLampiran();
+
     if (imageLampiran.length === 0) return null;
 
     return (
@@ -2596,10 +2733,10 @@ export const EmailDetailBeritaBongkaran = ({
             const imageUrl = attachment.url.startsWith("http")
               ? attachment.url
               : `${apiUrl}${attachment.url}`;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex flex-col items-center justify-start"
               >
                 <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -2610,6 +2747,7 @@ export const EmailDetailBeritaBongkaran = ({
                     crossOrigin="anonymous"
                   />
                 </div>
+                {/* HAPUS <p> nama file */}
               </div>
             );
           })}
@@ -2637,7 +2775,7 @@ export const EmailDetailBeritaBongkaran = ({
 
     // Tentukan lampiran mana yang sudah ditampilkan di footer
     let lampiranAlreadyShown = 0;
-    
+
     if (materials.length <= MATERIAL_THRESHOLD) {
       lampiranAlreadyShown = 0;
     } else {
@@ -2651,20 +2789,20 @@ export const EmailDetailBeritaBongkaran = ({
 
     // Ambil sisa lampiran yang belum ditampilkan
     const lampiranToRender = imageLampiran.slice(lampiranAlreadyShown);
-    
+
     if (lampiranToRender.length === 0) return null;
 
     // Bagi lampiran ke beberapa halaman jika banyak (15 per halaman: 3 kolom x 5 baris)
     const lampiranPages = [];
     const LAMPIRAN_PER_PAGE = 15;
-    
+
     for (let i = 0; i < lampiranToRender.length; i += LAMPIRAN_PER_PAGE) {
       lampiranPages.push(lampiranToRender.slice(i, i + LAMPIRAN_PER_PAGE));
     }
 
     return lampiranPages.map((pageLampiran, pageIndex) => {
       const startIndex = lampiranAlreadyShown + pageIndex * LAMPIRAN_PER_PAGE;
-      
+
       return (
         <div
           key={`lampiran-${pageIndex}`}
@@ -2677,7 +2815,7 @@ export const EmailDetailBeritaBongkaran = ({
         >
           {/* Header dengan cop surat */}
           {renderHeaderPDF(false)}
-          
+
           {/* Title Lampiran */}
           <div className="text-center mb-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">
@@ -2691,16 +2829,19 @@ export const EmailDetailBeritaBongkaran = ({
           </div>
 
           {/* Grid Lampiran - 3 kolom */}
-          <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 200px)' }}>
+          <div
+            className="grid grid-cols-3 gap-4"
+            style={{ maxHeight: "calc(100% - 200px)" }}
+          >
             {pageLampiran.map((attachment, index) => {
               const globalIndex = startIndex + index;
               const imageUrl = attachment.url.startsWith("http")
                 ? attachment.url
                 : `${apiUrl}${attachment.url}`;
-              
+
               return (
-                <div 
-                  key={globalIndex} 
+                <div
+                  key={globalIndex}
                   className="flex flex-col items-center justify-start"
                 >
                   <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -2793,7 +2934,7 @@ export const EmailDetailBeritaBongkaran = ({
         pdf.save(
           `${
             formData.nomorBeritaAcara || "Berita Acara Pemeriksaan Tim Mutu"
-          }.pdf`
+          }.pdf`,
         );
 
         toast.dismiss(toastId);
@@ -2822,15 +2963,19 @@ export const EmailDetailBeritaBongkaran = ({
         requestAnimationFrame(() => {
           // Tunggu sedikit lagi untuk memastikan React sudah render semua
           setTimeout(() => {
-            const printContent = document.getElementById('print-content-bongkaran');
+            const printContent = document.getElementById(
+              "print-content-bongkaran",
+            );
             if (!printContent) {
               resolve();
               return;
             }
 
             // Cari semua gambar di print content
-            const images = Array.from(printContent.querySelectorAll('img')) as HTMLImageElement[];
-            
+            const images = Array.from(
+              printContent.querySelectorAll("img"),
+            ) as HTMLImageElement[];
+
             if (images.length === 0) {
               resolve();
               return;
@@ -2842,7 +2987,7 @@ export const EmailDetailBeritaBongkaran = ({
 
             const checkComplete = () => {
               if (resolved) return;
-              
+
               loadedCount++;
               if (loadedCount === totalImages) {
                 resolved = true;
@@ -2857,43 +3002,47 @@ export const EmailDetailBeritaBongkaran = ({
             const timeout = setTimeout(() => {
               if (!resolved) {
                 resolved = true;
-                console.warn('Some images failed to load within timeout');
+                console.warn("Some images failed to load within timeout");
                 resolve();
               }
             }, 10000);
 
             images.forEach((img, index) => {
               // Pastikan gambar tidak lazy load dan force eager loading
-              img.loading = 'eager';
-              img.decoding = 'sync';
-              
+              img.loading = "eager";
+              img.decoding = "sync";
+
               const imagePromise = new Promise<void>((imgResolve) => {
                 // Jika gambar sudah complete dan memiliki dimensi, langsung resolve
-                if (img.complete && img.naturalHeight !== 0 && img.naturalWidth !== 0) {
+                if (
+                  img.complete &&
+                  img.naturalHeight !== 0 &&
+                  img.naturalWidth !== 0
+                ) {
                   imgResolve();
                 } else {
                   // Tambahkan event listener untuk load dan error
                   const onLoad = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     imgResolve();
                   };
-                  
+
                   const onError = () => {
-                    img.removeEventListener('load', onLoad);
-                    img.removeEventListener('error', onError);
+                    img.removeEventListener("load", onLoad);
+                    img.removeEventListener("error", onError);
                     console.warn(`Image ${index} failed to load:`, img.src);
                     imgResolve(); // Resolve anyway untuk tidak block
                   };
 
-                  img.addEventListener('load', onLoad, { once: true });
-                  img.addEventListener('error', onError, { once: true });
-                  
+                  img.addEventListener("load", onLoad, { once: true });
+                  img.addEventListener("error", onError, { once: true });
+
                   // Force reload jika src sudah ada tapi belum load
                   if (img.src && !img.complete) {
                     const currentSrc = img.src;
                     // Hapus dan set ulang src untuk force reload
-                    img.src = '';
+                    img.src = "";
                     setTimeout(() => {
                       img.src = currentSrc;
                     }, 10);
@@ -2911,29 +3060,40 @@ export const EmailDetailBeritaBongkaran = ({
     });
   };
 
-  const handlePrintClick = async () => {
+  const handlePrintClick = () => {
+    if (isMobileDevice()) {
+      setShowMobilePrintDialog(true);
+      return;
+    }
+    handleDesktopPrint();
+  };
+
+  const handleDesktopPrint = async () => {
     setIsPrinting(true);
-    
-    // Tunggu sedikit untuk memastikan React sudah render print content
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Tunggu semua gambar load sebelum buka print dialog
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await waitForImagesToLoad();
-    
-    // Trigger print dialog setelah semua gambar sudah load
+
     window.print();
-    
-    // Reset setelah print dialog ditutup (user bisa cancel atau print)
-    // Gunakan beforeprint dan afterprint events jika tersedia
+
     const handleAfterPrint = () => {
       setIsPrinting(false);
-      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
     };
-    window.addEventListener('afterprint', handleAfterPrint);
-    // Fallback jika afterprint tidak didukung
+    window.addEventListener("afterprint", handleAfterPrint);
+
     setTimeout(() => {
       setIsPrinting(false);
     }, 1000);
+  };
+
+  const handleMobilePrintPreview = async () => {
+    setShowMobilePrintDialog(false);
+    await handleDesktopPrint();
+  };
+
+  const handleMobileDownloadPDF = () => {
+    setShowMobilePrintDialog(false);
+    setIsGeneratingPDF(true);
   };
 
   return (
@@ -2970,7 +3130,7 @@ export const EmailDetailBeritaBongkaran = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    email.surat_jalan.pengirim.departemen_pengirim
+                    email.surat_jalan.pengirim.departemen_pengirim,
                   )}
                 </div>
                 <div>
@@ -2994,7 +3154,7 @@ export const EmailDetailBeritaBongkaran = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -3021,7 +3181,7 @@ export const EmailDetailBeritaBongkaran = ({
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium bg-blue-500`}
                 >
                   {getCompanyAbbreviation(
-                    email.surat_jalan.pengirim.departemen_pengirim
+                    email.surat_jalan.pengirim.departemen_pengirim,
                   )}
                 </div>
                 <div>
@@ -3045,7 +3205,7 @@ export const EmailDetailBeritaBongkaran = ({
                   <Star
                     className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors duration-200 ${
                       localEmail.email_statuses?.find(
-                        (item) => item.user.name === user?.name
+                        (item) => item.user.name === user?.name,
                       )?.is_bookmarked
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-400"
@@ -3094,7 +3254,10 @@ export const EmailDetailBeritaBongkaran = ({
         <div className="mb-6 md:mb-8 w-full flex justify-center">
           <div className="w-80 xs:w-[210mm] scale-[0.38] xs:scale-[0.45] sm:scale-[0.6] md:scale-[0.75] lg:scale-100 transform origin-top-left">
             {/* Fixed width document preview */}
-            <div className="bg-white py-4" style={{ width: '210mm', minWidth: '210mm' }}>
+            <div
+              className="bg-white py-4"
+              style={{ width: "210mm", minWidth: "210mm" }}
+            >
               {/* Company Header */}
               <div className="w-full mb-8">
                 {copSuratUrl ? (
@@ -3248,7 +3411,7 @@ export const EmailDetailBeritaBongkaran = ({
                       <td className="border-2 border-gray-800 px-2 py-2 text-center">
                         {email.surat_jalan.materials.reduce(
                           (acc, item) => acc + item.jumlah,
-                          0
+                          0,
                         )}
                       </td>
                       <td className="border-2 border-gray-800 px-2 py-2"></td>
@@ -3447,7 +3610,7 @@ export const EmailDetailBeritaBongkaran = ({
                         onClick={() =>
                           handleDownloadAttachment(
                             attachment.url,
-                            attachment.name
+                            attachment.name,
                           )
                         }
                       >
@@ -3620,21 +3783,23 @@ export const EmailDetailBeritaBongkaran = ({
                       {footerParts.keterangan && renderFooterKeteranganPDF()}
                       {footerParts.kendaraan && renderFooterKendaraanPDF()}
                       {footerParts.tandaTangan && renderFooterTandaTanganPDF()}
-                      {footerParts.lampiran && (
+                      {footerParts.lampiran &&
                         (() => {
                           // Jika ini halaman terakhir dengan footer, tampilkan lampiran terbatas
                           const imageLampiran = getImageLampiran();
                           const LAMPIRAN_PER_PAGE = 6; // Maksimal 6 lampiran di footer (2x3 grid)
-                          const lampiranToShow = imageLampiran.slice(0, LAMPIRAN_PER_PAGE);
+                          const lampiranToShow = imageLampiran.slice(
+                            0,
+                            LAMPIRAN_PER_PAGE,
+                          );
                           return renderFooterLampiranPDF(lampiranToShow);
-                        })()
-                      )}
+                        })()}
                     </>
                   )}
                 </div>
               );
             })}
-            
+
             {/* Halaman Lampiran terpisah - untuk lampiran yang tidak muat atau jika material <= threshold */}
             {renderLampiranPagesPDF()}
           </div>
@@ -3779,21 +3944,23 @@ export const EmailDetailBeritaBongkaran = ({
                     {footerParts.keterangan && renderFooterKeteranganPDF()}
                     {footerParts.kendaraan && renderFooterKendaraanPDF()}
                     {footerParts.tandaTangan && renderFooterTandaTanganPDF()}
-                    {footerParts.lampiran && (
+                    {footerParts.lampiran &&
                       (() => {
                         // Jika ini halaman terakhir dengan footer, tampilkan lampiran terbatas
                         const imageLampiran = getImageLampiran();
                         const LAMPIRAN_PER_PAGE = 6; // Maksimal 6 lampiran di footer (2x3 grid)
-                        const lampiranToShow = imageLampiran.slice(0, LAMPIRAN_PER_PAGE);
+                        const lampiranToShow = imageLampiran.slice(
+                          0,
+                          LAMPIRAN_PER_PAGE,
+                        );
                         return renderFooterLampiranPDF(lampiranToShow);
-                      })()
-                    )}
+                      })()}
                   </>
                 )}
               </div>
             );
           })}
-          
+
           {/* Halaman Lampiran terpisah - untuk lampiran yang tidak muat atau jika material <= threshold */}
           {(() => {
             const imageLampiran = getImageLampiran();
@@ -3801,7 +3968,7 @@ export const EmailDetailBeritaBongkaran = ({
 
             // Tentukan lampiran mana yang sudah ditampilkan di footer
             let lampiranAlreadyShown = 0;
-            
+
             if (materials.length <= MATERIAL_THRESHOLD) {
               lampiranAlreadyShown = 0;
             } else {
@@ -3815,20 +3982,27 @@ export const EmailDetailBeritaBongkaran = ({
 
             // Ambil sisa lampiran yang belum ditampilkan
             const lampiranToRender = imageLampiran.slice(lampiranAlreadyShown);
-            
+
             if (lampiranToRender.length === 0) return null;
 
             // Bagi lampiran ke beberapa halaman jika banyak (15 per halaman: 3 kolom x 5 baris)
             const lampiranPages = [];
             const LAMPIRAN_PER_PAGE = 15;
-            
-            for (let i = 0; i < lampiranToRender.length; i += LAMPIRAN_PER_PAGE) {
-              lampiranPages.push(lampiranToRender.slice(i, i + LAMPIRAN_PER_PAGE));
+
+            for (
+              let i = 0;
+              i < lampiranToRender.length;
+              i += LAMPIRAN_PER_PAGE
+            ) {
+              lampiranPages.push(
+                lampiranToRender.slice(i, i + LAMPIRAN_PER_PAGE),
+              );
             }
 
             return lampiranPages.map((pageLampiran, pageIndex) => {
-              const startIndex = lampiranAlreadyShown + pageIndex * LAMPIRAN_PER_PAGE;
-              
+              const startIndex =
+                lampiranAlreadyShown + pageIndex * LAMPIRAN_PER_PAGE;
+
               return (
                 <div
                   key={`lampiran-print-${pageIndex}`}
@@ -3843,7 +4017,7 @@ export const EmailDetailBeritaBongkaran = ({
                 >
                   {/* Header dengan cop surat */}
                   {renderHeaderPDF(false)}
-                  
+
                   {/* Title Lampiran */}
                   <div className="text-center mb-6">
                     <h2 className="text-sm font-semibold text-gray-900 mb-2">
@@ -3857,16 +4031,19 @@ export const EmailDetailBeritaBongkaran = ({
                   </div>
 
                   {/* Grid Lampiran - 3 kolom */}
-                  <div className="grid grid-cols-3 gap-4" style={{ maxHeight: 'calc(100% - 200px)' }}>
+                  <div
+                    className="grid grid-cols-3 gap-4"
+                    style={{ maxHeight: "calc(100% - 200px)" }}
+                  >
                     {pageLampiran.map((attachment, index) => {
                       const globalIndex = startIndex + index;
                       const imageUrl = attachment.url.startsWith("http")
                         ? attachment.url
                         : `${apiUrl}${attachment.url}`;
-                      
+
                       return (
-                        <div 
-                          key={globalIndex} 
+                        <div
+                          key={globalIndex}
                           className="flex flex-col items-center justify-start"
                         >
                           <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -3897,23 +4074,23 @@ export const EmailDetailBeritaBongkaran = ({
             display: none !important;
           }
         }
-        
+
         @page {
           margin: 0;
           size: A4;
         }
-        
+
         @media print {
           /* Hide everything except print content */
           body * {
             visibility: hidden;
           }
-          
+
           #print-content-bongkaran,
           #print-content-bongkaran * {
             visibility: visible;
           }
-          
+
           #print-content-bongkaran {
             position: absolute;
             left: 0;
@@ -3921,19 +4098,19 @@ export const EmailDetailBeritaBongkaran = ({
             width: 100%;
             background: white;
           }
-          
+
           .surat-print {
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
           }
-          
+
           .surat-print:last-child {
             page-break-after: auto;
             break-after: auto;
           }
-          
+
           /* Ensure images load in print */
           img {
             max-width: 100%;
@@ -3941,15 +4118,61 @@ export const EmailDetailBeritaBongkaran = ({
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          
+
           /* Ensure borders print */
-          table, th, td {
+          table,
+          th,
+          td {
             border-collapse: collapse;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
         }
       `}</style>
+
+      {showMobilePrintDialog && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+          onClick={() => setShowMobilePrintDialog(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Pilih Aksi
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Pilih cara untuk mendapatkan surat Anda
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleMobileDownloadPDF}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#0056B0] text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                <span className="font-medium">Download PDF</span>
+              </button>
+
+              <button
+                onClick={handleMobilePrintPreview}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 hover:bg-gray-500 rounded-lg transition-colors"
+              >
+                <Printer className="w-5 h-5" />
+                <span className="font-medium">Print Preview</span>
+              </button>
+
+              <button
+                onClick={() => setShowMobilePrintDialog(false)}
+                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
