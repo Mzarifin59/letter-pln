@@ -167,6 +167,7 @@ export interface BeritaPemeriksaan  {
   materials: Material[];
   penyedia_barang: PenyediaBarang;
   pemeriksa_barang: PemeriksaBarang;
+  lampiran: FileAttachment[];
   emails: EmailItem[];
 }
 

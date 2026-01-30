@@ -2,7 +2,7 @@
 
 import { MouseEventHandler, useEffect, useState } from "react";
 import Image from "next/image";
-import { Star, X, Printer, Download } from "lucide-react";
+import { Star, X, Printer, Download, Paperclip } from "lucide-react";
 import {
   EmailDataOther,
   FileAttachment,
@@ -143,6 +143,24 @@ export const EmailDetailBeritaPemeriksaan = ({
 
   const beritaPemeriksaan: BeritaPemeriksaan = email.surat_jalan;
 
+  const getLampiranImages = () => {
+    const beritaPemeriksaan = email.surat_jalan as any;
+    const hasLampiran =
+      "lampiran" in beritaPemeriksaan &&
+      beritaPemeriksaan.lampiran &&
+      Array.isArray(beritaPemeriksaan.lampiran) &&
+      beritaPemeriksaan.lampiran.length > 0;
+
+    if (!hasLampiran) return [];
+
+    const lampiran = beritaPemeriksaan.lampiran as FileAttachment[];
+    // Filter hanya image files
+    return lampiran.filter((att) => {
+      const ext = att.name.split(".").pop()?.toLowerCase() || "";
+      return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+    });
+  };
+
   // Parse kelengkapan dokumen
   const kelengkapanDokumen = parseKelengkapanFromMarkdown(
     beritaPemeriksaan.kelengkapan_dokumen || "",
@@ -279,6 +297,31 @@ export const EmailDetailBeritaPemeriksaan = ({
     }
   };
 
+  const handleDownloadAttachment = async (
+    fileUrl: string,
+    fileName: string,
+  ) => {
+    const fullUrl = `${apiUrl}${fileUrl}`;
+    try {
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error("Gagal mengunduh file");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Gagal mengunduh lampiran. Silakan coba lagi.");
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (!isGeneratingPDF) return;
 
@@ -289,7 +332,8 @@ export const EmailDetailBeritaPemeriksaan = ({
         position: "top-center",
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Tunggu lebih lama untuk memastikan semua gambar ter-render
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const hiddenContent = document.getElementById(
         "hidden-preview-content-berita",
@@ -309,15 +353,46 @@ export const EmailDetailBeritaPemeriksaan = ({
       }
 
       try {
+        // Deteksi mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // Preload semua gambar lampiran sebelum generate PDF
+        const imageLampiran = getLampiranImages();
+        if (imageLampiran.length > 0) {
+          const imagePromises = imageLampiran.map(
+            (attachment: FileAttachment) => {
+              return new Promise<void>((resolve) => {
+                const img = document.createElement("img") as HTMLImageElement;
+                img.crossOrigin = "anonymous";
+
+                const imageUrl = attachment.url.startsWith("http")
+                  ? attachment.url
+                  : `${apiUrl}${attachment.url}`;
+
+                img.onload = () => resolve();
+                img.onerror = () => {
+                  console.warn(`Failed to load image: ${imageUrl}`);
+                  resolve(); // Resolve anyway to not block PDF generation
+                };
+
+                img.src = imageUrl;
+              });
+            },
+          );
+
+          // Wait for all images to load
+          await Promise.all(imagePromises);
+
+          // Extra delay after images loaded
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
         const pdf = new jsPDF({
           orientation: "portrait",
           unit: "mm",
           format: "a4",
           compress: true,
         });
-
-        // Deteksi mobile device
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i] as HTMLElement;
@@ -326,26 +401,48 @@ export const EmailDetailBeritaPemeriksaan = ({
           page.style.transform = "";
           page.style.transformOrigin = "";
 
+          // Gunakan scale yang lebih tinggi untuk kualitas lebih baik
+          const scale = isMobile ? 3 : 2.5;
+
           const canvas = await html2canvas(page, {
-            scale: isMobile ? 3 : 2, // Scale lebih tinggi untuk mobile
+            scale: scale,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: "#ffffff",
             logging: false,
-            imageTimeout: 0,
-            windowWidth: 794, // A4 width in pixels at 96 DPI (210mm)
-            windowHeight: 1123, // A4 height in pixels at 96 DPI (297mm)
+            imageTimeout: 15000,
+            windowWidth: 794,
+            windowHeight: 1123,
             width: 794,
             height: 1123,
             scrollX: 0,
             scrollY: 0,
+            onclone: (clonedDoc) => {
+              // Pastikan semua gambar di cloned document sudah loaded
+              const images = clonedDoc.querySelectorAll("img");
+              images.forEach((img) => {
+                const imgElement = img as HTMLImageElement;
+                imgElement.loading = "eager";
+                imgElement.decoding = "sync";
+              });
+            },
           });
 
-          const imgData = canvas.toDataURL("image/png");
+          const imgData = canvas.toDataURL("image/png", 1.0);
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
 
           if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
+          pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            0,
+            pageWidth,
+            pageHeight,
+            undefined,
+            "FAST",
+          );
         }
 
         pdf.save(
@@ -370,7 +467,7 @@ export const EmailDetailBeritaPemeriksaan = ({
     };
 
     generatePDF();
-  }, [isGeneratingPDF, beritaPemeriksaan.no_berita_acara]);
+  }, [isGeneratingPDF, beritaPemeriksaan.no_berita_acara, apiUrl]);
 
   // Fungsi untuk memastikan semua gambar sudah load
   const waitForImagesToLoad = (): Promise<void> => {
@@ -948,6 +1045,66 @@ export const EmailDetailBeritaPemeriksaan = ({
           </div>
         </div>
 
+        {/* Attachments Section - Tampilan berbeda dari preview */}
+        {(() => {
+          const imageLampiran = getLampiranImages();
+          if (imageLampiran.length === 0) return null;
+
+          return (
+            <>
+              <hr className="border-b-4 border-gray-800 mb-6" />
+
+              <div className="mb-6 md:mb-8">
+                <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm md:text-base">
+                  <Paperclip className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  Lampiran ({imageLampiran.length})
+                </h4>
+                <div className="space-y-2">
+                  {imageLampiran.map(
+                    (attachment: FileAttachment, index: number) => {
+                      const imageUrl = attachment.url.startsWith("http")
+                        ? attachment.url
+                        : `${apiUrl}${attachment.url}`;
+
+                      // Ambil ekstensi file (uppercase)
+                      const ext =
+                        attachment.name.split(".").pop()?.toUpperCase() || "";
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-2 sm:space-x-3">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center">
+                              <span className="text-[10px] sm:text-xs font-bold text-red-600">
+                                {ext}
+                              </span>
+                            </div>
+                            <span className="text-xs sm:text-sm font-medium">
+                              {attachment.name}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleDownloadAttachment(
+                                attachment.url,
+                                attachment.name,
+                              )
+                            }
+                          >
+                            <Download className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+                          </button>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
         {/* Ubah Surat Button for Reject Status */}
         {user?.role?.name === "Admin" &&
           beritaPemeriksaan.status_surat === "Reject" && (
@@ -1416,6 +1573,79 @@ export const EmailDetailBeritaPemeriksaan = ({
                 </div>
               );
             })}
+
+            {(() => {
+              const imageLampiran = getLampiranImages();
+              if (imageLampiran.length === 0) return null;
+
+              return (
+                <div
+                  key="lampiran-page-pdf"
+                  className="surat-berita-pemeriksaan bg-white shadow-lg mx-auto my-8 flex flex-col overflow-hidden"
+                  style={{
+                    width: "794px",
+                    minHeight: "1123px",
+                    padding: "40px 56.7px 30px 56.7px",
+                    boxSizing: "border-box",
+                    whiteSpace: "normal",
+                    wordSpacing: "normal",
+                  }}
+                >
+                  {/* Company Header */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="flex items-center justify-center">
+                      <Image
+                        src={`/images/PLN-logo.png`}
+                        alt="PLN Logo"
+                        width={104}
+                        height={104}
+                        className="w-[104px] h-[104px] object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                        PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                      </div>
+                      <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                        UNIT PELAKSANA TRANSMISI BANDUNG
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="border-t-2 border-gray-800 mb-2" />
+
+                  {/* Grid Lampiran - 3 kolom */}
+                  <div
+                    className="grid grid-cols-3 gap-4"
+                    style={{ maxHeight: "calc(100% - 200px)" }}
+                  >
+                    {imageLampiran.map(
+                      (attachment: FileAttachment, index: number) => {
+                        const imageUrl = attachment.url.startsWith("http")
+                          ? attachment.url
+                          : `${apiUrl}${attachment.url}`;
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex flex-col items-center justify-start"
+                          >
+                            <div className="w-full aspect-square flex items-center justify-center overflow-hidden mb-2">
+                              <img
+                                src={imageUrl}
+                                alt={`Lampiran ${index + 1}`}
+                                className="w-full h-full object-contain"
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1896,6 +2126,79 @@ export const EmailDetailBeritaPemeriksaan = ({
               </div>
             );
           })}
+
+          {(() => {
+            const imageLampiran = getLampiranImages();
+            if (imageLampiran.length === 0) return null;
+
+            return (
+              <div
+                key="lampiran-page-print"
+                className="surat-print w-[210mm] h-[297mm] bg-white mx-auto my-0 flex flex-col"
+                style={{
+                  padding: "10mm 10mm 10mm 10mm",
+                  boxSizing: "border-box",
+                  pageBreakAfter: "always",
+                  pageBreakInside: "avoid",
+                }}
+              >
+                {/* Company Header */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center justify-center">
+                    <Image
+                      src={`/images/PLN-logo.png`}
+                      alt="PLN Logo"
+                      width={104}
+                      height={104}
+                      className="w-[104px] h-[104px] object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+                    </div>
+                    <div className="plus-jakarta-sans text-base font-semibold text-[#232323]">
+                      UNIT PELAKSANA TRANSMISI BANDUNG
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-t-2 border-gray-800 mb-3" />
+
+                {/* Grid Lampiran - 3 kolom */}
+                <div
+                  className="grid grid-cols-3 gap-4"
+                  style={{ maxHeight: "calc(100% - 150px)" }}
+                >
+                  {imageLampiran.map(
+                    (attachment: FileAttachment, index: number) => {
+                      const imageUrl = attachment.url.startsWith("http")
+                        ? attachment.url
+                        : `${apiUrl}${attachment.url}`;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex flex-col items-center justify-start"
+                        >
+                          <div className="w-full aspect-square flex items-center justify-center overflow-hidden">
+                            <img
+                              src={imageUrl}
+                              alt={`Lampiran ${index + 1}`}
+                              className="w-full h-full object-contain"
+                              crossOrigin="anonymous"
+                              loading="eager"
+                              decoding="sync"
+                            />
+                          </div>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

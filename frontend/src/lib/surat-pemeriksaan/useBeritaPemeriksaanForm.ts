@@ -31,7 +31,7 @@ const getAuthToken = (): string => {
 
 async function getAllUsers(): Promise<User[]> {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users?populate=role`
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users?populate=role`,
   );
 
   if (!res.ok) throw new Error("Gagal mengambil data users");
@@ -44,16 +44,17 @@ export const useBeritaPemeriksaanForm = () => {
   const [materials, setMaterials] = useState<MaterialForm[]>([
     { id: 1, ...INITIAL_MATERIAL },
   ]);
-  const [signaturePenyediaBarang, setSignaturePenyediaBarang] = useState<SignatureData>({
-    upload: null,
-    signature: null,
-    preview: { upload: null, signature: null },
-  });
+  const [signaturePenyediaBarang, setSignaturePenyediaBarang] =
+    useState<SignatureData>({
+      upload: null,
+      signature: null,
+      preview: { upload: null, signature: null },
+    });
   const [pemeriksaBarang, setPemeriksaBarang] = useState<{
     departemenPemeriksa: string;
     mengetahui: MengetahuiForm[];
   }>({
-    departemenPemeriksa: "",
+    departemenPemeriksa: "TIM MUTU UPT BANDUNG",
     mengetahui: [
       {
         id: Date.now(),
@@ -67,6 +68,7 @@ export const useBeritaPemeriksaanForm = () => {
       },
     ],
   });
+  const [lampiran, setLampiran] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useUserLogin();
 
@@ -75,18 +77,28 @@ export const useBeritaPemeriksaanForm = () => {
    */
   const prepareSubmissionData = async (isDraft = false) => {
     try {
+      // Upload lampiran files
+      const lampiranIds: number[] = [];
+      if (lampiran.length > 0) {
+        const uploadedLampiran = await StrapiAPIService.uploadFiles(lampiran);
+        const validLampiran = uploadedLampiran
+          .filter((f) => f && f.id)
+          .map((f) => f.id);
+        lampiranIds.push(...validLampiran);
+      }
+
       // Upload TTD Penyedia Barang
       let ttdPenyediaBarangId = null;
       if (signaturePenyediaBarang.upload) {
         const uploaded = await StrapiAPIService.uploadFile(
           signaturePenyediaBarang.upload,
-          `${formData.namaPenanggungJawab}_ttd.png`
+          `${formData.namaPenanggungJawab}_ttd.png`,
         );
         ttdPenyediaBarangId = uploaded.id;
       } else if (signaturePenyediaBarang.signature) {
         const file = await FileUtils.dataURLToFile(
           signaturePenyediaBarang.signature,
-          `${formData.namaPenanggungJawab}_ttd.png`
+          `${formData.namaPenanggungJawab}_ttd.png`,
         );
         const uploaded = await StrapiAPIService.uploadFile(file);
         ttdPenyediaBarangId = uploaded.id;
@@ -99,13 +111,13 @@ export const useBeritaPemeriksaanForm = () => {
           if (m.signature.upload) {
             const uploaded = await StrapiAPIService.uploadFile(
               m.signature.upload,
-              `${m.namaMengetahui}_ttd.png`
+              `${m.namaMengetahui}_ttd.png`,
             );
             ttdMengetahuiId = uploaded.id;
           } else if (m.signature.signature) {
             const file = await FileUtils.dataURLToFile(
               m.signature.signature,
-              `${m.namaMengetahui}_ttd.png`
+              `${m.namaMengetahui}_ttd.png`,
             );
             const uploaded = await StrapiAPIService.uploadFile(file);
             ttdMengetahuiId = uploaded.id;
@@ -116,10 +128,11 @@ export const useBeritaPemeriksaanForm = () => {
             nama_mengetahui: m.namaMengetahui,
             ttd_mengetahui: ttdMengetahuiId,
           };
-        })
+        }),
       );
 
-      const departemenPemeriksaValue = pemeriksaBarang.departemenPemeriksa || "PLN";
+      const departemenPemeriksaValue =
+        pemeriksaBarang.departemenPemeriksa || "TIM MUTU UPT BANDUNG";
       console.log("Departemen Pemeriksa:", departemenPemeriksaValue);
       console.log("Pemeriksa Barang Data:", {
         departemen_pemeriksa: departemenPemeriksaValue,
@@ -155,7 +168,8 @@ export const useBeritaPemeriksaanForm = () => {
         pemeriksa_barang: {
           departemen_pemeriksa: departemenPemeriksaValue,
           mengetahui: mengetahuiData,
-        }
+        },
+        lampiran: lampiranIds,
       };
     } catch (error) {
       console.error("Error preparing submission data:", error);
@@ -184,7 +198,7 @@ export const useBeritaPemeriksaanForm = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!res.ok) throw new Error("Gagal mengambil data berita pemeriksaan");
@@ -207,7 +221,7 @@ export const useBeritaPemeriksaanForm = () => {
           localDate.getDate(),
           new Date().getHours(),
           new Date().getMinutes(),
-          new Date().getSeconds()
+          new Date().getSeconds(),
         ).toISOString();
 
         submissionData.tanggal_kontrak = fullDateTime;
@@ -223,7 +237,7 @@ export const useBeritaPemeriksaanForm = () => {
           localDate.getDate(),
           new Date().getHours(),
           new Date().getMinutes(),
-          new Date().getSeconds()
+          new Date().getSeconds(),
         ).toISOString();
 
         submissionData.tanggal_pelaksanaan = fullDateTime;
@@ -232,7 +246,7 @@ export const useBeritaPemeriksaanForm = () => {
       }
 
       const existingSurat = dataBeritaPemeriksaan.find(
-        (item) => item.no_berita_acara === submissionData.no_berita_acara
+        (item) => item.no_berita_acara === submissionData.no_berita_acara,
       );
 
       const users = await getAllUsers();
@@ -243,18 +257,19 @@ export const useBeritaPemeriksaanForm = () => {
       if (existingSurat) {
         // Cek kondisi khusus SEBELUM update berita pemeriksaan:
         // jika isHaveStatus true dan status_surat Reject, maka reset status email dan email-status
-        const emailsResponse = await StrapiAPIService.getEmailsByBeritaPemeriksaan(
-          existingSurat.documentId
-        );
+        const emailsResponse =
+          await StrapiAPIService.getEmailsByBeritaPemeriksaan(
+            existingSurat.documentId,
+          );
         const emails = Array.isArray(emailsResponse.data)
           ? emailsResponse.data
           : emailsResponse.data
-          ? [emailsResponse.data]
-          : [];
+            ? [emailsResponse.data]
+            : [];
 
         // Simpan status_surat sebelum update
         const previousStatusSurat = existingSurat.status_surat;
-        
+
         console.log("🔍 Debug Reset Email - Berita Pemeriksaan:", {
           documentId: existingSurat.documentId,
           previousStatusSurat,
@@ -269,18 +284,15 @@ export const useBeritaPemeriksaanForm = () => {
         // Update berita pemeriksaan
         result = await StrapiAPIService.updateBeritaPemeriksaan(
           existingSurat.documentId,
-          submissionData
+          submissionData,
         );
 
         // Loop semua email yang terkait dengan berita pemeriksaan ini
         for (const email of emails) {
           // Cek apakah email.isHaveStatus === true dan status_surat sebelumnya adalah "Reject"
-          if (
-            email.isHaveStatus === true &&
-            previousStatusSurat === "Reject"
-          ) {
+          if (email.isHaveStatus === true && previousStatusSurat === "Reject") {
             console.log("🔄 Resetting email:", email.documentId);
-            
+
             // Update email.isHaveStatus menjadi false
             await StrapiAPIService.updateEmail(email.documentId, {
               isHaveStatus: false,
@@ -293,11 +305,14 @@ export const useBeritaPemeriksaanForm = () => {
                 (emailStatus: any) =>
                   StrapiAPIService.updateEmailStatus(
                     emailStatus.documentId || emailStatus.id,
-                    { is_read: false }
-                  )
+                    { is_read: false },
+                  ),
               );
               await Promise.all(updatePromises);
-              console.log("✅ Email statuses reset:", email.email_statuses.length);
+              console.log(
+                "✅ Email statuses reset:",
+                email.email_statuses.length,
+              );
             }
           }
         }
@@ -348,12 +363,11 @@ export const useBeritaPemeriksaanForm = () => {
           },
         };
 
-        resultStatusEmail = await StrapiAPIService.createStatusEmail(
-          dataStatusEmail
-        );
+        resultStatusEmail =
+          await StrapiAPIService.createStatusEmail(dataStatusEmail);
 
         resultStatusEmailSpv = await StrapiAPIService.createStatusEmail(
-          dataStatusEmailForSpv
+          dataStatusEmailForSpv,
         );
       }
 
@@ -378,12 +392,14 @@ export const useBeritaPemeriksaanForm = () => {
     signaturePenyediaBarang,
     pemeriksaBarang,
     isSubmitting,
+    lampiran,
 
     // Setters
     setFormData,
     setMaterials,
     setSignaturePenyediaBarang,
     setPemeriksaBarang,
+    setLampiran,
     // Methods
     handleSubmit,
   };

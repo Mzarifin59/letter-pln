@@ -72,17 +72,20 @@ export default function FormCreatePemeriksaanPage({
     materials,
     signaturePenyediaBarang,
     pemeriksaBarang,
+    lampiran,
+
     setFormData,
     setMaterials,
     setSignaturePenyediaBarang,
     setPemeriksaBarang,
+    setLampiran,
     handleSubmit: submitForm,
   } = useBeritaPemeriksaanForm();
 
   // State untuk kelengkapan dokumen
   const [jenisGambar, setJenisGambar] = useState<string>("");
   const [checkedKelengkapan, setCheckedKelengkapan] = useState<Set<number>>(
-    new Set()
+    new Set(),
   );
   const [dokumenLainnya, setDokumenLainnya] = useState<string>("");
   const [dokumenInfo, setDokumenInfo] = useState({
@@ -99,7 +102,7 @@ export default function FormCreatePemeriksaanPage({
   // Signature Refs
   const signatureRefPenyediaBarang = useRef<SignatureCanvas>(null);
   const signatureRefsMengetahui = useRef<Map<number, SignatureCanvas>>(
-    new Map()
+    new Map(),
   );
 
   // Fungsi untuk menambah mengetahui baru
@@ -141,7 +144,7 @@ export default function FormCreatePemeriksaanPage({
     checkedItems: Set<number>,
     gambarValue: string,
     lainnyaValue: string,
-    dokumenInfoValue: { dokumen: string; noDokumen: string; tanggal: string }
+    dokumenInfoValue: { dokumen: string; noDokumen: string; tanggal: string },
   ): string => {
     const items: string[] = [];
     let itemNumber = 1;
@@ -179,7 +182,7 @@ export default function FormCreatePemeriksaanPage({
       items.push(
         `${itemNumber}. ${
           gambarValue === "outline" ? "Outline Drawing" : "Approval Drawing"
-        }`
+        }`,
       );
       itemNumber++;
     }
@@ -309,7 +312,7 @@ export default function FormCreatePemeriksaanPage({
         newSet,
         jenisGambar,
         dokumenLainnya,
-        dokumenInfo
+        dokumenInfo,
       );
       setFormData((prevFormData) => ({
         ...prevFormData,
@@ -327,7 +330,7 @@ export default function FormCreatePemeriksaanPage({
       checkedKelengkapan,
       value,
       dokumenLainnya,
-      dokumenInfo
+      dokumenInfo,
     );
     setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
   };
@@ -340,7 +343,7 @@ export default function FormCreatePemeriksaanPage({
       checkedKelengkapan,
       jenisGambar,
       value,
-      dokumenInfo
+      dokumenInfo,
     );
     setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
   };
@@ -350,7 +353,7 @@ export default function FormCreatePemeriksaanPage({
     try {
       if (dataSurat && draftId) {
         const beritaPemeriksaan = dataSurat.find(
-          (item) => item.documentId === draftId
+          (item) => item.documentId === draftId,
         );
 
         if (!beritaPemeriksaan) {
@@ -380,13 +383,12 @@ export default function FormCreatePemeriksaanPage({
             beritaPemeriksaan.penyedia_barang?.perusahaan_penyedia_barang || "",
           namaPenanggungJawab:
             beritaPemeriksaan.penyedia_barang?.nama_penanggung_jawab || "",
-          departemenPemeriksa:
-            beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
+          departemenPemeriksa: "TIM MUTU UPT BANDUNG",
         });
 
         // Parse kelengkapan dokumen dari markdown
         const parsedKelengkapan = parseKelengkapanFromMarkdown(
-          beritaPemeriksaan.kelengkapan_dokumen || ""
+          beritaPemeriksaan.kelengkapan_dokumen || "",
         );
         setCheckedKelengkapan(parsedKelengkapan.checkedItems);
         setJenisGambar(parsedKelengkapan.gambarValue);
@@ -408,14 +410,14 @@ export default function FormCreatePemeriksaanPage({
               serial_number: (mat as any).serial_number || "",
               lokasi: (mat as any).lokasi || "",
               jumlah: mat.jumlah?.toString() || "0",
-            })
+            }),
           );
           setMaterials(loadedMaterials);
         }
 
         // Load signature penyedia barang
         const getFileUrl = (
-          fileAttachment: FileAttachment | null | undefined
+          fileAttachment: FileAttachment | null | undefined,
         ): string => {
           if (!fileAttachment?.url) return "";
           if (fileAttachment.url.startsWith("http")) return fileAttachment.url;
@@ -424,7 +426,7 @@ export default function FormCreatePemeriksaanPage({
 
         if (beritaPemeriksaan.penyedia_barang?.ttd_penerima) {
           const signatureUrl = getFileUrl(
-            beritaPemeriksaan.penyedia_barang.ttd_penerima
+            beritaPemeriksaan.penyedia_barang.ttd_penerima,
           );
           setSignaturePenyediaBarang((prev) => ({
             ...prev,
@@ -463,16 +465,43 @@ export default function FormCreatePemeriksaanPage({
           setPemeriksaBarang((prev) => ({
             ...prev,
             departemenPemeriksa:
-              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
-            mengetahui: loadedMengetahui,
+              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
+              "TIM MUTU UPT BANDUNG",
           }));
         } else {
           // Jika tidak ada mengetahui, tetap update departemenPemeriksa
           setPemeriksaBarang((prev) => ({
             ...prev,
             departemenPemeriksa:
-              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa || "",
+              beritaPemeriksaan.pemeriksa_barang?.departemen_pemeriksa ||
+              "TIM MUTU UPT BANDUNG",
           }));
+        }
+
+        if (
+          beritaPemeriksaan.lampiran &&
+          beritaPemeriksaan.lampiran.length > 0
+        ) {
+          try {
+            const loadedLampiran = await Promise.all(
+              beritaPemeriksaan.lampiran.map(
+                async (attachment: FileAttachment) => {
+                  const fileUrl = getFileUrl(attachment);
+                  const response = await fetch(fileUrl);
+                  const blob = await response.blob();
+                  return new File([blob], attachment.name || "lampiran", {
+                    type: blob.type,
+                  });
+                },
+              ),
+            );
+            setLampiran(loadedLampiran);
+          } catch (error) {
+            console.error("Error loading lampiran:", error);
+            toast.error("Beberapa lampiran gagal dimuat", {
+              position: "top-center",
+            });
+          }
         }
 
         toast.success("Data berhasil dimuat", {
@@ -513,7 +542,7 @@ export default function FormCreatePemeriksaanPage({
 
   // FORM HANDLERS
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -532,7 +561,7 @@ export default function FormCreatePemeriksaanPage({
         checkedKelengkapan,
         jenisGambar,
         dokumenLainnya,
-        dokumenInfo
+        dokumenInfo,
       );
       setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
 
@@ -576,7 +605,7 @@ export default function FormCreatePemeriksaanPage({
         checkedKelengkapan,
         jenisGambar,
         dokumenLainnya,
-        dokumenInfo
+        dokumenInfo,
       );
       setFormData((prev) => ({ ...prev, kelengkapanDokumen: markdown }));
 
@@ -611,12 +640,12 @@ export default function FormCreatePemeriksaanPage({
   const handleMengetahuiChange = (
     id: number,
     field: "departemenMengetahui" | "namaMengetahui",
-    value: string
+    value: string,
   ) => {
     setPemeriksaBarang((prev) => ({
       ...prev,
       mengetahui: prev.mengetahui.map((m) =>
-        m.id === id ? { ...m, [field]: value } : m
+        m.id === id ? { ...m, [field]: value } : m,
       ),
     }));
   };
@@ -648,10 +677,10 @@ export default function FormCreatePemeriksaanPage({
   const handleMaterialChange = (
     id: number,
     field: keyof MaterialForm,
-    value: string
+    value: string,
   ) => {
     setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
     );
   };
 
@@ -671,7 +700,7 @@ export default function FormCreatePemeriksaanPage({
 
   // SIGNATURE HANDLERS - Penyedia Barang
   const handleFileUploadPenyediaBarang = async (
-    e: ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -725,10 +754,22 @@ export default function FormCreatePemeriksaanPage({
     }));
   };
 
+  // LAMPIRAN HANDLERS
+  const handleFileChangeLampiran = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setLampiran((prev) => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const handleRemoveLampiran = (index: number) => {
+    setLampiran((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // SIGNATURE HANDLERS - Mengetahui
   const handleFileUploadMengetahui = async (
     e: ChangeEvent<HTMLInputElement>,
-    mengetahuiId: number
+    mengetahuiId: number,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -752,7 +793,7 @@ export default function FormCreatePemeriksaanPage({
                 preview: { ...m.signature.preview, upload: preview },
               },
             }
-          : m
+          : m,
       ),
     }));
   };
@@ -773,7 +814,7 @@ export default function FormCreatePemeriksaanPage({
                   preview: { ...m.signature.preview, signature: dataURL },
                 },
               }
-            : m
+            : m,
         ),
       }));
     } else {
@@ -797,7 +838,7 @@ export default function FormCreatePemeriksaanPage({
                   preview: { ...m.signature.preview, signature: null },
                 },
               }
-            : m
+            : m,
         ),
       }));
     }
@@ -816,7 +857,7 @@ export default function FormCreatePemeriksaanPage({
                 preview: { ...m.signature.preview, upload: null },
               },
             }
-          : m
+          : m,
       ),
     }));
   };
@@ -939,7 +980,7 @@ export default function FormCreatePemeriksaanPage({
                   checkedKelengkapan,
                   jenisGambar,
                   dokumenLainnya,
-                  newDokumenInfo
+                  newDokumenInfo,
                 );
                 setFormData((prev) => ({
                   ...prev,
@@ -968,7 +1009,7 @@ export default function FormCreatePemeriksaanPage({
                   checkedKelengkapan,
                   jenisGambar,
                   dokumenLainnya,
-                  newDokumenInfo
+                  newDokumenInfo,
                 );
                 setFormData((prev) => ({
                   ...prev,
@@ -997,7 +1038,7 @@ export default function FormCreatePemeriksaanPage({
                   checkedKelengkapan,
                   jenisGambar,
                   dokumenLainnya,
-                  newDokumenInfo
+                  newDokumenInfo,
                 );
                 setFormData((prev) => ({
                   ...prev,
@@ -1043,7 +1084,7 @@ export default function FormCreatePemeriksaanPage({
       <div className="space-y-3">
         {/* Item 3-13: Checkbox List */}
         {KELENGKAPAN_DOKUMEN_LIST.filter(
-          (item) => item.id >= 3 && item.id <= 13
+          (item) => item.id >= 3 && item.id <= 13,
         ).map((item) => (
           <label
             key={item.id}
@@ -1151,7 +1192,7 @@ export default function FormCreatePemeriksaanPage({
                     handleMaterialChange(
                       material.id,
                       "namaMaterial",
-                      e.target.value
+                      e.target.value,
                     )
                   }
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1171,7 +1212,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "katalog",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1206,7 +1247,7 @@ export default function FormCreatePemeriksaanPage({
                     handleMaterialChange(
                       material.id,
                       "serial_number",
-                      e.target.value
+                      e.target.value,
                     )
                   }
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1225,7 +1266,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "satuan",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
@@ -1253,7 +1294,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "jumlah",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1270,11 +1311,7 @@ export default function FormCreatePemeriksaanPage({
                   type="text"
                   value={material.lokasi}
                   onChange={(e) =>
-                    handleMaterialChange(
-                      material.id,
-                      "lokasi",
-                      e.target.value
-                    )
+                    handleMaterialChange(material.id, "lokasi", e.target.value)
                   }
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Lokasi"
@@ -1345,7 +1382,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "namaMaterial",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -1360,7 +1397,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "katalog",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -1386,7 +1423,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "serial_number",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -1400,7 +1437,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "satuan",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent bg-white"
@@ -1424,7 +1461,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "jumlah",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -1439,7 +1476,7 @@ export default function FormCreatePemeriksaanPage({
                       handleMaterialChange(
                         material.id,
                         "lokasi",
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
@@ -1622,7 +1659,7 @@ export default function FormCreatePemeriksaanPage({
 
   const renderSignatureSectionMengetahui = (
     mengetahui: MengetahuiForm,
-    index: number
+    index: number,
   ) => (
     <div className="border border-gray-200 rounded-xl p-4 sm:p-6 relative">
       <div className="space-y-4 sm:space-y-6">
@@ -1637,7 +1674,7 @@ export default function FormCreatePemeriksaanPage({
               handleMengetahuiChange(
                 mengetahui.id,
                 "namaMengetahui",
-                e.target.value
+                e.target.value,
               )
             }
             className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1761,6 +1798,123 @@ export default function FormCreatePemeriksaanPage({
     </div>
   );
 
+  const renderAttachmentSection = () => (
+    <div className="flex flex-col bg-white rounded-xl shadow-md w-full max-w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
+        <div className="flex items-center gap-3">
+          <h3 className="plus-jakarta-sans text-lg sm:text-xl lg:text-[26px] font-semibold text-[#353739]">
+            Lampiran
+          </h3>
+        </div>
+        <div className="flex gap-4 sm:gap-[30px]">
+          <label
+            htmlFor="lampiran"
+            className="plus-jakarta-sans flex items-center text-sm sm:text-base text-[#232323] font-medium gap-2 px-3 sm:px-4 py-2 border-2 border-[#EBEBEB] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer w-full sm:w-auto justify-center"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Tambah Lampiran</span>
+            <span className="sm:hidden">Tambah</span>
+          </label>
+          <input
+            id="lampiran"
+            type="file"
+            className="hidden"
+            multiple
+            accept="image/*,.pdf"
+            onChange={handleFileChangeLampiran}
+          />
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-6">
+        <p className="plus-jakarta-sans items-center text-sm sm:text-base text-[#232323] font-medium mb-4">
+          Tambahkan Lampiran
+        </p>
+
+        {lampiran.length === 0 ? (
+          <label
+            htmlFor="lampiran"
+            className="w-full flex flex-col items-center justify-center px-4 py-8 sm:py-12 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gray-400 transition-colors"
+          >
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl mb-3">📎</div>
+              <p className="plus-jakarta-sans text-sm sm:text-base text-gray-500 font-medium mb-1">
+                Belum Ada Lampiran
+              </p>
+              <p className="plus-jakarta-sans text-xs sm:text-sm text-gray-400">
+                Klik untuk menambahkan gambar atau PDF
+              </p>
+            </div>
+          </label>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {lampiran.map((file, index) => (
+              <div
+                key={index}
+                className="relative border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                {file.type.startsWith("image/") ? (
+                  <div className="w-full">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-full h-24 sm:h-32 object-cover rounded-md mb-2"
+                    />
+                    <p className="text-xs text-gray-600 text-center truncate px-1">
+                      {file.name}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="w-full h-24 sm:h-32 flex flex-col items-center justify-center bg-gray-200 rounded-md mb-2">
+                    <div className="text-2xl sm:text-3xl mb-1">📄</div>
+                    <p className="text-xs text-gray-600 text-center truncate px-2">
+                      {file.name}
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveLampiran(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
+                  aria-label="Hapus lampiran"
+                >
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-1 rounded">
+                  {(file.size / 1024 / 1024).toFixed(1)}MB
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {lampiran.length > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <div className="text-blue-600 mt-0.5">ℹ️</div>
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">
+                  {lampiran.length} file(s) terlampir
+                </p>
+                <p className="text-xs">
+                  Total ukuran:{" "}
+                  {(
+                    lampiran.reduce((total, file) => total + file.size, 0) /
+                    1024 /
+                    1024
+                  ).toFixed(2)}{" "}
+                  MB
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className=" bg-[#F6F9FF] p-4 sm:p-6 lg:p-9 flex items-center justify-center min-h-screen">
@@ -1784,6 +1938,7 @@ export default function FormCreatePemeriksaanPage({
         onDraft={handleDraft}
         onDownloadPDF={handleDownloadPDF}
         calculateTotal={calculateTotal}
+        lampiran={lampiran}
       />
     );
   }
@@ -1805,21 +1960,33 @@ export default function FormCreatePemeriksaanPage({
               onClick={handlePreviewPDF}
               className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
             >
-              <Eye width={20} height={20} className="text-[#232323] flex-shrink-0" />
+              <Eye
+                width={20}
+                height={20}
+                className="text-[#232323] flex-shrink-0"
+              />
               Preview
             </button>
             <button
               onClick={handleDraft}
               className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-[#232323] rounded-xl hover:bg-gray-200 border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
             >
-              <StickyNote width={18} height={18} className="text-[#232323] flex-shrink-0" />
+              <StickyNote
+                width={18}
+                height={18}
+                className="text-[#232323] flex-shrink-0"
+              />
               Draft
             </button>
             <button
               onClick={handleSubmit}
               className="plus-jakarta-sans px-4 sm:px-[18px] py-3 sm:py-3.5 text-white rounded-xl bg-[#0056B0] border-2 border-[#EBEBEB] transition-colors flex gap-2.5 items-center justify-center cursor-pointer text-sm sm:text-base"
             >
-              <Send width={18} height={18} className="text-white flex-shrink-0" />
+              <Send
+                width={18}
+                height={18}
+                className="text-white flex-shrink-0"
+              />
               Kirim
             </button>
           </div>
@@ -1851,7 +2018,8 @@ export default function FormCreatePemeriksaanPage({
                     </label>
                     <input
                       type="text"
-                      value="TIM MUTU UPT BANDUNG"
+                      value={pemeriksaBarang.departemenPemeriksa}
+                      onChange={handlePemeriksaChange}
                       disabled
                       className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="TIM MUTU UPT BANDUNG"
@@ -1885,6 +2053,9 @@ export default function FormCreatePemeriksaanPage({
           </div>
         </div>
       </div>
+
+      {/* Attachments Section */}
+      {renderAttachmentSection()}
     </div>
   );
 }
